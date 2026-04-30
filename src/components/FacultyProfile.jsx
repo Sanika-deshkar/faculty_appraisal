@@ -1,0 +1,317 @@
+import { useState } from "react";
+
+export default function FacultyProfile({ user, onProceed }) {
+  const [confirmed, setConfirmed] = useState(false);
+
+  const fields = [
+    ["Employee ID",        user.employeeId],
+    ["Full Name",          user.name],
+    ["Designation",        user.designation],
+    ["Qualification",      user.qualification],
+    ["Department",         user.department],
+    ["School / Faculty",   user.school],
+    ["Teaching Experience",user.experience],
+    ["Contact",            user.phone],
+    ["Academic Year",      user.ay],
+    ["Appraisal Role",     user.role === "faculty" ? "Faculty (Self-Appraisal)" : user.role === "hod" ? "Head of Department" : user.role === "dean" ? "Dean / Director" : "Vice Chancellor"],
+  ];
+
+  const roleColor = {
+    faculty: { bg: "#ede9fe", color: "#6d28d9" },
+    hod:     { bg: "#fef3c7", color: "#b45309" },
+    dean:    { bg: "#d1fae5", color: "#065f46" },
+    vc:      { bg: "#fee2e2", color: "#991b1b" },
+  }[user.role] || { bg: "#f1f5f9", color: "#475569" };
+
+  return (
+    <div style={S.page}>
+      {/* Top bar */}
+      <div style={S.topBar}>
+        <div style={S.logoWrap}>
+          <div style={S.logoMark}>FA</div>
+          <div>
+            <div style={S.logoName}>FacultyAppraise</div>
+            <div style={S.logoSub}>D Y Patil International University</div>
+          </div>
+        </div>
+        <div style={S.ayPill}>Academic Year {user.ay}</div>
+      </div>
+
+      {/* Content */}
+      <div style={S.content}>
+
+        {/* Greeting */}
+        <div style={S.greeting}>
+          <div style={{ color: "#64748b", fontSize: 13, marginBottom: 4 }}>Welcome back,</div>
+          <div style={S.greetName}>{user.name}</div>
+          <div style={{ marginTop: 8 }}>
+            <span style={{ ...S.roleBadge, background: roleColor.bg, color: roleColor.color }}>
+              {fields[9][1]}
+            </span>
+          </div>
+        </div>
+
+        {/* Profile card */}
+        <div style={S.card}>
+          {/* Avatar section */}
+          <div style={S.avatarSection}>
+            <div style={S.avatar}>{user.avatar}</div>
+            <div style={S.avatarInfo}>
+              <div style={S.avatarName}>{user.name}</div>
+              <div style={S.avatarDesig}>{user.designation} · {user.department}</div>
+              <div style={S.avatarId}>{user.employeeId}</div>
+            </div>
+          </div>
+
+          <div style={S.divider} />
+
+          {/* Info grid */}
+          <div style={S.infoGrid}>
+            {fields.slice(0, 9).map(([label, value]) => (
+              <div key={label} style={S.infoItem}>
+                <div style={S.infoLabel}>{label}</div>
+                <div style={S.infoValue}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={S.divider} />
+
+          {/* Confirmation checkbox */}
+          <div style={S.confirmRow}>
+            <label style={S.checkLabel}>
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+                style={{ width: 15, height: 15, accentColor: "#0f172a", cursor: "pointer" }}
+              />
+              <span>
+                I confirm that the above information is correct and I wish to proceed with my{" "}
+                <strong>{user.ay}</strong> performance appraisal.
+              </span>
+            </label>
+          </div>
+
+          {/* Proceed button */}
+          <button
+            onClick={onProceed}
+            disabled={!confirmed}
+            style={{
+              ...S.proceedBtn,
+              opacity: confirmed ? 1 : 0.45,
+              cursor: confirmed ? "pointer" : "not-allowed",
+            }}
+          >
+            Proceed to Appraisal Dashboard →
+          </button>
+
+          {!confirmed && (
+            <div style={S.hintText}>Please check the box above to confirm your details before proceeding.</div>
+          )}
+        </div>
+
+        {/* Info note */}
+        <div style={S.noteBox}>
+          <span style={{ fontWeight: 700 }}>Note:</span> If any of your details are incorrect, please contact your HR department or IT helpdesk before submitting the appraisal form.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Styles ─────────────────────────────────────────────────────────────────
+const S = {
+  page: {
+    minHeight: "100vh",
+    background: "#f0ede8",
+    fontFamily: "'Georgia', serif",
+    color: "#1e293b",
+  },
+
+  topBar: {
+    background: "#0f172a",
+    padding: "14px 40px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  logoWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  },
+  logoMark: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    background: "linear-gradient(135deg,#6366f1,#0ea5e9)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#fff",
+    fontWeight: 800,
+    fontSize: 12,
+    flexShrink: 0,
+  },
+  logoName: {
+    color: "#f1f5f9",
+    fontWeight: 700,
+    fontSize: 13,
+  },
+  logoSub: {
+    color: "#64748b",
+    fontSize: 9,
+    marginTop: 1,
+  },
+  ayPill: {
+    background: "#1e293b",
+    color: "#94a3b8",
+    fontSize: 11,
+    padding: "5px 12px",
+    borderRadius: 20,
+    fontWeight: 600,
+  },
+
+  content: {
+    maxWidth: 700,
+    margin: "0 auto",
+    padding: "48px 24px 60px",
+  },
+
+  greeting: {
+    marginBottom: 28,
+  },
+  greetName: {
+    fontSize: 28,
+    fontWeight: 700,
+    color: "#0f172a",
+    letterSpacing: -0.5,
+  },
+  roleBadge: {
+    display: "inline-block",
+    fontSize: 12,
+    fontWeight: 700,
+    padding: "4px 12px",
+    borderRadius: 20,
+    letterSpacing: 0.2,
+  },
+
+  card: {
+    background: "#fff",
+    borderRadius: 14,
+    boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+    padding: "28px 32px",
+    marginBottom: 18,
+  },
+
+  avatarSection: {
+    display: "flex",
+    alignItems: "center",
+    gap: 18,
+    marginBottom: 22,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: "50%",
+    background: "linear-gradient(135deg,#6366f1,#0ea5e9)",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 800,
+    fontSize: 20,
+    flexShrink: 0,
+    letterSpacing: 1,
+  },
+  avatarInfo: {},
+  avatarName: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: "#0f172a",
+    marginBottom: 3,
+  },
+  avatarDesig: {
+    fontSize: 13,
+    color: "#475569",
+    marginBottom: 3,
+  },
+  avatarId: {
+    fontSize: 11,
+    color: "#94a3b8",
+    fontFamily: "monospace",
+    letterSpacing: 0.5,
+  },
+
+  divider: {
+    height: 1,
+    background: "#f1f5f9",
+    margin: "20px 0",
+  },
+
+  infoGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "16px 28px",
+  },
+  infoItem: {},
+  infoLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: "#94a3b8",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 3,
+  },
+  infoValue: {
+    fontSize: 13,
+    color: "#1e293b",
+    fontWeight: 500,
+  },
+
+  confirmRow: {
+    marginBottom: 18,
+  },
+  checkLabel: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 10,
+    fontSize: 13,
+    color: "#374151",
+    cursor: "pointer",
+    lineHeight: 1.6,
+  },
+
+  proceedBtn: {
+    width: "100%",
+    padding: "14px",
+    background: "#0f172a",
+    color: "#fff",
+    border: "none",
+    borderRadius: 9,
+    fontSize: 14,
+    fontWeight: 700,
+    fontFamily: "'Georgia', serif",
+    letterSpacing: 0.3,
+    transition: "opacity 0.2s",
+    display: "block",
+    textAlign: "center",
+  },
+  hintText: {
+    fontSize: 11,
+    color: "#94a3b8",
+    textAlign: "center",
+    marginTop: 10,
+  },
+
+  noteBox: {
+    background: "#fefce8",
+    border: "1px solid #fde68a",
+    borderRadius: 9,
+    padding: "12px 16px",
+    fontSize: 12,
+    color: "#713f12",
+    lineHeight: 1.6,
+  },
+};
