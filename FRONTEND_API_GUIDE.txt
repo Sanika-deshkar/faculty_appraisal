@@ -1,7 +1,7 @@
 # API Documentation for Frontend Team - Faculty Appraisal System
 
 ## 1. Base URL & Authentication
-- **Base URL**: `http://localhost:8000/api/v1`
+- **Base URL**: `https://fastapi-backend-376777978967.us-central1.run.app/api/v1`
 - **Auth Strategy**: Supabase JWT (Bearer Token)
 - **Header**: `Authorization: Bearer <your_supabase_jwt>`
 - **User IDs**: All `faculty_id` and item `id` fields are **UUID strings**.

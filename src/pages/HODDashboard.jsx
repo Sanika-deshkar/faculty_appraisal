@@ -901,6 +901,7 @@ export default function HODDashboard() {
   const setLec = (i, k, v) => setLectures((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
 
   const [courseFile, setCourseFile] = useState([{ course: "", title: "", details: "", score: "", hod: "", director: "" }]);
+  const setCF = (i, k, v) => setCourseFile((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
   const [innovScore, setInnovScore] = useState("");
   const [innovDetails, setInnovDetails] = useState("");
   const [projects, setProjects] = useState([
@@ -1765,7 +1766,8 @@ export default function HODDashboard() {
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}>{r.label}</td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setAcr(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} onChange={(v) => setAcrRow(i, "score", v)} center /></td>
+
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -1886,13 +1888,13 @@ export default function HODDashboard() {
                       {ict.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setIct(i, "title", v)} /></td>
-                          <td style={TD}><TI val={r.desc} onChange={(v) => setIct(i, "desc", v)} /></td>
-                          <td style={TD}><TI val={r.type} onChange={(v) => setIct(i, "type", v)} /></td>
-                          <td style={TD}><TI val={r.quad} onChange={(v) => setIct(i, "quad", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setIctRow(i, "title", v)} /></td>
+                          <td style={TD}><TI val={r.desc} onChange={(v) => setIctRow(i, "desc", v)} /></td>
+                          <td style={TD}><TI val={r.type} onChange={(v) => setIctRow(i, "type", v)} /></td>
+                          <td style={TD}><TI val={r.quad} onChange={(v) => setIctRow(i, "quad", v)} /></td>
                           <td style={TD}><DocCell id={`ict-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`ict-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setIct(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} onChange={(v) => setIctRow(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>

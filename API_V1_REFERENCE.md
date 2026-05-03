@@ -3,7 +3,7 @@
 This document provides a comprehensive guide to all endpoints in the Faculty Appraisal System.
 
 ## 1. Core Principles
-- **Base URL**: `http://localhost:8000/api/v1`
+- **Base URL**: `https://fastapi-backend-376777978967.us-central1.run.app/api/v1`
 - **Auth**: Supabase JWT Bearer Token in `Authorization` header.
 - **Data Types**: All IDs (`id`, `faculty_id`) are UUID strings.
 - **File Uploads**: Use `multipart/form-data` for endpoints accepting a `file`.

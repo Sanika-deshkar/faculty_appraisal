@@ -2,36 +2,61 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SCHOOL_CONFIG, APP_INFO } from "../constants/formConfig";
 import { CREDENTIALS } from "../data/mockData";
+import { supabase } from "../services/supabase";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(""); // This will be treated as email for Supabase
   const [password, setPassword] = useState("");
   const [showPw, setShowPw]     = useState(false);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
-      setError("Please enter your username and password.");
+      setError("Please enter your email and password.");
       return;
     }
 
     setLoading(true);
     setError("");
 
-    // Simulate network delay — replace setTimeout with fetch() in production
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      // 1. Attempt Supabase Auth
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: username.trim(),
+        password: password,
+      });
 
+      if (!authError && data?.user) {
+        console.log("Supabase login successful:", data.user);
+        
+        // You might want to fetch the user's role from a 'profiles' table here.
+        // For now, we'll try to match with mock data or default to faculty.
+        const mockCred = CREDENTIALS[username.trim().toLowerCase()] || { role: "faculty" };
+        
+        localStorage.setItem("supabaseToken", data.session.access_token);
+        localStorage.setItem("role", mockCred.role);
+        localStorage.setItem("username", username.trim().toLowerCase());
+        
+        const school = mockCred.school || "";
+        const dept = mockCred.department || "";
+        const hasHod = school ? (SCHOOL_CONFIG[school]?.hasHod !== false) : true;
+        localStorage.setItem("school", school);
+        localStorage.setItem("department", dept);
+        localStorage.setItem("hasHod", hasHod ? "true" : "false");
+
+        navigate("/profile");
+        return;
+      }
+
+      // 2. Fallback to Mock Data (useful during development/migration)
+      console.warn("Supabase auth failed, trying mock fallback...", authError?.message);
       const cred = CREDENTIALS[username.trim().toLowerCase()];
 
       if (cred && cred.password === password) {
         localStorage.setItem("role", cred.role);
         localStorage.setItem("username", username.trim().toLowerCase());
-        // Save the school and whether this school has an HOD layer.
-        // This is read by HODDashboard and permissions.js to conditionally
-        // show/hide HOD columns and decide the approval routing.
         const school = cred.school || "";
         const dept = cred.department || "";
         const hasHod = school ? (SCHOOL_CONFIG[school]?.hasHod !== false) : true;
@@ -39,12 +64,16 @@ export default function Login() {
         localStorage.setItem("department", dept);
         localStorage.setItem("hasHod", hasHod ? "true" : "false");
 
-        // Always go to profile first
         navigate("/profile");
       } else {
-        setError("Invalid username or password. Please try again.");
+        setError(authError?.message || "Invalid credentials. Please try again.");
       }
-    }, 900);
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyDown = (e) => {
