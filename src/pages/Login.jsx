@@ -155,36 +155,104 @@ export default function Login() {
   };
 
   return (
-    <div style={s.wrap}>
-      <div style={s.card}>
+    <>
+      <style>{`
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; }
 
-        {/* ── LEFT: Branding ───────────────────────────────────────────────── */}
-        <div style={s.left}>
-          <div style={s.logoBox}>
-            <img src="/dypiu.jpeg" alt="University Logo" style={{ height: 60 }} />
+  .dyp-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid rgba(255,255,255,0.55);
+    border-radius: 4px;
+    font-size: 14px;
+    color: white;
+    background: rgba(255,255,255,0.08);
+    margin-bottom: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .dyp-input::placeholder { color: rgba(255,255,255,0.5); }
+  .dyp-input:focus {
+    border-color: white;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.15);
+  }
+  .dyp-btn {
+    width: 100%;
+    padding: 12px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+    margin-bottom: 12px;
+    letter-spacing: 0.2px;
+  }
+  .dyp-btn:hover:not(:disabled) { background: #1d4ed8; }
+  .dyp-btn:disabled { opacity: 0.72; cursor: not-allowed; }
+  .dyp-forgot {
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
+    text-align: center;
+    width: 100%;
+    transition: color 0.2s;
+  }
+  .dyp-forgot:hover:not(:disabled) { color: white; text-decoration: underline; }
+  .dyp-forgot:disabled { opacity: 0.65; }
+`}</style>
+
+      <div style={s.wrap}>
+        {/* Top Left Logo */}
+        <img
+          src="/image.png"
+          alt="University Logo"
+          style={s.topLeftLogo}
+        />
+
+        {/* Top Right Logo */}
+        <img
+          src="/IQAS.png"
+          alt="IQAC Logo"
+          style={s.topRightLogo}
+        />
+
+        <div style={s.overlay} />
+
+        {/* ── Wide Card ── */}
+        <div style={s.card}>
+
+          {/* ════ LEFT ════ */}
+          <div style={s.left}>
+            <h1 style={s.uniName}>
+              D Y Patil International University, Akurdi, Pune.
+            </h1>
+
+            <p style={s.desc}>
+              To Create a vibrant learning environment – fostering innovation and creativity,
+              experiential learning, which is inspired by research, and focuses on regionally,
+              nationally and globally relevant areas.
+            </p>
           </div>
-          <h2 style={s.heading}>{APP_INFO.UNIVERSITY_NAME}, {APP_INFO.UNIVERSITY_LOCATION}</h2>
-          <p style={s.desc}>
-            To create a vibrant learning environment – fostering innovation and creativity,
-            experiential learning, which is inspired by research, and focuses on regionally,
-            nationally and globally relevant areas.
-          </p>
 
-        </div>
+          {/* ════ RIGHT: Login panel ════ */}
+          <div style={s.right}>
+            <h2 style={s.panelTitle}>Welcome! Please login to continue.</h2>
 
-        {/* ── RIGHT: Login form ────────────────────────────────────────────── */}
-        <div style={s.right}>
-          <div style={s.formWrap}>
-            <h3 style={s.welcome}>{APP_INFO.PORTAL_NAME}</h3>
-            <p style={s.sub}>Sign in to continue</p>
-
-            {error && <div style={s.error}>{error}</div>}
+            {error   && <div style={s.error}>{error}</div>}
             {message && <div style={s.success}>{message}</div>}
 
-            {/* Username */}
-            <label style={s.label}>Username</label>
             <input
-              style={s.input}
+              className="dyp-input"
               type="text"
               placeholder="Enter username"
               value={username}
@@ -193,11 +261,10 @@ export default function Login() {
               autoComplete="username"
             />
 
-            {/* Password */}
-            <label style={s.label}>Password</label>
-            <div style={{ position: "relative", marginBottom: 20 }}>
+            <div style={{ position: "relative", marginBottom: 2 }}>
               <input
-                style={{ ...s.input, marginBottom: 0, paddingRight: 44 }}
+                className="dyp-input"
+                style={{ marginBottom: 0, paddingRight: 44 }}
                 type={showPw ? "text" : "password"}
                 placeholder="Enter password"
                 value={password}
@@ -215,160 +282,129 @@ export default function Login() {
               </button>
             </div>
 
-            {/* Submit */}
-            <button
-              style={{ ...s.btn, opacity: loading ? 0.7 : 1 }}
-              onClick={handleLogin}
-              disabled={loading}
-            >
-              {loading ? (
-                <span style={s.spinner}>◌ Signing in…</span>
-              ) : (
-                "Sign In →"
-              )}
+            <div style={{ marginBottom: 16 }} />
+
+            <button className="dyp-btn" onClick={handleLogin} disabled={loading}>
+              {loading ? "Signing in…" : "Login"}
             </button>
 
-            <button
-              type="button"
-              style={{ ...s.forgot, opacity: resetLoading ? 0.7 : 1 }}
-              onClick={handleForgotPassword}
-              disabled={resetLoading}
-            >
+            <button className="dyp-forgot" onClick={handleForgotPassword} disabled={resetLoading}>
               {resetLoading ? "Sending reset link..." : "Forgot password?"}
             </button>
 
-            <div style={{ marginTop: 20, textAlign: "center", fontSize: 13, color: "#94a3b8" }}>
-              Don't have an account? <Link to="/signup" style={{ color: "#38bdf8", textDecoration: "none", fontWeight: 700 }}>Sign up</Link>
-            </div>
-
+            <p style={s.signupText}>
+              Don't have an account?{" "}
+              <Link to="/signup" style={s.signupLink}>Sign up</Link>
+            </p>
           </div>
-        </div>
 
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = {
+  topLeftLogo: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    height: 100,
+    zIndex: 2,
+  },
+
+  topRightLogo: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    height: 100,
+    zIndex: 2,
+  },
+
   wrap: {
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #dbeafe 0%, #e2e8f0 55%, #f8fafc 100%)",
+    width: "100%",
+    backgroundImage: "url('/dyp.jpeg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: 28,
-  },
-  card: {
-    background: "rgba(15, 23, 42, 0.94)",
-    borderRadius: 14,
-    display: "flex",
-    width: "100%",
-    maxWidth: 920,
-    overflow: "hidden",
-    boxShadow: "0 22px 56px rgba(15,23,42,0.28)",
+    padding: "24px 16px",
+    position: "relative",
   },
 
-  // LEFT
+  overlay: {
+    position: "absolute",
+    inset: 0,
+    background: "rgba(8, 16, 38, 0.30)",
+    pointerEvents: "none",
+  },
+
+  card: {
+    position: "relative",
+    zIndex: 1,
+    width: "65%",
+    maxWidth: 1280,
+    display: "flex",
+    alignItems: "stretch",
+    borderRadius: 8,
+    background: "rgba(15, 25, 50, 0.72)",
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
+    overflow: "hidden",
+    minHeight: 260,
+  },
+
   left: {
-    flex: 1.3,
-    padding: "40px 36px",
+    flex: 1,
     color: "white",
+    padding: "24px 32px",
     display: "flex",
     flexDirection: "column",
-    gap: 16,
+    gap: 14,
+    justifyContent: "center",
   },
-  logoBox: {
-    background: "white",
-    borderRadius: 6,
-    padding: "10px 14px",
-    display: "inline-block",
-    width: "fit-content",
-  },
-  heading: {
-    fontSize: 18,
-    fontWeight: 600,
-    color: "#f1f5f9",
-    lineHeight: 1.4,
+
+  uniName: {
+    fontSize: 28,
+    fontWeight: 700,
     margin: 0,
+    lineHeight: 1.3,
+    color: "white",
   },
+
   desc: {
-    fontSize: 12,
-    color: "#94a3b8",
-    lineHeight: 1.7,
+    fontSize: 14,
+    color: "rgba(255,255,255,0.72)",
+    lineHeight: 1.8,
     margin: 0,
+    maxWidth: 500,
   },
-  hint: {
-    marginTop: "auto",
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: 6,
-    padding: "12px 14px",
-  },
-  hintTitle: {
-    fontSize: 10,
-    fontWeight: 700,
-    color: "#64748b",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  hintRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 4,
-    fontSize: 12,
-  },
-  hintUser: { color: "#e2e8f0", fontFamily: "monospace" },
-  hintRole: { color: "#64748b" },
-  hintPwd: { fontSize: 10, color: "#475569", marginTop: 6 },
 
-  // RIGHT
   right: {
-    flex: 1,
-    borderLeft: "1px solid rgba(255,255,255,0.08)",
+    width: 320,
+    flexShrink: 0,
+    background: "transparent",
+    borderLeft: "1px solid rgba(255,255,255,0.15)",
+    padding: "20px 18px",
     display: "flex",
-    alignItems: "center",
-  },
-  formWrap: {
-    padding: "40px 36px",
-    width: "100%",
-  },
-  welcome: {
-    fontSize: 16,
-    fontWeight: 700,
-    color: "#f1f5f9",
-    margin: "0 0 4px",
-  },
-  sub: {
-    fontSize: 12,
-    color: "#64748b",
-    margin: "0 0 24px",
+    flexDirection: "column",
+    justifyContent: "center",
   },
 
-  label: {
-    display: "block",
-    fontSize: 11,
-    fontWeight: 600,
-    color: "#94a3b8",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 6,
+  panelTitle: {
+    fontSize: 15.5,
+    fontWeight: 700,
+    color: "white",
+    marginBottom: 22,
+    marginTop: 0,
+    lineHeight: 1.45,
   },
-  input: {
-    width: "100%",
-    padding: "11px 14px",
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.15)",
-    borderRadius: 7,
-    fontSize: 13,
-    color: "#f1f5f9",
-    marginBottom: 16,
-    boxSizing: "border-box",
-    outline: "none",
-    fontFamily: "inherit",
-    transition: "border-color 0.2s",
-  },
+
   eyeBtn: {
     position: "absolute",
     right: 10,
@@ -377,67 +413,44 @@ const s = {
     background: "none",
     border: "none",
     cursor: "pointer",
-    fontSize: 15,
-    lineHeight: 1,
+    fontSize: 16,
     padding: 4,
+    color: "rgba(255,255,255,0.6)",
+    lineHeight: 1,
   },
-  btn: {
-    width: "100%",
-    padding: "12px 14px",
-    background: "#1a6fe0",
-    color: "white",
-    border: "none",
-    borderRadius: 7,
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: "pointer",
-    letterSpacing: 0.3,
-    fontFamily: "inherit",
-    transition: "opacity 0.2s",
-    marginBottom: 12,
+
+  signupText: {
+    marginTop: 18,
+    textAlign: "center",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.55)",
   },
-  spinner: {
-    display: "inline-block",
-    animation: "spin 1s linear infinite",
+
+  signupLink: {
+    color: "#60a5fa",
+    fontWeight: 600,
+    textDecoration: "none",
   },
-  forgot: {
-    background: "none",
-    border: "none",
-    display: "block",
-    width: "100%",
-    fontFamily: "inherit",
-    fontSize: 12,
-    color: "#64748b",
-    textAlign: "right",
-    cursor: "pointer",
-    textDecoration: "underline",
-    marginBottom: 20,
-  },
+
   error: {
-    background: "rgba(220,50,50,0.18)",
-    border: "1px solid rgba(220,50,50,0.4)",
+    background: "rgba(185,28,28,0.25)",
+    border: "1px solid rgba(252,165,165,0.5)",
     color: "#fca5a5",
     padding: "9px 12px",
-    borderRadius: 5,
-    fontSize: 12,
-    marginBottom: 14,
-    lineHeight: 1.5,
-  },
-  success: {
-    background: "rgba(34,197,94,0.14)",
-    border: "1px solid rgba(34,197,94,0.35)",
-    color: "#86efac",
-    padding: "9px 12px",
-    borderRadius: 5,
+    borderRadius: 4,
     fontSize: 12,
     marginBottom: 14,
     lineHeight: 1.5,
   },
 
-  roleLegend: {
-    display: "flex", gap: 6, flexWrap: "wrap",
-  },
-  rolePill: {
-    fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 20, letterSpacing: 0.5,
+  success: {
+    background: "rgba(21,128,61,0.25)",
+    border: "1px solid rgba(134,239,172,0.5)",
+    color: "#86efac",
+    padding: "9px 12px",
+    borderRadius: 4,
+    fontSize: 12,
+    marginBottom: 14,
+    lineHeight: 1.5,
   },
 };

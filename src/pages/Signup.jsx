@@ -130,24 +130,60 @@ export default function Signup() {
   };
 
   return (
-    <div style={s.wrap}>
-      <div style={s.card}>
+    <>
+      <style>{`
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; }
 
-        {/* ── LEFT: Branding ── */}
-        <div style={s.left}>
-          <div style={s.logoBox}>
-            <img src="/dypiu.jpeg" alt="University Logo" style={{ height: 60 }} />
-          </div>
-          <h2 style={s.heading}>{APP_INFO.UNIVERSITY_NAME}, {APP_INFO.UNIVERSITY_LOCATION}</h2>
-          <p style={s.desc}>
-            Join the {APP_INFO.PORTAL_NAME} platform. Create your account to submit and manage your appraisals efficiently.
-          </p>
-        </div>
+  .dyp-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid rgba(255,255,255,0.55);
+    border-radius: 4px;
+    font-size: 13px;
+    color: white;
+    background: rgba(255,255,255,0.08);
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .dyp-input::placeholder { color: rgba(255,255,255,0.5); }
+  .dyp-input:focus {
+    border-color: white;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.15);
+  }
+  .dyp-input option { background: #0f1932; color: white; }
+  .dyp-btn {
+    width: 100%;
+    padding: 12px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+    letter-spacing: 0.2px;
+  }
+  .dyp-btn:hover:not(:disabled) { background: #1d4ed8; }
+  .dyp-btn:disabled { opacity: 0.72; cursor: not-allowed; }
+`}</style>
 
-        {/* ── RIGHT: Signup form ── */}
-        <div style={s.right}>
-          <div style={s.formWrap}>
-            <h3 style={s.welcome}>Create Account</h3>
+      <div style={s.wrap}>
+        {/* Top Left Logo */}
+        <img src="/image.png" alt="University Logo" style={s.topLeftLogo} />
+        {/* Top Right Logo */}
+        <img src="/IQAS.png" alt="IQAC Logo" style={s.topRightLogo} />
+
+        <div style={s.overlay} />
+
+        <div style={s.card}>
+
+          {/* ════ Signup form ════ */}
+          <div style={s.right}>
+            <h2 style={s.panelTitle}>Create Account</h2>
             <p style={s.sub}>Fill in your details to get started</p>
 
             {error && <div style={s.error}>{error}</div>}
@@ -155,24 +191,24 @@ export default function Signup() {
             <form onSubmit={handleSignup} style={s.formGrid}>
               <div style={s.inputGroup}>
                 <label style={s.label}>Full Name *</label>
-                <input style={s.input} type="text" name="name" value={formData.name} onChange={handleChange} required />
+                <input className="dyp-input" type="text" name="name" value={formData.name} onChange={handleChange} required />
               </div>
               <div style={s.inputGroup}>
                 <label style={s.label}>Email Address *</label>
-                <input style={s.input} type="email" name="email" value={formData.email} onChange={handleChange} required />
+                <input className="dyp-input" type="email" name="email" value={formData.email} onChange={handleChange} required />
               </div>
               <div style={s.inputGroup}>
                 <label style={s.label}>Password *</label>
-                <input style={s.input} type="password" name="password" value={formData.password} onChange={handleChange} required />
+                <input className="dyp-input" type="password" name="password" value={formData.password} onChange={handleChange} required />
               </div>
               <div style={s.inputGroup}>
                 <label style={s.label}>Employee ID *</label>
-                <input style={s.input} type="text" name="employeeId" value={formData.employeeId} onChange={handleChange} required />
+                <input className="dyp-input" type="text" name="employeeId" value={formData.employeeId} onChange={handleChange} required />
               </div>
 
               <div style={s.inputGroup}>
                 <label style={s.label}>Role</label>
-                <select style={s.input} name="role" value={formData.role} onChange={handleChange}>
+                <select className="dyp-input" name="role" value={formData.role} onChange={handleChange}>
                   <option value="faculty">Faculty</option>
                   <option value="hod">HOD</option>
                   <option value="dean">Dean</option>
@@ -180,10 +216,10 @@ export default function Signup() {
                   <option value="vc">Vice Chancellor</option>
                 </select>
               </div>
-              
+
               <div style={s.inputGroup}>
                 <label style={s.label}>School *</label>
-                <select style={s.input} name="school" value={formData.school} onChange={handleChange} required>
+                <select className="dyp-input" name="school" value={formData.school} onChange={handleChange} required>
                   <option value="">Select school</option>
                   {SCHOOL_OPTIONS.map((school) => (
                     <option key={school.value} value={school.value}>{school.label}</option>
@@ -194,7 +230,7 @@ export default function Signup() {
               {needsDepartment && (
                 <div style={s.inputGroup}>
                   <label style={s.label}>SoEMR Department *</label>
-                  <select style={s.input} name="department" value={formData.department} onChange={handleChange} required>
+                  <select className="dyp-input" name="department" value={formData.department} onChange={handleChange} required>
                     <option value="">Select department</option>
                     {SOEMR_DEPARTMENTS.map((department) => (
                       <option key={department} value={department}>{department}</option>
@@ -205,126 +241,146 @@ export default function Signup() {
 
               <div style={s.inputGroup}>
                 <label style={s.label}>Designation</label>
-                <input style={s.input} type="text" name="designation" placeholder="e.g. Assistant Professor" value={formData.designation} onChange={handleChange} />
+                <input className="dyp-input" type="text" name="designation" placeholder="e.g. Assistant Professor" value={formData.designation} onChange={handleChange} />
               </div>
 
               <div style={s.inputGroup}>
                 <label style={s.label}>Qualification</label>
-                <input style={s.input} type="text" name="qualification" placeholder="e.g. Ph.D, M.Tech" value={formData.qualification} onChange={handleChange} />
+                <input className="dyp-input" type="text" name="qualification" placeholder="e.g. Ph.D, M.Tech" value={formData.qualification} onChange={handleChange} />
               </div>
 
               <div style={s.inputGroup}>
                 <label style={s.label}>Experience (Years)</label>
-                <input style={s.input} type="text" name="experience" placeholder="e.g. 10 Years" value={formData.experience} onChange={handleChange} />
+                <input className="dyp-input" type="text" name="experience" placeholder="e.g. 10 Years" value={formData.experience} onChange={handleChange} />
               </div>
 
               <div style={{ ...s.inputGroup, gridColumn: "1 / -1" }}>
                 <label style={s.label}>Phone Number</label>
-                <input style={s.input} type="text" name="phone" placeholder="e.g. +91 98765 43210" value={formData.phone} onChange={handleChange} />
+                <input className="dyp-input" type="text" name="phone" placeholder="e.g. +91 98765 43210" value={formData.phone} onChange={handleChange} />
               </div>
 
               <button
                 type="submit"
-                style={{ ...s.btn, opacity: loading ? 0.7 : 1, gridColumn: "1 / -1", marginTop: 10 }}
+                className="dyp-btn"
+                style={{ gridColumn: "1 / -1", marginTop: 10, opacity: loading ? 0.72 : 1 }}
                 disabled={loading}
               >
-                {loading ? "Creating Account..." : "Sign Up →"}
+                {loading ? "Creating Account..." : "Sign Up"}
               </button>
             </form>
 
-            <div style={{ marginTop: 20, textAlign: "center", fontSize: 13, color: "#94a3b8" }}>
-              Already have an account? <Link to="/login" style={{ color: "#38bdf8", textDecoration: "none", fontWeight: 700 }}>Log in</Link>
-            </div>
+            <p style={s.loginText}>
+              Already have an account?{" "}
+              <Link to="/login" style={s.loginLink}>Log in</Link>
+            </p>
           </div>
-        </div>
 
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
-// ─── Styles ───
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const s = {
+  topLeftLogo: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    height: 100,
+    zIndex: 2,
+  },
+  topRightLogo: {
+    position: "absolute",
+    top: 20,
+    right: 20,
+    height: 100,
+    zIndex: 2,
+  },
   wrap: {
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #dbeafe 0%, #e2e8f0 55%, #f8fafc 100%)",
+    width: "100%",
+    backgroundImage: "url('/dyp.jpeg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: 28,
+    padding: "24px 16px",
+    position: "relative",
+  },
+  overlay: {
+    position: "absolute",
+    inset: 0,
+    background: "rgba(8, 16, 38, 0.30)",
+    pointerEvents: "none",
   },
   card: {
-    background: "rgba(15, 23, 42, 0.94)",
-    borderRadius: 14,
+    position: "relative",
+    zIndex: 1,
+    width: "55%",
+    maxWidth: 700,
     display: "flex",
-    width: "100%",
-    maxWidth: 920,
+    alignItems: "stretch",
+    borderRadius: 8,
+    background: "rgba(15, 25, 50, 0.72)",
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
     overflow: "hidden",
-    boxShadow: "0 22px 56px rgba(15,23,42,0.28)",
   },
   left: {
     flex: 1,
-    padding: "40px 36px",
     color: "white",
+    padding: "32px 32px",
     display: "flex",
     flexDirection: "column",
-    gap: 16,
+    gap: 14,
+    justifyContent: "center",
   },
-  logoBox: {
-    background: "white",
-    borderRadius: 6,
-    padding: "10px 14px",
-    display: "inline-block",
-    alignSelf: "flex-start",
-    marginBottom: 8,
-  },
-  heading: {
+  uniName: {
+    fontSize: 26,
+    fontWeight: 700,
     margin: 0,
-    fontSize: 24,
-    lineHeight: 1.25,
-    fontWeight: 800,
-    letterSpacing: -0.5,
-    fontFamily: "Georgia, serif",
+    lineHeight: 1.3,
+    color: "white",
   },
   desc: {
-    margin: 0,
-    color: "#cbd5e1",
     fontSize: 14,
-    lineHeight: 1.6,
+    color: "rgba(255,255,255,0.72)",
+    lineHeight: 1.8,
+    margin: 0,
+    maxWidth: 420,
   },
   right: {
-    flex: 1.4,
-    background: "#0f172a",
-    padding: "40px 50px",
+    flex: 1,
+    padding: "28px 32px",
     display: "flex",
-    alignItems: "center",
-    position: "relative",
+    flexDirection: "column",
+    justifyContent: "center",
   },
-  formWrap: {
-    width: "100%",
-    maxWidth: 440,
-    margin: "0 auto",
-  },
-  welcome: {
-    margin: 0,
+  panelTitle: {
+    fontSize: 18,
+    fontWeight: 700,
     color: "white",
-    fontSize: 26,
-    fontWeight: 800,
-    letterSpacing: -0.5,
+    marginBottom: 4,
+    marginTop: 0,
   },
   sub: {
-    margin: "4px 0 28px",
-    color: "#94a3b8",
-    fontSize: 14,
+    fontSize: 13,
+    color: "rgba(255,255,255,0.55)",
+    margin: "0 0 20px",
   },
   error: {
-    background: "#7f1d1d",
-    color: "#fecaca",
-    padding: "10px 14px",
-    borderRadius: 6,
-    fontSize: 13,
-    marginBottom: 20,
-    border: "1px solid #991b1b",
+    background: "rgba(185,28,28,0.25)",
+    border: "1px solid rgba(252,165,165,0.5)",
+    color: "#fca5a5",
+    padding: "9px 12px",
+    borderRadius: 4,
+    fontSize: 12,
+    marginBottom: 14,
+    lineHeight: 1.5,
   },
   formGrid: {
     display: "grid",
@@ -334,39 +390,24 @@ const s = {
   inputGroup: {
     display: "flex",
     flexDirection: "column",
+    gap: 6,
   },
   label: {
-    display: "block",
-    color: "#cbd5e1",
+    color: "rgba(255,255,255,0.6)",
     fontSize: 11,
-    fontWeight: 700,
+    fontWeight: 600,
     textTransform: "uppercase",
     letterSpacing: 0.8,
-    marginBottom: 6,
   },
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: 8,
-    padding: "10px 14px",
-    fontSize: 14,
-    color: "white",
-    outline: "none",
-    transition: "border 0.2s, background 0.2s",
+  loginText: {
+    marginTop: 18,
+    textAlign: "center",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.55)",
   },
-  btn: {
-    width: "100%",
-    background: "linear-gradient(135deg, #0ea5e9, #3b82f6)",
-    color: "white",
-    border: "none",
-    borderRadius: 8,
-    padding: "13px",
-    fontSize: 15,
-    fontWeight: 800,
-    cursor: "pointer",
-    boxShadow: "0 4px 12px rgba(14,165,233,0.3)",
-    transition: "transform 0.1s, box-shadow 0.2s",
+  loginLink: {
+    color: "#60a5fa",
+    fontWeight: 600,
+    textDecoration: "none",
   },
 };
