@@ -1641,10 +1641,15 @@ export default function HODDashboard() {
   const g = gradeFunc();
 
   const [submitting, setSubmitting] = useState(false);
+  const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
 
   const handleSubmitAppraisal = async () => {
     if (appraisalLocked) {
       alert("This appraisal has already been submitted and is locked for review.");
+      return;
+    }
+    if (!accuracyConfirmed) {
+      alert("Please verify and confirm the accuracy declaration before submitting.");
       return;
     }
 
@@ -3205,14 +3210,22 @@ export default function HODDashboard() {
                   <div style={{ fontSize: 20, fontWeight: 800, color: g.color, marginTop: 4 }}>{g.label}</div>
                 </div>
 
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={accuracyConfirmed}
+                    onChange={(e) => setAccuracyConfirmed(e.target.checked)}
+                    disabled={submitting || appraisalLocked}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+                </label>
+
                 <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
-                  <button onClick={generateReport} style={{ padding: "10px 24px", background: "#e2e8f0", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
-                    Generate Report
-                  </button>
                   <button 
                     onClick={handleSubmitAppraisal}
-                    disabled={submitting || appraisalLocked}
-                    style={{ padding: "10px 28px", background: appraisalLocked ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: appraisalLocked ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
+                    disabled={submitting || appraisalLocked || !accuracyConfirmed}
+                    style={{ padding: "10px 28px", background: appraisalLocked || !accuracyConfirmed ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: appraisalLocked || !accuracyConfirmed ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
                   >
                     {appraisalLocked ? "Submitted & Locked" : submitting ? "Submitting..." : "✔ Submit Appraisal"}
                   </button>

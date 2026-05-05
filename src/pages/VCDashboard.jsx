@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { deleteWorkflowSubmission, fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
+import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/formConfig";
 import { VC_USER } from "../data/mockData";
-import { rejectedStatusFor, reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { DEAN_TRACKS, UNIVERSITY_SCHOOLS } from "../constants/universityHierarchy";
+import { getSchoolKey, reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -19,14 +20,14 @@ const grade = (score, max) => {
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-function Avatar({ initials, color = "#b45309", size = 40 }) {
+function Avatar({ initials, color = "#0ea5e9", size = 40 }) {
   return (
     <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg,${color},${color}99)`, color: "#fff", fontWeight: 800, fontSize: size * 0.32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, letterSpacing: 0.5 }}>
       {initials}
     </div>
   );
 }
-function ScoreBar({ score, max, color = "#b45309" }) {
+function ScoreBar({ score, max, color = "#0ea5e9" }) {
   return (
     <div style={{ width: "100%", background: "#f1f5f9", borderRadius: 4, height: 5, overflow: "hidden" }}>
       <div style={{ width: `${pct(score, max)}%`, height: "100%", background: color, borderRadius: 4, transition: "width .5s" }} />
@@ -35,20 +36,37 @@ function ScoreBar({ score, max, color = "#b45309" }) {
 }
 function StatusBadge({ status }) {
   const map = {
-    "Dean Reviewed":   { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
-    "Reviewed":        { bg: "#d1fae5", color: "#065f46", dot: "#10b981" },
-    "VC Reviewed":     { bg: "#d1fae5", color: "#065f46", dot: "#10b981" },
-    "Pending Review":  { bg: "#ede9fe", color: "#5b21b6", dot: "#7c3aed" },
-    "Pending VC Review": { bg: "#ede9fe", color: "#5b21b6", dot: "#7c3aed" },
-    Rejected:          { bg: "#fee2e2", color: "#991b1b", dot: "#dc2626" },
-    "VC Rejected":     { bg: "#fee2e2", color: "#991b1b", dot: "#dc2626" },
+    "Pending Review":      { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
+    "HOD Reviewed":        { bg: "#ede9fe", color: "#5b21b6", dot: "#7c3aed" },
+    "Director Reviewed":   { bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
+    "Director Approved":   { bg: "#cffafe", color: "#164e63", dot: "#06b6d4" },
+    "Pending Dean Review": { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
+    "Dean Reviewed":       { bg: "#d1fae5", color: "#065f46", dot: "#10b981" },
+    "VC Reviewed":         { bg: "#fdf4ff", color: "#6b21a8", dot: "#a855f7" },
+    "Reviewed":            { bg: "#fdf4ff", color: "#6b21a8", dot: "#a855f7" },
+    "Rejected":            { bg: "#fee2e2", color: "#991b1b", dot: "#dc2626" },
+    "VC Rejected":         { bg: "#fee2e2", color: "#991b1b", dot: "#dc2626" },
+    "Pending VC Review":   { bg: "#ede9fe", color: "#5b21b6", dot: "#7c3aed" },
   };
-  const s = map[status] || map["Pending VC Review"];
+  const s = map[status] || map["Pending Review"];
   const label = status === "Reviewed" ? "VC Reviewed" : status === "Pending Review" ? "Pending VC Review" : status;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: s.bg, color: s.color, fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 20 }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot }} />
-      {label}
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot }} />{label}
+    </span>
+  );
+}
+function RoleBadge({ role }) {
+  const map = {
+    Director: { bg: "#0c4a6e", color: "#7dd3fc", icon: "🏛️" },
+    HOD:      { bg: "#312e81", color: "#c7d2fe", icon: "👥" },
+    Faculty:  { bg: "#14532d", color: "#86efac", icon: "📋" },
+    Dean:     { bg: "#4c1d95", color: "#ddd6fe", icon: "🎓" },
+  };
+  const s = map[role] || map.Faculty;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: s.bg, color: s.color, fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 10, textTransform: "uppercase", letterSpacing: 0.6 }}>
+      {s.icon} {role}
     </span>
   );
 }
@@ -59,7 +77,7 @@ function VCInput({ val, onChange }) {
   return (
     <input type="number" min="0" step="0.5" value={val ?? ""}
       onChange={e => onChange(e.target.value)}
-      style={{ width: 58, textAlign: "center", border: "1.5px solid #b45309", borderRadius: 5, padding: "3px 5px", fontSize: 11, fontFamily: "Georgia, serif", outline: "none", background: "#fffbf0" }}
+      style={{ width: 58, textAlign: "center", border: "1.5px solid #7c3aed", borderRadius: 5, padding: "3px 5px", fontSize: 11, fontFamily: "Georgia, serif", outline: "none", background: "#fdf4ff" }}
     />
   );
 }
@@ -70,7 +88,7 @@ function ViewDocsCell({ docKey, docs }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       {files.map((f, i) => (
         <a key={i} href={f.url} target="_blank" rel="noreferrer"
-          style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#b45309", fontSize: 10, textDecoration: "none", background: "#fffbf0", border: "1px solid #fde68a", borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#0ea5e9", fontSize: 10, textDecoration: "none", background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap" }}
           title={f.name}>
           📄 {f.name.length > 16 ? f.name.slice(0, 16) + "…" : f.name}
         </a>
@@ -78,7 +96,7 @@ function ViewDocsCell({ docKey, docs }) {
     </div>
   );
 }
-function SC({ title, subtitle, accent = "#b45309", children }) {
+function SC({ title, subtitle, accent = "#7c3aed", children }) {
   return (
     <div style={{ background: "#fff", borderRadius: 9, boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 14, overflow: "hidden", border: "1px solid #e2e8f0", borderTop: `3px solid ${accent}` }}>
       <div style={{ padding: "10px 15px", borderBottom: "1px solid #f1f5f9" }}>
@@ -95,15 +113,15 @@ const T     = { width: "100%", borderCollapse: "collapse", fontSize: 11 };
 const TH      = { border: "1px solid #cbd5e1", padding: "5px 7px", background: "#0f172a",  color: "#94a3b8",  fontWeight: 700, textAlign: "center", fontSize: 10 };
 const TH_HOD  = { ...TH, background: "#312e81", color: "#c7d2fe" };
 const TH_DIR  = { ...TH, background: "#0c4a6e", color: "#bae6fd" };
-const TH_DEAN = { ...TH, background: "#4c1d95", color: "#ddd6fe" };
-const TH_VC   = { ...TH, background: "#78350f", color: "#fde68a" };
+const TH_DEAN = { ...TH, background: "#065f46", color: "#bbf7d0" };
+const TH_VC   = { ...TH, background: "#4c1d95", color: "#e9d5ff" };
 const TD  = { border: "1px solid #e2e8f0", padding: "5px 7px", verticalAlign: "middle" };
 const TDC = { ...TD, textAlign: "center" };
 const TDS     = { ...TD, textAlign: "center", background: "#f8fafc", minWidth: 58 };
 const TDS_HOD  = { ...TDS, background: "#f0f4ff" };
 const TDS_DIR  = { ...TDS, background: "#f0fbff" };
-const TDS_DEAN = { ...TDS, background: "#faf5ff" };
-const TDS_VC   = { ...TDS, background: "#fffbf0" };
+const TDS_DEAN = { ...TDS, background: "#f0fdf4" };
+const TDS_VC   = { ...TDS, background: "#fdf4ff", minWidth: 70 };
 const TDV = { ...TD, background: "#fafbff", minWidth: 110 };
 
 const VC_REVIEW_ARRAY_KEYS = ["lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs", "society", "industry", "acr", "journals", "books", "ict", "research", "projects2", "patents", "awards", "confs", "proposals", "fdps", "training"];
@@ -123,12 +141,15 @@ const buildVcSectionScores = (person, vcData) => {
   return payload;
 };
 
+
 // ─── VC Review Form ───────────────────────────────────────────────────────────
 // personMode: "dean" | "director" | "hod" | "faculty"
 function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
-  const showHodCol  = personMode === "hod" || personMode === "faculty";
-  const showDirCol  = personMode === "director" || personMode === "hod" || personMode === "faculty";
-  const showDeanCol = true;
+  const isDir = personMode === "director" || personMode === "dean";
+  const isHod = personMode === "hod";
+  const isFac = personMode === "faculty";
+  const showHodCol = isFac && (n(person.hodTotal) > 0 || n(person.hodScore) > 0);
+  const showDirCol = personMode !== "dean";
 
   const set = (section, idx, field, val) => {
     setVcData(prev => {
@@ -138,8 +159,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
         updated[section] = Array.isArray(updated[section])
           ? (updated[section].length ? updated[section].map((r, i) => i === 0 ? { ...r, [field]: val } : r) : [{ [field]: val }])
           : { ...updated[section], [field]: val };
-      }
-      else updated[section] = updated[section].map((r, i) => i === idx ? { ...r, [field]: val } : r);
+      } else updated[section] = updated[section].map((r, i) => i === idx ? { ...r, [field]: val } : r);
       return updated;
     });
   };
@@ -162,43 +182,44 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
   const courseFileRow = Array.isArray(person.courseFile) ? (person.courseFile[0] || {}) : (person.courseFile || {});
   const rows = (arr) => arr && arr.length > 0 ? arr : [{}];
 
-  const deanScoreKey = personMode === "dean" ? "score" : "dean";
-
-  const buildScoreHeaders = () => (
+  const ScoreHeaders = () => (
     <>
-      {showHodCol && <><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th></>}
-      {!showHodCol && personMode !== "dean" && <th style={TH}>Self Score</th>}
-      {personMode === "dean" && <th style={TH}>Self Score</th>}
-      {showDirCol && <th style={TH_DIR}>Dir Score</th>}
-      {showDeanCol && <th style={TH_DEAN}>Dean Score</th>}
+      {isFac  && <th style={TH}>Faculty Score</th>}
+      {isHod  && <th style={TH}>Self Score</th>}
+      {isDir  && <th style={TH}>Self Score</th>}
+      {showHodCol && <th style={TH_HOD}>HOD Score</th>}
+      {(isHod || isFac) && showDirCol && <th style={TH_DIR}>Dir Score</th>}
+      {isDir && showDirCol && false}
+      <th style={TH_DEAN}>Dean Score</th>
       <th style={TH_VC}>VC Score</th>
     </>
   );
 
-  const buildScoreCells = (r, section, idx) => (
+  const ScoreCells = ({ r, section, i }) => (
     <>
-      {showHodCol && <><td style={TDS}><RO val={r.score} center /></td><td style={TDS_HOD}><RO val={r.hod} center /></td></>}
-      {!showHodCol && personMode !== "dean" && <td style={TDS}><RO val={r.score} center /></td>}
-      {personMode === "dean" && <td style={TDS}><RO val={r.score} center /></td>}
-      {showDirCol && <td style={TDS_DIR}><RO val={r.director} center /></td>}
-      {showDeanCol && <td style={TDS_DEAN}><RO val={r.dean || r[deanScoreKey]} center /></td>}
-      <td style={TDS_VC}><VCInput val={get(section, idx, "vc")} onChange={v => set(section, idx, "vc", v)} /></td>
+      {isFac  && <td style={TDS}><RO val={r?.score} center /></td>}
+      {isHod  && <td style={TDS}><RO val={r?.hod ?? r?.score} center /></td>}
+      {isDir  && <td style={TDS}><RO val={r?.score} center /></td>}
+      {showHodCol && <td style={TDS_HOD}><RO val={r?.hod} center /></td>}
+      {(isHod || isFac) && showDirCol && <td style={TDS_DIR}><RO val={r?.director} center /></td>}
+      <td style={TDS_DEAN}><RO val={r?.dean} center /></td>
+      <td style={TDS_VC}><VCInput val={get(section, i, "vc")} onChange={v => set(section, i, "vc", v)} /></td>
     </>
   );
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {/* Mode banner */}
-      <div style={{ background: `linear-gradient(90deg,#451a03,#92400e)`, color: "#fef3c7", borderRadius: 8, padding: "10px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
-        <span style={{ fontSize: 18 }}>👁️</span>
+      <div style={{ background: "linear-gradient(90deg,#2e1065,#6d28d9)", color: "#ede9fe", borderRadius: 8, padding: "10px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
+        <span style={{ fontSize: 18 }}>🎓</span>
         <div>
-          <strong>VC Review Mode</strong> — All prior scores are read-only. Only the <span style={{ color: "#fde68a", fontWeight: 700 }}>VC Score</span> column is editable.
-          {showHodCol && " HOD scores visible for reference."} {showDirCol && " Director scores visible for reference."} Dean scores shown for reference.
+          <strong>Vice Chancellor Review Mode</strong> — Only the <span style={{ color: "#d8b4fe", fontWeight: 700 }}>VC Score</span> column is editable.
+          {" "}All previous scores are shown read-only for reference.
         </div>
       </div>
 
       {/* Personal Info */}
-      <SC title="Personal Information" accent="#b45309">
+      <SC title="Personal Information" accent="#7c3aed">
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
           <tbody>
             {Object.entries(person.info).map(([k, v]) => (
@@ -211,65 +232,67 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
         </table>
       </SC>
 
-      <div style={{ fontWeight: 800, fontSize: 13, color: "#1e293b", background: "#fef3c7", padding: "8px 14px", borderRadius: 6, marginBottom: 10 }}>PART A — Teaching & Academic Activities</div>
+      <div style={{ fontWeight: 800, fontSize: 13, color: "#1e293b", background: "#dbeafe", padding: "8px 14px", borderRadius: 6, marginBottom: 10 }}>PART A — Teaching &amp; Academic Activities</div>
 
       {/* A1 Lectures */}
-      <SC title="A1. Lectures / Tutorials / Practicals (Max 50)" accent="#b45309">
+      <SC title="A1. Lectures / Tutorials / Practicals (Max 50)" accent="#7c3aed">
         <div style={{ overflowX: "auto" }}>
           <table style={T}><thead><tr>
             <th style={TH}>SN</th><th style={TH}>Semester</th><th style={TH}>Course</th>
             <th style={TH}>Planned</th><th style={TH}>Conducted</th><th style={TH}>Docs</th>
-            {buildScoreHeaders()}
+            <ScoreHeaders />
           </tr></thead>
           <tbody>{rows(person.lectures).map((r, i) => (
             <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
               <td style={TDC}>{i + 1}</td><td style={TD}><RO val={r.sem} /></td><td style={TD}><RO val={r.code} /></td>
               <td style={TDC}><RO val={r.planned} center /></td><td style={TDC}><RO val={r.conducted} center /></td>
               <td style={TDV}><ViewDocsCell docKey={`lec-${i}`} docs={docs} /></td>
-              {buildScoreCells(r, "lectures", i)}
+              <ScoreCells r={r} section="lectures" i={i} />
             </tr>
           ))}</tbody></table>
         </div>
       </SC>
 
       {/* A2 Course File */}
-      <SC title="A2. Course File (Max 20)" accent="#b45309">
+      <SC title="A2. Course File (Max 20)" accent="#7c3aed">
         <table style={T}><thead><tr>
           <th style={TH}>Course</th><th style={TH}>Title</th><th style={TH}>Details</th><th style={TH}>Docs</th>
-          {showHodCol && <><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th></>}
-          {!showHodCol && <th style={TH}>Self Score</th>}
-          {showDirCol && <th style={TH_DIR}>Dir Score</th>}
-          <th style={TH_DEAN}>Dean Score</th>
-          <th style={TH_VC}>VC Score</th>
+          <ScoreHeaders />
         </tr></thead>
         <tbody><tr>
           <td style={TD}><RO val={courseFileRow.course} /></td>
           <td style={TD}><RO val={courseFileRow.title} /></td>
           <td style={TDC}><RO val={courseFileRow.details} center /></td>
           <td style={TDV}><ViewDocsCell docKey="cf-0" docs={docs} /></td>
-          {showHodCol && <><td style={TDS}><RO val={courseFileRow.score} center /></td><td style={TDS_HOD}><RO val={courseFileRow.hod} center /></td></>}
-          {!showHodCol && <td style={TDS}><RO val={courseFileRow.score} center /></td>}
-          {showDirCol && <td style={TDS_DIR}><RO val={courseFileRow.director} center /></td>}
-          <td style={TDS_DEAN}><RO val={courseFileRow.dean || courseFileRow.score} center /></td>
+          {isFac  && <td style={TDS}><RO val={courseFileRow.score} center /></td>}
+          {isHod  && <td style={TDS}><RO val={courseFileRow.hod ?? courseFileRow.score} center /></td>}
+          {isDir  && <td style={TDS}><RO val={courseFileRow.score} center /></td>}
+          {showHodCol && <td style={TDS_HOD}><RO val={courseFileRow.hod} center /></td>}
+          {(isHod || isFac) && showDirCol && <td style={TDS_DIR}><RO val={courseFileRow.director} center /></td>}
+          <td style={TDS_DEAN}><RO val={courseFileRow.dean} center /></td>
           <td style={TDS_VC}><VCInput val={get("courseFile", null, "vc")} onChange={v => set("courseFile", null, "vc", v)} /></td>
         </tr></tbody></table>
       </SC>
 
       {/* A3 Innovative */}
-      <SC title="A3. Innovative Teaching-Learning (Max 10)" accent="#b45309">
+      <SC title="A3. Innovative Teaching-Learning (Max 10)" accent="#7c3aed">
         <table style={T}><thead><tr>
           <th style={TH}>Method</th>
-          {showHodCol && <><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th></>}
-          {!showHodCol && <th style={TH}>Self Score</th>}
-          {showDirCol && <th style={TH_DIR}>Dir Score</th>}
+          {isFac  && <th style={TH}>Faculty Score</th>}
+          {isHod  && <th style={TH}>Self Score</th>}
+          {isDir  && <th style={TH}>Self Score</th>}
+          {showHodCol && <th style={TH_HOD}>HOD Score</th>}
+          {(isHod || isFac) && showDirCol && <th style={TH_DIR}>Dir Score</th>}
           <th style={TH_DEAN}>Dean Score</th>
           <th style={TH_VC}>VC Score</th>
         </tr></thead>
         <tbody><tr>
           <td style={TD}>Innovative / participatory teaching methods used</td>
-          {showHodCol && <><td style={TDS}><RO val={person.innovScore} center /></td><td style={TDS_HOD}><RO val={person.innovHod} center /></td></>}
-          {!showHodCol && <td style={TDS}><RO val={person.innovScore} center /></td>}
-          {showDirCol && <td style={TDS_DIR}><RO val={person.innovDirector} center /></td>}
+          {isFac  && <td style={TDS}><RO val={person.innovScore} center /></td>}
+          {isHod  && <td style={TDS}><RO val={person.innovHod ?? person.innovScore} center /></td>}
+          {isDir  && <td style={TDS}><RO val={person.innovScore} center /></td>}
+          {showHodCol && <td style={TDS_HOD}><RO val={person.innovHod} center /></td>}
+          {(isHod || isFac) && showDirCol && <td style={TDS_DIR}><RO val={person.innovDirector ?? person.innovDir} center /></td>}
           <td style={TDS_DEAN}><RO val={person.innovDean} center /></td>
           <td style={TDS_VC}><VCInput val={getS("innovVc") || getS("innovVC")} onChange={v => setScalar("innovVc", v)} /></td>
         </tr></tbody></table>
@@ -280,82 +303,58 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
         ["A4. Projects (Max 10)", "projects", "proj"],
         ["A5. Qualification Enhancement (Max 10)", "quals", "qual"],
       ].map(([title, key, docPfx]) => (
-        <SC key={key} title={title} accent="#b45309">
+        <SC key={key} title={title} accent="#7c3aed">
           <table style={T}><thead><tr>
             <th style={TH}>SN</th><th style={TH}>Description</th><th style={TH}>Docs</th>
-            {showHodCol && <><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th></>}
-            {!showHodCol && <th style={TH}>Self Score</th>}
-            {showDirCol && <th style={TH_DIR}>Dir Score</th>}
-            <th style={TH_DEAN}>Dean Score</th>
-            <th style={TH_VC}>VC Score</th>
+            <ScoreHeaders />
           </tr></thead>
           <tbody>{rows(person[key]).map((r, i) => (
             <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
               <td style={TDC}>{i + 1}</td>
               <td style={TD}><RO val={r.label} /></td>
               <td style={TDV}><ViewDocsCell docKey={`${docPfx}-${i}`} docs={docs} /></td>
-              {showHodCol && <><td style={TDS}><RO val={r.score} center /></td><td style={TDS_HOD}><RO val={r.hod} center /></td></>}
-              {!showHodCol && <td style={TDS}><RO val={r.score} center /></td>}
-              {showDirCol && <td style={TDS_DIR}><RO val={r.director} center /></td>}
-              <td style={TDS_DEAN}><RO val={r.dean || r.score} center /></td>
-              <td style={TDS_VC}><VCInput val={get(key, i, "vc")} onChange={v => set(key, i, "vc", v)} /></td>
+              <ScoreCells r={r} section={key} i={i} />
             </tr>
           ))}</tbody></table>
         </SC>
       ))}
 
       {/* B Feedback */}
-      <SC title="B. Student Feedback (Max 10)" accent="#b45309">
+      <SC title="B. Student Feedback (Max 10)" accent="#7c3aed">
         <table style={T}><thead><tr>
           <th style={TH}>SN</th><th style={TH}>Course</th><th style={TH}>FB1</th><th style={TH}>FB2</th><th style={TH}>Avg</th>
-          {showHodCol && <><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th></>}
-          {!showHodCol && <th style={TH}>Self Score</th>}
-          {showDirCol && <th style={TH_DIR}>Dir Score</th>}
-          <th style={TH_DEAN}>Dean Score</th>
-          <th style={TH_VC}>VC Score</th>
+          <ScoreHeaders />
         </tr></thead>
         <tbody>{rows(person.feedback).map((r, i) => (
           <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
             <td style={TDC}>{i + 1}</td><td style={TD}><RO val={r.code} /></td>
             <td style={TDC}><RO val={r.fb1} center /></td><td style={TDC}><RO val={r.fb2} center /></td>
-            <td style={{ ...TDC, fontWeight: 700, color: "#b45309" }}>{r.fb1 && r.fb2 ? ((n(r.fb1) + n(r.fb2)) / 2).toFixed(2) : "—"}</td>
-            {showHodCol && <><td style={TDS}><RO val={r.score} center /></td><td style={TDS_HOD}><RO val={r.hod} center /></td></>}
-            {!showHodCol && <td style={TDS}><RO val={r.score} center /></td>}
-            {showDirCol && <td style={TDS_DIR}><RO val={r.director} center /></td>}
-            <td style={TDS_DEAN}><RO val={r.dean || r.score} center /></td>
-            <td style={TDS_VC}><VCInput val={get("feedback", i, "vc")} onChange={v => set("feedback", i, "vc", v)} /></td>
+            <td style={{ ...TDC, fontWeight: 700, color: "#0ea5e9" }}>{r.fb1 && r.fb2 ? ((n(r.fb1) + n(r.fb2)) / 2).toFixed(2) : "—"}</td>
+            <ScoreCells r={r} section="feedback" i={i} />
           </tr>
         ))}</tbody></table>
       </SC>
 
       {/* C–F Activities */}
       {[
-        ["C. Departmental Activities (Max 20)", "deptActs", "#d97706", ["Activity", "Nature"], ["activity", "nature"], "dept"],
-        ["D. University Activities (Max 30)", "uniActs", "#d97706", ["Activity", "Nature"], ["activity", "nature"], "uni"],
-        ["E. Contribution to Society (Max 10)", "society", "#059669", ["Activity", "Details"], ["label", "details"], "soc"],
-        ["F. Industry Connect (Max 5)", "industry", "#059669", ["Industry", "Details"], ["name", "details"], "ind"],
+        ["C. Departmental Activities (Max 20)", "deptActs", "#f59e0b", ["Activity", "Nature"], ["activity", "nature"], "dept"],
+        ["D. University Activities (Max 30)", "uniActs", "#f59e0b", ["Activity", "Nature"], ["activity", "nature"], "uni"],
+        ["E. Contribution to Society (Max 10)", "society", "#10b981", ["Activity", "Details"], ["label", "details"], "soc"],
+        ["F. Industry Connect (Max 5)", "industry", "#10b981", ["Industry", "Details"], ["name", "details"], "ind"],
       ].map(([title, key, accent2, cols, fields, docPfx]) => (
         <SC key={key} title={title} accent={accent2}>
           <table style={T}><thead><tr>
             <th style={TH}>SN</th>
             {cols.map(c => <th key={c} style={TH}>{c}</th>)}
             <th style={TH}>Docs</th>
-            {showHodCol && <><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th></>}
-            {!showHodCol && <th style={TH}>Self Score</th>}
-            {showDirCol && <th style={TH_DIR}>Dir Score</th>}
-            <th style={TH_DEAN}>Dean Score</th>
-            <th style={TH_VC}>VC Score</th>
+            <ScoreHeaders />
           </tr></thead>
           <tbody>{rows(person[key]).map((r, i) => (
             <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
               <td style={TDC}>{i + 1}</td>
               {fields.map(f => <td key={f} style={TD}><RO val={r[f]} /></td>)}
               <td style={TDV}><ViewDocsCell docKey={`${docPfx}-${i}`} docs={docs} /></td>
-              {showHodCol && <><td style={TDS}><RO val={r.score} center /></td><td style={TDS_HOD}><RO val={r.hod} center /></td></>}
-              {!showHodCol && <td style={TDS}><RO val={r.score} center /></td>}
-              {showDirCol && <td style={TDS_DIR}><RO val={r.director} center /></td>}
-              <td style={TDS_DEAN}><RO val={r.dean || r.score} center /></td>
-              <td style={TDS_VC}><VCInput val={get(key, i, "vc")} onChange={v => set(key, i, "vc", v)} /></td>
+              <ScoreCells r={r} section={key} i={i} />
             </tr>
           ))}</tbody></table>
         </SC>
@@ -365,8 +364,10 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
       <SC title="G. Annual Confidential Report (Max 25)" accent="#ef4444">
         <table style={T}><thead><tr>
           <th style={TH}>SN</th><th style={TH}>Parameter</th>
+          {isHod  && <th style={TH}>Self Score</th>}
           {showHodCol && <th style={TH_HOD}>HOD Score</th>}
-          {showDirCol && <th style={TH_DIR}>Dir Score</th>}
+          {(isHod || isFac) && showDirCol && <th style={TH_DIR}>Dir Score</th>}
+          {isDir  && <th style={TH_DIR}>Self Score</th>}
           <th style={TH_DEAN}>Dean Score</th>
           <th style={TH_VC}>VC Score</th>
         </tr></thead>
@@ -374,37 +375,31 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
           <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
             <td style={TDC}>{i + 1}</td>
             <td style={TD}><RO val={r.label} /></td>
+            {isHod  && <td style={TDS}><RO val={r.hod ?? r.director} center /></td>}
             {showHodCol && <td style={TDS_HOD}><RO val={r.hod} center /></td>}
-            {showDirCol && <td style={TDS_DIR}><RO val={r.director} center /></td>}
+            {(isHod || isFac) && showDirCol && <td style={TDS_DIR}><RO val={r.director} center /></td>}
+            {isDir  && <td style={TDS_DIR}><RO val={r.director} center /></td>}
             <td style={TDS_DEAN}><RO val={r.dean} center /></td>
             <td style={TDS_VC}><VCInput val={get("acr", i, "vc")} onChange={v => set("acr", i, "vc", v)} /></td>
           </tr>
         ))}</tbody></table>
       </SC>
 
-      <div style={{ fontWeight: 800, fontSize: 13, color: "#1e293b", background: "#fef3c7", padding: "8px 14px", borderRadius: 6, marginBottom: 10 }}>PART B — Research & Academic Contributions</div>
+      <div style={{ fontWeight: 800, fontSize: 13, color: "#1e293b", background: "#ede9fe", padding: "8px 14px", borderRadius: 6, marginBottom: 10 }}>PART B — Research &amp; Academic Contributions</div>
 
       {/* B1 Journals */}
-      <SC title="B1. Research Papers / Journal Publications (Max 120)" accent="#b45309">
+      <SC title="B1. Research Papers / Journal Publications (Max 120)" accent="#7c3aed">
         <div style={{ overflowX: "auto" }}><table style={T}><thead><tr>
           <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>Journal</th>
           <th style={TH}>ISSN</th><th style={TH}>Index</th><th style={TH}>Docs</th>
-          {showHodCol && <><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th></>}
-          {!showHodCol && <th style={TH}>Self Score</th>}
-          {showDirCol && <th style={TH_DIR}>Dir Score</th>}
-          <th style={TH_DEAN}>Dean Score</th>
-          <th style={TH_VC}>VC Score</th>
+          <ScoreHeaders />
         </tr></thead>
         <tbody>{rows(person.journals).map((r, i) => (
           <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
             <td style={TDC}>{i + 1}</td><td style={TD}><RO val={r.title} /></td><td style={TD}><RO val={r.journal} /></td>
             <td style={TDC}><RO val={r.issn} center /></td><td style={TDC}><RO val={r.index} center /></td>
             <td style={TDV}><ViewDocsCell docKey={`jour-${i}`} docs={docs} /></td>
-            {showHodCol && <><td style={TDS}><RO val={r.score} center /></td><td style={TDS_HOD}><RO val={r.hod} center /></td></>}
-            {!showHodCol && <td style={TDS}><RO val={r.score} center /></td>}
-            {showDirCol && <td style={TDS_DIR}><RO val={r.director} center /></td>}
-            <td style={TDS_DEAN}><RO val={r.dean || r.score} center /></td>
-            <td style={TDS_VC}><VCInput val={get("journals", i, "vc")} onChange={v => set("journals", i, "vc", v)} /></td>
+            <ScoreCells r={r} section="journals" i={i} />
           </tr>
         ))}</tbody></table></div>
       </SC>
@@ -430,15 +425,11 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
         { title: "B8. Self Development — FDP (Max 10)", key: "fdps", docPfx: "fdp",
           render: (r) => [r.program, r.duration, r.org] },
       ].map(({ title, key, docPfx, render }) => (
-        <SC key={key} title={title} accent="#b45309">
+        <SC key={key} title={title} accent="#7c3aed">
           <div style={{ overflowX: "auto" }}><table style={T}><thead>
             <tr>
               <th style={TH}>SN</th><th style={TH}>Details</th><th style={TH}>Docs</th>
-              {showHodCol && <><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th></>}
-              {!showHodCol && <th style={TH}>Self Score</th>}
-              {showDirCol && <th style={TH_DIR}>Dir Score</th>}
-              <th style={TH_DEAN}>Dean Score</th>
-              <th style={TH_VC}>VC Score</th>
+              <ScoreHeaders />
             </tr>
           </thead>
           <tbody>{rows(person[key]).map((r, i) => {
@@ -452,11 +443,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
                   ))}
                 </td>
                 <td style={TDV}><ViewDocsCell docKey={`${docPfx}-${i}`} docs={docs} /></td>
-                <td style={TDS}><RO val={r.score} center /></td>
-                {showHodCol && <td style={TDS_HOD}><RO val={r.hod} center /></td>}
-                {showDirCol && <td style={TDS_DIR}><RO val={r.director} center /></td>}
-                <td style={TDS_DEAN}><RO val={r.dean || r.score} center /></td>
-                <td style={TDS_VC}><VCInput val={get(key, i, "vc")} onChange={v => set(key, i, "vc", v)} /></td>
+                <ScoreCells r={r} section={key} i={i} />
               </tr>
             );
           })}</tbody></table></div>
@@ -465,6 +452,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
     </div>
   );
 }
+
 
 // ─── Score Calculator ─────────────────────────────────────────────────────────
 function calcVCScore(person, vcData) {
@@ -495,272 +483,233 @@ function calcVCScore(person, vcData) {
   return { partA, partB, total: partA + partB };
 }
 
-// ─── Analytics Overview ───────────────────────────────────────────────────────
-function AnalyticsPanel({ deans, directors, hods, faculty }) {
-  const all = [
-    ...deans.map(d => ({ ...d, role: "Dean" })),
-    ...directors.map(d => ({ ...d, role: "Director" })),
-    ...hods.map(h => ({ ...h, role: "HOD" })),
-    ...faculty.map(f => ({ ...f, role: "Faculty" })),
-  ];
-
-  const reviewed = all.filter(isVcReviewed);
-  const pending  = all.filter(p => !isVcReviewed(p));
-  const avgScore = reviewed.length ? (reviewed.reduce((a, p) => a + (p.vcTotal || p.deanTotal || 0), 0) / reviewed.length).toFixed(1) : "—";
-
-  const roleStats = ["Dean", "Director", "HOD", "Faculty"].map(role => ({
-    role,
-    count: all.filter(p => p.role === role).length,
-    approved: all.filter(p => p.role === role && isVcReviewed(p)).length,
-  }));
-
-  const topPerformers = [...all].sort((a, b) => (b.vcTotal || b.deanTotal || 0) - (a.vcTotal || a.deanTotal || 0)).slice(0, 5);
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a", letterSpacing: -0.5 }}>University Analytics</h1>
-      <p style={{ margin: "0 0 8px", color: "#64748b", fontSize: 11 }}>{APP_INFO.SHORT_NAME} · AY {VC_USER.ay} — VC-level overview</p>
-
-      {/* KPI Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-        {[
-          { label: "Total Records", val: all.length, icon: "📋", color: "#0f172a" },
-          { label: "VC Reviewed", val: reviewed.length, icon: "✅", color: "#059669" },
-          { label: "Pending VC", val: pending.length, icon: "⏳", color: "#d97706" },
-          { label: "Avg VC Score", val: avgScore, sub: `/${MAX_SCORES.GRAND_TOTAL}`, icon: "📊", color: "#b45309" },
-        ].map(({ label, val, icon, color, sub }) => (
-          <div key={label} style={{ background: "#fff", borderRadius: 10, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,.07)", borderTop: `3px solid ${color}` }}>
-            <div style={{ fontSize: 22, marginBottom: 6 }}>{icon}</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color }}>
-              {val}<span style={{ fontSize: 13, color: "#94a3b8" }}>{sub}</span>
-            </div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>{label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        {/* Role Distribution */}
-        <div style={{ background: "#fff", borderRadius: 10, padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,.05)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>Approval Status by Role</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {roleStats.map(s => (
-              <div key={s.role}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
-                  <span style={{ fontWeight: 700 }}>{s.role}</span>
-                  <span style={{ color: "#64748b" }}>{s.approved} / {s.count} approved</span>
-                </div>
-                <div style={{ height: 6, background: "#f1f5f9", borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ width: `${pct(s.approved, s.count)}%`, height: "100%", background: "#b45309" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Performers */}
-        <div style={{ background: "#fff", borderRadius: 10, padding: "20px", boxShadow: "0 1px 4px rgba(0,0,0,.05)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>Top Performers (Consolidated)</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {topPerformers.map((p, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < 4 ? "1px solid #f1f5f9" : "none" }}>
-                <Avatar initials={p.avatar} size={30} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700 }}>{p.name}</div>
-                  <div style={{ fontSize: 9, color: "#94a3b8" }}>{p.role} · {p.department}</div>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: grade(p.vcTotal || p.deanTotal || 0, MAX_SCORES.GRAND_TOTAL).color }}>
-                  {p.vcTotal || p.deanTotal || "—"}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Person Card ──────────────────────────────────────────────────────────────
-function PersonCard({ person, personMode, onReview, onDelete }) {
-  const g = grade(person.vcTotal || person.deanTotal || 300, MAX_SCORES.GRAND_TOTAL);
-  const docCount = Object.values(person.docs || {}).reduce((a, arr) => a + arr.length, 0);
-
-  const scoreRows = [];
-  if (personMode === "faculty" || personMode === "hod") {
-    scoreRows.push({ label: personMode === "hod" ? "Own Score" : "HOD Score", val: person.hodTotal || person.hodScore || 0, color: "#6366f1" });
-  }
-  if (personMode !== "dean") {
-    scoreRows.push({ label: "Dir Score", val: person.directorTotal || person.directorScore || 0, color: "#0ea5e9" });
-  }
-  scoreRows.push({ label: "Dean Score", val: person.deanTotal || person.deanSelfScore || 0, color: "#7c3aed" });
-  scoreRows.push({ label: "VC Score", val: person.vcTotal || 0, color: "#b45309" });
-
-  return (
-    <div style={{ background: "#fff", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 6px rgba(0,0,0,.07)", display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-        <Avatar initials={person.avatar} color={person.avatarColor || "#b45309"} size={46} />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 2 }}>{person.name}</div>
-          <div style={{ fontSize: 11, color: "#475569", marginBottom: 2 }}>{person.designation}</div>
-          <div style={{ fontSize: 10, color: "#94a3b8", fontFamily: "monospace" }}>{person.employeeId}</div>
-          {person.department && <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>{person.department}</div>}
-        </div>
-        <StatusBadge status={person.status} />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${scoreRows.length},1fr)`, gap: 10, background: "#f8fafc", borderRadius: 8, padding: "12px 14px" }}>
-        {scoreRows.map(({ label, val, color }) => (
-          <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color, lineHeight: 1 }}>{val}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div>
-            <ScoreBar score={val} max={MAX_SCORES.GRAND_TOTAL} color={color} />
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
-        <div style={{ fontSize: 10, color: "#94a3b8" }}>Docs: {docCount} files · {person.submittedOn}</div>
-        <button onClick={() => onDelete(person, personMode)}
-          style={{ fontSize: 11, padding: "7px 14px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif", marginRight: 8 }}>
-          Delete
-        </button>
-        <button onClick={() => onReview(person, personMode)}
-          style={{ fontSize: 11, padding: "7px 18px", background: isVcReviewed(person) ? "#1e293b" : "#b45309", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
-          {isVcReviewed(person) ? "✎ Edit VC Approval" : "🔍 Review & Approve →"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── VC Review Panel (Main Review Container) ──────────────────────────────────
-function VCReviewPanel({ person, personMode, onBack, onSubmit }) {
+// ─── VC Review Panel ──────────────────────────────────────────────────────────
+function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false }) {
   const [vcData, setVcData] = useState({});
   const [remarks, setRemarks] = useState(person.vcRemarks || "");
   const [tab, setTab] = useState("form");
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const reviewLocked = readOnly || isVcReviewed(person);
 
   const { partA, partB, total } = calcVCScore(person, vcData);
   const g = grade(total, MAX_SCORES.GRAND_TOTAL);
-
   const deanTotal = person.deanTotal || person.deanSelfScore || 0;
   const dirTotal  = person.directorTotal || person.directorScore || 0;
-  const hodTotal   = person.hodTotal || person.hodScore || 0;
+  const hodTotal  = person.hodTotal || person.hodScore || 0;
+  const vcReviewCompleted = person.status === "Reviewed" || person.status === "VC Reviewed" || n(person.vcTotal) > 0;
+
+  const generateVcReport = () => {
+    if (!vcReviewCompleted) return;
+    const esc = (value) => String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+    const reportPartA = n(person.vcPartA ?? partA);
+    const reportPartB = n(person.vcPartB ?? partB);
+    const reportTotal = n(person.vcTotal ?? total);
+    const reportRemarks = person.vcRemarks || remarks || "No VC remarks recorded.";
+    const reviewerName = localStorage.getItem("name") || "Vice Chancellor";
+    const html = `
+<!doctype html>
+<html>
+<head>
+  <title>VC Appraisal Report</title>
+  <style>
+    body { font-family: Georgia, serif; color: #0f172a; padding: 28px; }
+    h1 { margin: 0 0 4px; font-size: 24px; }
+    .muted { color: #64748b; font-size: 12px; margin-bottom: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+    .box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; }
+    .label { color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+    .value { font-size: 14px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; }
+    th, td { border: 1px solid #cbd5e1; padding: 9px 10px; text-align: left; }
+    th { background: #0f172a; color: #f8fafc; }
+    .remarks { white-space: pre-wrap; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f8fafc; }
+  </style>
+</head>
+<body>
+  <h1>VC Appraisal Report</h1>
+  <div class="muted">${esc(APP_INFO.UNIVERSITY_NAME)} | Academic Year ${esc(person.academicYear || person.info?.ay || VC_USER.ay || "")}</div>
+  <div class="grid">
+    <div class="box"><div class="label">Name</div><div class="value">${esc(person.name || "")}</div></div>
+    <div class="box"><div class="label">Role</div><div class="value">${esc(person.designation || personMode)}</div></div>
+    <div class="box"><div class="label">Employee ID</div><div class="value">${esc(person.employeeId || "")}</div></div>
+    <div class="box"><div class="label">School</div><div class="value">${esc(person.schoolName || person.school || "")}</div></div>
+    <div class="box"><div class="label">Reviewed By</div><div class="value">${esc(reviewerName)}</div></div>
+    <div class="box"><div class="label">Generated On</div><div class="value">${esc(new Date().toLocaleString())}</div></div>
+  </div>
+  <table>
+    <thead><tr><th>Section</th><th>Score</th><th>Maximum</th></tr></thead>
+    <tbody>
+      <tr><td>Part A - Teaching & Activities</td><td>${reportPartA.toFixed(1)}</td><td>200</td></tr>
+      <tr><td>Part B - Research & Contributions</td><td>${reportPartB.toFixed(1)}</td><td>375</td></tr>
+      <tr><td><strong>Grand Total</strong></td><td><strong>${reportTotal.toFixed(1)}</strong></td><td><strong>${MAX_SCORES.GRAND_TOTAL}</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="label">VC Remarks</div>
+  <div class="remarks">${esc(reportRemarks)}</div>
+</body>
+</html>`;
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (!win) {
+      alert("Please allow popups to generate the report.");
+      return;
+    }
+    win.document.write(html);
+    win.document.close();
+    win.print();
+  };
+
+  const scoreCards = [];
+  if (personMode === "faculty" && hodTotal > 0) scoreCards.push({ label: "HOD Score", val: hodTotal, color: "#818cf8" });
+  if (personMode === "hod") scoreCards.push({ label: "HOD Self", val: hodTotal, color: "#818cf8" });
+  if (personMode === "director") scoreCards.push({ label: "Self Score", val: dirTotal, color: "#38bdf8" });
+  else scoreCards.push({ label: "Dir Score", val: dirTotal, color: "#38bdf8" });
+  if (deanTotal > 0) scoreCards.push({ label: "Dean Score", val: deanTotal, color: "#34d399" });
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      {/* VC Header */}
-      <div style={{ background: "#451a03", padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, marginBottom: 16, borderRadius: 10, borderBottom: "4px solid #b45309" }}>
-        <button onClick={onBack} style={{ background: "#78350f", border: "none", color: "#fde68a", cursor: "pointer", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontFamily: "Georgia, serif" }}>← Back</button>
-        <Avatar initials={person.avatar} color={person.avatarColor || "#b45309"} size={44} />
+      {/* Header */}
+      <div style={{ background: "#0f172a", padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, marginBottom: 16, borderRadius: 10 }}>
+        <button onClick={onBack} style={{ background: "#1e293b", border: "none", color: "#94a3b8", cursor: "pointer", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontFamily: "Georgia, serif" }}>← Back</button>
+        <Avatar initials={person.avatar} color={person.avatarColor || "#7c3aed"} size={40} />
         <div style={{ flex: 1 }}>
-          <div style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>{person.name}</div>
-          <div style={{ color: "#fde68a", fontSize: 11 }}>{person.designation} · {person.employeeId}</div>
+          <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 15 }}>{person.name}</div>
+          <div style={{ color: "#64748b", fontSize: 11 }}>{person.designation} · {person.employeeId}</div>
         </div>
-        
-        {/* Prior Score Display */}
-        <div style={{ display: "flex", gap: 8 }}>
-          {[["Dean Total", deanTotal, "#ddd6fe"], ["VC Part A", partA.toFixed(1), "#fde68a"], ["VC Part B", partB.toFixed(1), "#fcd34d"]].map(([l, v, c]) => (
-            <div key={l} style={{ background: "rgba(0,0,0,0.2)", borderRadius: 8, padding: "8px 12px", textAlign: "center", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6 }}>{l}</div>
-              <div style={{ color: c, fontWeight: 800, fontSize: 14 }}>{v}</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {scoreCards.map(({ label, val, color }) => (
+            <div key={label} style={{ background: "#1e293b", borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
+              <div style={{ color: "#94a3b8", fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</div>
+              <div style={{ color, fontWeight: 800, fontSize: 14 }}>{val}</div>
             </div>
           ))}
-          <div style={{ background: g.bg, borderRadius: 8, padding: "8px 12px", textAlign: "center", border: `2px solid ${g.color}` }}>
-            <div style={{ color: g.color, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 800 }}>VC Total</div>
-            <div style={{ color: g.color, fontWeight: 900, fontSize: 14 }}>{total.toFixed(1)}<span style={{ fontSize: 10, opacity: 0.7 }}>/{MAX_SCORES.GRAND_TOTAL}</span></div>
+          <div style={{ background: "#1e293b", borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
+            <div style={{ color: "#94a3b8", fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6 }}>VC Part A</div>
+            <div style={{ color: "#c4b5fd", fontWeight: 800, fontSize: 14 }}>{partA.toFixed(1)}</div>
+          </div>
+          <div style={{ background: "#1e293b", borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
+            <div style={{ color: "#94a3b8", fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6 }}>VC Part B</div>
+            <div style={{ color: "#a78bfa", fontWeight: 800, fontSize: 14 }}>{partB.toFixed(1)}</div>
+          </div>
+          <div style={{ background: g.bg, border: `2px solid ${g.color}40`, borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
+            <div style={{ color: g.color, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 700 }}>VC Total</div>
+            <div style={{ color: g.color, fontWeight: 800, fontSize: 14 }}>{total.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-        {[["form", "📋 Review Form"], ["remarks", "✏️ Final Approval"]].map(([id, label]) => (
+        {[["form", "📋 Review Form"], ["remarks", "✏️ Remarks & Submit"]].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}
-            style={{ padding: "8px 22px", border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "Georgia, serif", fontSize: 12, fontWeight: 700, background: tab === id ? "#78350f" : "#fff", color: tab === id ? "#fff" : "#92400e", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+            style={{ padding: "7px 18px", border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "Georgia, serif", fontSize: 12, fontWeight: 700, background: tab === id ? "#4c1d95" : "#e2e8f0", color: tab === id ? "#ddd6fe" : "#475569" }}>
             {label}
           </button>
         ))}
       </div>
 
-      {tab === "form" && <VCReviewForm person={person} vcData={vcData} setVcData={setVcData} personMode={personMode} />}
+      {tab === "form" && (
+        <fieldset disabled={reviewLocked} style={{ border: "none", padding: 0, margin: 0 }}>
+          <VCReviewForm person={person} vcData={vcData} setVcData={setVcData} personMode={personMode} />
+        </fieldset>
+      )}
 
       {tab === "remarks" && (
-        <div style={{ background: "#fff", borderRadius: 10, padding: "22px 24px", boxShadow: "0 2px 10px rgba(0,0,0,0.08)" }}>
-          <h3 style={{ margin: "0 0 18px", color: "#451a03", fontSize: 16 }}>VC Final Remarks & Sanction</h3>
+        <div style={{ background: "#fff", borderRadius: 10, padding: "22px 24px", boxShadow: "0 1px 6px rgba(0,0,0,.06)" }}>
+          <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>{reviewLocked ? "VC Submitted Review" : "VC Remarks &amp; Final Submission"}</h3>
 
-          {/* Remarks Chain */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
-            {person.directorRemarks && (
-              <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "12px" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#0369a1", textTransform: "uppercase", marginBottom: 4 }}>Director Remarks</div>
-                <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.5 }}>{person.directorRemarks}</div>
-              </div>
-            )}
-            {person.deanRemarks && (
-              <div style={{ background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: 8, padding: "12px" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#5b21b6", textTransform: "uppercase", marginBottom: 4 }}>Dean Remarks</div>
-                <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.5 }}>{person.deanRemarks}</div>
-              </div>
-            )}
-          </div>
+          {person.hodRemarks && (
+            <div style={{ background: "#f0f4ff", border: "1px solid #c7d2fe", borderRadius: 8, padding: "12px 14px", marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#4338ca", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>HOD Remarks</div>
+              <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.6 }}>{person.hodRemarks}</div>
+            </div>
+          )}
+          {person.directorRemarks && (
+            <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "12px 14px", marginBottom: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#0369a1", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>Director Remarks</div>
+              <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.6 }}>{person.directorRemarks}</div>
+            </div>
+          )}
+          {person.deanRemarks && (
+            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "12px 14px", marginBottom: 16 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#065f46", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>Dean Remarks</div>
+              <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.6 }}>{person.deanRemarks}</div>
+            </div>
+          )}
 
-          <SC title="Score Reconciliation" accent="#b45309">
+          <SC title="Score Reconciliation" accent="#7c3aed">
             <table style={{ ...T, fontSize: 12 }}>
               <thead><tr>
                 <th style={TH}>Section</th>
-                {personMode === "faculty" && <th style={TH_HOD}>HOD</th>}
-                {personMode !== "dean" && <th style={TH_DIR}>Dir</th>}
-                <th style={TH_DEAN}>Dean</th>
+                {personMode === "hod" && <th style={TH}>HOD Self</th>}
+                {personMode === "faculty" && hodTotal > 0 && <th style={TH_HOD}>HOD Score</th>}
+                {personMode === "director" ? <th style={TH_DIR}>Self Score</th> : <th style={TH_DIR}>Dir Score</th>}
+                <th style={TH_DEAN}>Dean Score</th>
                 <th style={TH_VC}>VC Final</th>
               </tr></thead>
               <tbody>
                 <tr>
                   <td style={TD}>Part A — Teaching</td>
-                  {personMode === "faculty" && <td style={TDS_HOD}>—</td>}
-                  {personMode !== "dean" && <td style={TDS_DIR}>—</td>}
+                  {personMode === "hod" && <td style={TDS}>—</td>}
+                  {personMode === "faculty" && hodTotal > 0 && <td style={TDS_HOD}>—</td>}
+                  <td style={TDS_DIR}>—</td>
                   <td style={TDS_DEAN}>—</td>
                   <td style={{ ...TDS_VC, fontWeight: 700 }}>{partA.toFixed(1)}</td>
                 </tr>
                 <tr>
                   <td style={TD}>Part B — Research</td>
-                  {personMode === "faculty" && <td style={TDS_HOD}>—</td>}
-                  {personMode !== "dean" && <td style={TDS_DIR}>—</td>}
+                  {personMode === "hod" && <td style={TDS}>—</td>}
+                  {personMode === "faculty" && hodTotal > 0 && <td style={TDS_HOD}>—</td>}
+                  <td style={TDS_DIR}>—</td>
                   <td style={TDS_DEAN}>—</td>
                   <td style={{ ...TDS_VC, fontWeight: 700 }}>{partB.toFixed(1)}</td>
                 </tr>
-                <tr style={{ background: "#fffbeb", fontWeight: 800 }}>
+                <tr style={{ background: "#ede9fe", fontWeight: 800 }}>
                   <td style={TD}>GRAND TOTAL</td>
-                  {personMode === "faculty" && <td style={TDS_HOD}>{hodTotal}</td>}
-                  {personMode !== "dean" && <td style={TDS_DIR}>{dirTotal}</td>}
+                  {personMode === "hod" && <td style={TDS}>{hodTotal}</td>}
+                  {personMode === "faculty" && hodTotal > 0 && <td style={TDS_HOD}>{hodTotal}</td>}
+                  <td style={TDS_DIR}>{dirTotal}</td>
                   <td style={TDS_DEAN}>{deanTotal}</td>
-                  <td style={{ ...TDS_VC, fontSize: 15, color: "#92400e" }}>{total.toFixed(1)}</td>
+                  <td style={{ ...TDS_VC, fontSize: 15, color: "#4c1d95" }}>{total.toFixed(1)}</td>
                 </tr>
               </tbody>
             </table>
           </SC>
 
-          <label style={{ fontWeight: 800, fontSize: 13, color: "#451a03", display: "block", marginBottom: 8 }}>VC Final Observations & Decisions</label>
-          <textarea value={remarks} onChange={e => setRemarks(e.target.value)} rows={5}
+          <label style={{ fontWeight: 700, fontSize: 13, color: "#334155", display: "block", marginBottom: 6 }}>VC Final Observations &amp; Decisions</label>
+          <textarea value={remarks} onChange={e => setRemarks(e.target.value)} rows={5} readOnly={reviewLocked}
             placeholder="Final executive decision, appraisal score confirmation, and future recommendations..."
-            style={{ width: "100%", border: "2px solid #fde68a", borderRadius: 8, padding: "12px", fontSize: 13, fontFamily: "Georgia, serif", resize: "vertical", boxSizing: "border-box", marginBottom: 18, background: "#fffdf5" }} />
+            style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 7, padding: "10px 12px", fontSize: 13, fontFamily: "Georgia, serif", resize: "vertical", boxSizing: "border-box", marginBottom: 18, background: reviewLocked ? "#f8fafc" : "#fff" }} />
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
-            <button onClick={onBack} style={{ padding: "10px 24px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>Cancel</button>
-            <button onClick={() => {
-              if (!remarks.trim()) {
-                alert("Please enter a rejection comment before rejecting this appraisal.");
-                return;
-              }
-              onSubmit(person.id, { partA, partB, total }, remarks, personMode, buildVcSectionScores(person, vcData), "rejected");
-            }}
-              style={{ padding: "11px 26px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 800, fontSize: 14, fontFamily: "Georgia, serif" }}>
-              Reject
+          {!reviewLocked && (
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={reviewConfirmed}
+                onChange={(e) => setReviewConfirmed(e.target.checked)}
+                style={{ marginTop: 3 }}
+              />
+              <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+            </label>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "Georgia, serif" }}>{reviewLocked ? "Close" : "Cancel"}</button>
+            <button onClick={generateVcReport} disabled={!vcReviewCompleted}
+              style={{ padding: "10px 24px", background: vcReviewCompleted ? "#e2e8f0" : "#f1f5f9", color: vcReviewCompleted ? "#475569" : "#94a3b8", border: "none", borderRadius: 7, cursor: vcReviewCompleted ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
+              Generate Report
             </button>
-            <button onClick={() => onSubmit(person.id, { partA, partB, total }, remarks, personMode, buildVcSectionScores(person, vcData), "approved")}
-              style={{ padding: "11px 32px", background: "#92400e", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 800, fontSize: 14, fontFamily: "Georgia, serif", boxShadow: "0 4px 10px rgba(146, 64, 14, 0.2)" }}>
-              ✔ CONFIRM & SIGN APPRAISAL
+            {!reviewLocked && (
+            <button onClick={() => onSubmit(person.id, { partA, partB, total }, remarks, personMode, buildVcSectionScores(person, vcData), reviewConfirmed)}
+              disabled={!reviewConfirmed}
+              style={{ padding: "10px 28px", background: reviewConfirmed ? "#4c1d95" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
+              🎓 Confirm &amp; Sign Appraisal
             </button>
+            )}
           </div>
         </div>
       )}
@@ -768,11 +717,203 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit }) {
   );
 }
 
+
+// ─── Person Card ──────────────────────────────────────────────────────────────
+function PersonCard({ person, role, onReview, schoolColor }) {
+  const personMode = role === "Director" ? "director" : role === "HOD" ? "hod" : role === "Dean" ? "dean" : "faculty";
+  const dirTotal  = person.directorTotal || person.directorScore || 0;
+  const hodTotal  = person.hodTotal || person.hodScore || 0;
+  const deanTotal = person.deanTotal || 0;
+  const vcTotal   = person.vcTotal || 0;
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 10, padding: "15px 16px", boxShadow: "0 1px 5px rgba(0,0,0,.06)", display: "flex", flexDirection: "column", gap: 11, borderLeft: `3px solid ${schoolColor || "#7c3aed"}` }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <Avatar initials={person.avatar} color={person.avatarColor || "#7c3aed"} size={40} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{person.name}</span>
+            <RoleBadge role={role} />
+          </div>
+          <div style={{ fontSize: 10, color: "#475569", marginBottom: 1 }}>{person.designation}</div>
+          <div style={{ fontSize: 9, color: "#94a3b8", fontFamily: "monospace" }}>{person.employeeId}</div>
+        </div>
+        <StatusBadge status={person.status} />
+      </div>
+
+      {/* Score grid */}
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${1 + (hodTotal > 0 ? 1 : 0) + (deanTotal > 0 ? 1 : 0) + 1}, 1fr)`, gap: 8, background: "#f8fafc", borderRadius: 7, padding: "10px 12px" }}>
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>
+            {role === "Director" ? "Self Score" : "Dir Score"}
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#0ea5e9" }}>{dirTotal}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div>
+          <ScoreBar score={dirTotal} max={MAX_SCORES.GRAND_TOTAL} color="#0ea5e9" />
+        </div>
+        {hodTotal > 0 && (
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>HOD Score</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#6366f1" }}>{hodTotal}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div>
+            <ScoreBar score={hodTotal} max={MAX_SCORES.GRAND_TOTAL} color="#6366f1" />
+          </div>
+        )}
+        {deanTotal > 0 && (
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>Dean Score</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#10b981" }}>{deanTotal}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div>
+            <ScoreBar score={deanTotal} max={MAX_SCORES.GRAND_TOTAL} color="#10b981" />
+          </div>
+        )}
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>VC Score</div>
+          {vcTotal > 0
+            ? <><div style={{ fontSize: 14, fontWeight: 800, color: "#7c3aed" }}>{typeof vcTotal.toFixed === "function" ? vcTotal.toFixed(1) : vcTotal}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div><ScoreBar score={vcTotal} max={MAX_SCORES.GRAND_TOTAL} color="#7c3aed" /></>
+            : <div style={{ fontSize: 14, fontWeight: 800, color: "#7c3aed" }}>—</div>
+          }
+        </div>
+      </div>
+
+      {(person.hodRemarks || person.directorRemarks || person.deanRemarks) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {person.hodRemarks && (
+            <div style={{ background: "#f0f4ff", borderRadius: 5, padding: "5px 8px", fontSize: 10, color: "#4338ca", borderLeft: "2px solid #818cf8" }}>
+              <span style={{ fontWeight: 700 }}>HOD: </span>{person.hodRemarks.slice(0, 55)}{person.hodRemarks.length > 55 ? "…" : ""}
+            </div>
+          )}
+          {person.directorRemarks && (
+            <div style={{ background: "#f0f9ff", borderRadius: 5, padding: "5px 8px", fontSize: 10, color: "#0369a1", borderLeft: "2px solid #38bdf8" }}>
+              <span style={{ fontWeight: 700 }}>Dir: </span>{person.directorRemarks.slice(0, 55)}{person.directorRemarks.length > 55 ? "…" : ""}
+            </div>
+          )}
+          {person.deanRemarks && (
+            <div style={{ background: "#f0fdf4", borderRadius: 5, padding: "5px 8px", fontSize: 10, color: "#065f46", borderLeft: "2px solid #34d399" }}>
+              <span style={{ fontWeight: 700 }}>Dean: </span>{person.deanRemarks.slice(0, 55)}{person.deanRemarks.length > 55 ? "…" : ""}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
+        <div style={{ fontSize: 9, color: "#94a3b8" }}>Submitted: {person.submittedOn}</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => onReview(person, personMode)}
+            style={{ fontSize: 11, padding: "6px 14px", background: isVcReviewed(person) ? "#1e293b" : "#4c1d95", color: isVcReviewed(person) ? "#e2e8f0" : "#ede9fe", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
+            {isVcReviewed(person) ? "View Review" : "Review"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── School Panel ─────────────────────────────────────────────────────────────
+function SchoolPanel({ school, deanList, dirList, hodList, facList, onReview }) {
+  const schoolDeans    = deanList.filter(d => d.schoolId === school.id);
+  const schoolDirs     = dirList.filter(d => d.schoolId === school.id);
+  const schoolHods     = hodList.filter(h => h.schoolId === school.id);
+  const schoolFaculty  = facList.filter(f => f.schoolId === school.id);
+
+  const allPeople = [
+    ...schoolDeans.map(p => ({ person: p, role: "Dean" })),
+    ...schoolDirs.map(p => ({ person: p, role: "Director" })),
+    ...schoolHods.map(p => ({ person: p, role: "HOD" })),
+    ...schoolFaculty.map(p => ({ person: p, role: "Faculty" })),
+  ];
+
+  const pendingCount  = allPeople.filter(p => !isVcReviewed(p.person)).length;
+  const reviewedCount = allPeople.filter(p => isVcReviewed(p.person)).length;
+
+  return (
+    <div>
+      <div style={{ background: "#fff", borderRadius: 10, padding: "16px 20px", marginBottom: 16, boxShadow: "0 1px 4px rgba(0,0,0,.06)", borderTop: `4px solid ${school.color}`, display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: `${school.color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+          {school.icon}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: "#0f172a" }}>{school.name}</div>
+          <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{school.code} · {allPeople.length} member{allPeople.length !== 1 ? "s" : ""}</div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {pendingCount > 0 && (
+            <div style={{ background: "#fef3c7", color: "#92400e", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 700 }}>⏳ {pendingCount} Pending</div>
+          )}
+          {reviewedCount > 0 && (
+            <div style={{ background: "#fdf4ff", color: "#6b21a8", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 700 }}>🎓 {reviewedCount} VC Reviewed</div>
+          )}
+          {school.hasHods && (
+            <div style={{ background: "#ede9fe", color: "#6d28d9", borderRadius: 8, padding: "6px 10px", fontSize: 10, fontWeight: 700 }}>Has HODs</div>
+          )}
+        </div>
+      </div>
+
+      {allPeople.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8", background: "#fff", borderRadius: 10 }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>📭</div>
+          <div style={{ fontWeight: 600 }}>No submissions yet for this school</div>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          {allPeople.map(({ person, role }) => (
+            <PersonCard key={`${role}-${person.id}`} person={person} role={role} onReview={onReview} schoolColor={school.color} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ─── University Structure ─────────────────────────────────────────────────────
 // ─── Main VC Dashboard ────────────────────────────────────────────────────────
+const SCHOOL_META = {
+  SoCSEA: { color: "#6366f1", icon: "CS" },
+  SoBB:   { color: "#10b981", icon: "BB" },
+  SoCE:   { color: "#0ea5e9", icon: "CE" },
+  SoEMR:  { color: "#f59e0b", icon: "EM" },
+  SoC:    { color: "#14b8a6", icon: "CM" },
+  SoMCS:  { color: "#8b5cf6", icon: "MC" },
+  CioD:   { color: "#ec4899", icon: "DS" },
+  SoAA:   { color: "#f97316", icon: "AA" },
+};
+
+const toVcSchool = (school) => {
+  const meta = SCHOOL_META[school.code] || {};
+  return {
+    id: school.code.toLowerCase(),
+    code: school.code,
+    name: school.name,
+    label: school.label,
+    color: meta.color || "#64748b",
+    icon: meta.icon || school.code,
+    hasHods: school.code === "SoEMR",
+  };
+};
+
+const HIERARCHY_SCHOOLS = {
+  engg: UNIVERSITY_SCHOOLS
+    .filter((school) => school.deanTrack === DEAN_TRACKS.ENGINEERING)
+    .map(toVcSchool),
+  "non-engg": UNIVERSITY_SCHOOLS
+    .filter((school) => school.deanTrack === DEAN_TRACKS.NON_ENGINEERING)
+    .map(toVcSchool),
+};
+
+const schoolIdForPerson = (person = {}) => {
+  const schoolKey = getSchoolKey(person.school || person.info?.school || "");
+  return schoolKey ? schoolKey.toLowerCase() : "";
+};
+
+const withVcSchoolId = (item) => ({
+  ...item,
+  schoolId: item.schoolId || schoolIdForPerson(item),
+});
+
 export default function VCDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("analytics");
-  const [reviewing, setReviewing] = useState(null); // { person, personMode }
+  const [deanTypeFilter, setDeanTypeFilter] = useState("engg");
+  const [activeSchoolId, setActiveSchoolId] = useState("socsea");
+  const [reviewing, setReviewing] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [deanList, setDeanList] = useState([]);
   const [dirList, setDirList] = useState([]);
   const [hodList, setHodList] = useState([]);
@@ -780,50 +921,36 @@ export default function VCDashboard() {
 
   useEffect(() => {
     let active = true;
-
     const loadReviewQueue = async () => {
       try {
         const items = await fetchReviewQueueForRole({
           reviewerRole: "vc",
           reviewerProfile: { ...profileFromLocalStorage(), appraisal_role: "vc" },
         });
-
         if (!active) return;
-        setFacList(items.filter((item) => item.appraisalRole === "faculty"));
-        setHodList(items.filter((item) => item.appraisalRole === "hod"));
-        setDirList(items.filter((item) => item.appraisalRole === "director"));
-        setDeanList(items.filter((item) => item.appraisalRole === "dean"));
+        const routedItems = items.map(withVcSchoolId);
+        setFacList(routedItems.filter(item => item.appraisalRole === "faculty"));
+        setHodList(routedItems.filter(item => item.appraisalRole === "hod"));
+        setDirList(routedItems.filter(item => item.appraisalRole === "director"));
+        setDeanList(routedItems.filter(item => item.appraisalRole === "dean"));
       } catch (err) {
         console.error("Could not load VC review queue:", err);
         if (!active) return;
-        setFacList([]);
-        setHodList([]);
-        setDirList([]);
-        setDeanList([]);
+        setFacList([]); setHodList([]); setDirList([]); setDeanList([]);
       }
     };
-
     loadReviewQueue();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
-  const [filterStatus, setFilterStatus] = useState("All");
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-  const handleSubmit = async (id, scores, remarks, personMode, sectionScores, decision = "approved") => {
-    const sourceList = personMode === "dean"
-      ? deanList
-      : personMode === "director"
-        ? dirList
-        : personMode === "hod"
-          ? hodList
-          : facList;
-    const item = sourceList.find((entry) => entry.id === id);
+  const handleSubmit = async (id, scores, remarks, personMode, sectionScores, reviewConfirmed = false) => {
+    if (!reviewConfirmed) {
+      alert("Please verify and confirm the accuracy declaration before submitting the review.");
+      return;
+    }
+    const sourceList = personMode === "dean" ? deanList : personMode === "director" ? dirList : personMode === "hod" ? hodList : facList;
+    const item = sourceList.find(entry => entry.id === id);
     if (!item) return;
-    const rejected = decision === "rejected";
-
     try {
       await submitWorkflowReview({
         subjectEmail: item.email,
@@ -834,193 +961,207 @@ export default function VCDashboard() {
         totalScore: scores.total,
         remarks,
         sectionScores,
-        decision,
       });
-
       const upd = (list) => list.map(p => p.id === id
-        ? { ...p, ...sectionScores, innovVc: sectionScores?.innovativeTeaching?.vc ?? p.innovVc, status: rejected ? "Rejected" : "Reviewed", workflowStatus: rejected ? rejectedStatusFor("vc") : reviewedStatusFor("vc"), vcPartA: scores.partA, vcPartB: scores.partB, vcTotal: scores.total, vcRemarks: remarks }
+        ? { ...p, ...sectionScores, innovVc: sectionScores?.innovativeTeaching?.vc ?? p.innovVc, status: "Reviewed", workflowStatus: reviewedStatusFor("vc"), vcPartA: scores.partA, vcPartB: scores.partB, vcTotal: scores.total, vcRemarks: remarks }
         : p);
       if (personMode === "dean") setDeanList(upd);
       else if (personMode === "director") setDirList(upd);
       else if (personMode === "hod") setHodList(upd);
       else if (personMode === "faculty") setFacList(upd);
       setReviewing(null);
-      alert(rejected ? "VC rejected this appraisal." : "VC final approval submitted.");
+      alert("VC final approval submitted.");
     } catch (err) {
       console.error("Could not submit VC review:", err);
       alert(`Unable to submit VC review.\n\n${err.message}`);
     }
   };
 
-  const handleDeleteSubmission = async (person, personMode) => {
-    if (!person) return;
-    const confirmed = window.confirm(`Delete ${person.name}'s submitted appraisal and unlock it for editing? Their saved form data will remain available for resubmission.`);
-    if (!confirmed) return;
+  const currentSchools = HIERARCHY_SCHOOLS[deanTypeFilter];
+  const activeSchool = currentSchools.find(s => s.id === activeSchoolId) || currentSchools[0];
 
-    try {
-      await deleteWorkflowSubmission({
-        subjectEmail: person.email,
-        academicYear: person.academicYear || person.info?.ay,
-      });
+  const switchDeanType = (type) => { setDeanTypeFilter(type); setActiveSchoolId(HIERARCHY_SCHOOLS[type][0].id); setReviewing(null); };
+  const switchSchool = (schoolId) => { setActiveSchoolId(schoolId); setReviewing(null); };
 
-      const remove = (list) => list.filter(entry => entry.id !== person.id);
-      if (personMode === "dean") setDeanList(remove);
-      else if (personMode === "director") setDirList(remove);
-      else if (personMode === "hod") setHodList(remove);
-      else if (personMode === "faculty") setFacList(remove);
-      if (reviewing?.person?.id === person.id) setReviewing(null);
-
-      alert("Submission deleted. The user can now edit and submit the appraisal again.");
-    } catch (err) {
-      console.error("Could not delete appraisal submission:", err);
-      alert(`Unable to delete appraisal submission.\n\n${err.message}`);
-    }
+  const getSchoolPending = (school) => {
+    const all = [
+      ...deanList.filter(p => p.schoolId === school.id),
+      ...dirList.filter(p => p.schoolId === school.id),
+      ...hodList.filter(p => p.schoolId === school.id),
+      ...facList.filter(p => p.schoolId === school.id),
+    ];
+    return all.filter(p => !isVcReviewed(p)).length;
   };
 
-  const currentList = activeTab === "deans" ? deanList : activeTab === "directors" ? dirList : activeTab === "hods" ? hodList : facList;
-  
-  const filtered = filterStatus === "All" ? currentList : (filterStatus === "Pending VC Review"
-    ? currentList.filter(p => !isVcReviewed(p))
-    : currentList.filter(isVcReviewed));
-
-  const filterOptions = ["All", "Pending VC Review", "VC Reviewed"];
-  const personModeFor = (tab) => tab.slice(0, -1); // "deans" -> "dean" etc
-
-  const tabLabel = activeTab === "analytics" ? "University Analytics" : `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Approvals`;
+  const totalPending  = [...deanList, ...dirList, ...hodList, ...facList].filter(p => !isVcReviewed(p)).length;
+  const totalReviewed = [...deanList, ...dirList, ...hodList, ...facList].filter(isVcReviewed).length;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "Georgia, serif", background: "#fdfbf7", color: "#1e293b" }}>
+    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "Georgia, serif", background: "#f0ede8", color: "#1e293b" }}>
 
       {/* ── Sidebar ── */}
-      <aside style={{ width: 260, minHeight: "100vh", background: "#0f172a", display: "flex", flexDirection: "column", padding: "22px 18px", gap: 14, position: "sticky", top: 0, alignSelf: "flex-start", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#b45309,#f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: 16 }}>VC</div>
+      <aside style={{ width: 248, minHeight: "100vh", background: "#0f172a", display: "flex", flexDirection: "column", padding: "20px 16px", gap: 12, position: "sticky", top: 0, alignSelf: "flex-start", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <div style={{ width: 38, height: 38, borderRadius: 9, background: "linear-gradient(135deg,#7c3aed,#a78bfa)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 13 }}>FA</div>
           <div>
-            <div style={{ color: "#f1f5f9", fontWeight: 800, fontSize: 14, letterSpacing: -0.2 }}>{APP_INFO.PORTAL_NAME}</div>
-            <div style={{ color: "#94a3b8", fontSize: 9 }}>{APP_INFO.UNIVERSITY_NAME}</div>
+            <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 13 }}>{APP_INFO.PORTAL_NAME}</div>
+            <div style={{ color: "#475569", fontSize: 9 }}>{APP_INFO.UNIVERSITY_NAME}</div>
           </div>
         </div>
 
-        <div style={{ background: "#451a03", borderRadius: 10, padding: "10px 14px", borderLeft: "4px solid #f59e0b" }}>
-          <div style={{ fontWeight: 800, fontSize: 11, color: "#fde68a" }}>Vice Chancellor</div>
-          <div style={{ color: "rgba(253, 230, 138, 0.6)", fontSize: 10 }}>Executive Oversight</div>
+        <div style={{ background: "#3b0764", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#c4b5fd" }}>
+          <div style={{ fontWeight: 700, marginBottom: 2 }}>Vice Chancellor</div>
+          <div style={{ color: "#a78bfa", fontSize: 10 }}>Full university oversight</div>
+          <div style={{ color: "#6d28d9", fontSize: 9, marginTop: 2 }}>AY {VC_USER.ay}</div>
         </div>
 
-        <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "8px 0" }} />
+        <div style={{ height: 1, background: "#1e293b" }} />
 
-        {[
-          { id: "analytics", icon: "📊", label: "University Analytics" },
-          { id: "deans",     icon: "🎓", label: "Dean Approvals" },
-          { id: "directors", icon: "🏛️", label: "Director Approvals" },
-          { id: "hods",      icon: "👥", label: "HOD Approvals" },
-          { id: "faculty",   icon: "📋", label: "Faculty Approvals" },
-        ].map(tab => (
-          <button key={tab.id} onClick={() => { setActiveTab(tab.id); setReviewing(null); setFilterStatus("All"); }}
-            style={{ background: activeTab === tab.id ? "#1e293b" : "none", border: "none", borderRadius: 8, padding: "11px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, width: "100%", fontFamily: "Georgia, serif", transition: "all 0.2s" }}>
-            <span style={{ fontSize: 18 }}>{tab.icon}</span>
-            <span style={{ color: activeTab === tab.id ? "#fff" : "#94a3b8", fontWeight: activeTab === tab.id ? 700 : 500, fontSize: 13 }}>{tab.label}</span>
-          </button>
-        ))}
+        <button onClick={() => setReviewing(null)}
+          style={{ background: "#1e293b", border: "none", borderRadius: 9, padding: "10px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, width: "100%", fontFamily: "Georgia, serif" }}>
+          <span style={{ fontSize: 16 }}>🏫</span>
+          <div style={{ flex: 1, textAlign: "left" }}>
+            <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 12 }}>School Reviews</div>
+            <div style={{ color: "#64748b", fontSize: 10, marginTop: 1 }}>{totalPending} awaiting</div>
+          </div>
+          {totalPending > 0 && (
+            <div style={{ background: "#7c3aed", color: "#fff", fontWeight: 800, fontSize: 10, minWidth: 18, height: 18, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{totalPending}</div>
+          )}
+        </button>
+
+        {/* Score legend */}
+        <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 12px" }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>Score Columns</div>
+          {[
+            { color: "#818cf8", label: "HOD Score" },
+            { color: "#38bdf8", label: "Director Score" },
+            { color: "#34d399", label: "Dean Score" },
+            { color: "#a78bfa", label: "VC Score" },
+          ].map(({ color, label }) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, background: color, flexShrink: 0 }} />
+              <div style={{ fontSize: 10, color: "#94a3b8" }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* University summary */}
+        <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 12px" }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>University Overview</div>
+          <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 3 }}>🔧 4 Engineering Schools</div>
+          <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 6 }}>🎓 4 Non-Engineering Schools</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ flex: 1, background: "#fef3c7", borderRadius: 5, padding: "4px 6px", textAlign: "center" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#92400e" }}>{totalPending}</div>
+              <div style={{ fontSize: 8, color: "#b45309" }}>Pending</div>
+            </div>
+            <div style={{ flex: 1, background: "#fdf4ff", borderRadius: 5, padding: "4px 6px", textAlign: "center" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#6b21a8" }}>{totalReviewed}</div>
+              <div style={{ fontSize: 8, color: "#7c3aed" }}>VC Reviewed</div>
+            </div>
+          </div>
+        </div>
 
         <div style={{ flex: 1 }} />
-        <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
-        
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px" }}>
-          <Avatar initials={(localStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#b45309" size={38} />
+        <div style={{ height: 1, background: "#1e293b" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Avatar initials={(localStorage.getItem("name") || "U").split(" ").map(w => w[0]).join("").toUpperCase()} color="#7c3aed" size={34} />
           <div>
-            <div style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>{localStorage.getItem("name") || "Vice Chancellor"}</div>
-            <div style={{ color: "#64748b", fontSize: 10 }}>VC · {APP_INFO.SHORT_NAME}</div>
+            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{localStorage.getItem("name") || "Vice Chancellor"}</div>
+            <div style={{ color: "#475569", fontSize: 9 }}>Vice Chancellor · {APP_INFO.SHORT_NAME}</div>
           </div>
         </div>
-        
-        <button
-          onClick={() => setShowLogoutModal(true)}
+        <button onClick={() => setShowLogoutModal(true)}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "Georgia, serif" }}
           onMouseEnter={e => e.currentTarget.style.background = "#1e293b"}
-          onMouseLeave={e => e.currentTarget.style.background = "none"}
-        >
+          onMouseLeave={e => e.currentTarget.style.background = "none"}>
           <span style={{ fontSize: 15 }}>🚪</span>
           <span style={{ color: "#f87171", fontWeight: 700, fontSize: 12 }}>Logout</span>
         </button>
       </aside>
 
       {/* ── Main Content ── */}
-      <main style={{ flex: 1, padding: "24px 28px", display: "flex", flexDirection: "column", gap: 16, overflowX: "auto" }}>
+      <main style={{ flex: 1, padding: "24px 28px", display: "flex", flexDirection: "column", gap: 14, overflowX: "auto" }}>
 
-        {/* ANALYTICS */}
-        {activeTab === "analytics" && (
-          <AnalyticsPanel deans={deanList} directors={dirList} hods={hodList} faculty={facList} />
-        )}
-
-        {/* LIST VIEWS */}
-        {activeTab !== "analytics" && !reviewing && (
+        {!reviewing && (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a", letterSpacing: -0.5 }}>{tabLabel}</h1>
-                <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 11 }}>{APP_INFO.SHORT_NAME} · AY {VC_USER.ay} — VC Final Approval</p>
+                <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a", letterSpacing: -0.5 }}>School-wise Appraisal Reviews</h1>
+                <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 11 }}>{APP_INFO.SHORT_NAME} · AY {VC_USER.ay}</p>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#fef3c7", color: "#92400e" }}>
-                  ⏳ {filtered.filter(p => !isVcReviewed(p)).length} Pending
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#d1fae5", color: "#065f46" }}>
-                  ✔ {filtered.filter(isVcReviewed).length} VC Approved
-                </div>
+              <div style={{ fontSize: 11, color: "#64748b", background: "#fff", padding: "8px 14px", borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,.06)" }}>
+                {deanList.length + dirList.length + hodList.length + facList.length} total submissions
               </div>
             </div>
 
-            {/* Filter */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", background: "#fff", borderRadius: 9, boxShadow: "0 1px 4px rgba(0,0,0,.05)" }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b" }}>Filter:</span>
-              {filterOptions.map(f => (
-                <button key={f} onClick={() => setFilterStatus(f)}
-                  style={{ fontSize: 11, padding: "4px 12px", border: "1px solid #e2e8f0", borderRadius: 20, cursor: "pointer", fontFamily: "Georgia, serif", background: filterStatus === f ? "#0f172a" : "none", color: filterStatus === f ? "#f1f5f9" : "#475569" }}>
-                  {f}
-                </button>
-              ))}
+            {/* Engg / Non-Engg Toggle */}
+            <div style={{ display: "flex", background: "#fff", borderRadius: 10, padding: 4, boxShadow: "0 1px 4px rgba(0,0,0,.07)", width: "fit-content", gap: 2 }}>
+              {[
+                { key: "engg",     label: "🔧 Engineering Schools",     color: "#1e40af", bg: "#dbeafe" },
+                { key: "non-engg", label: "🎓 Non-Engineering Schools", color: "#6b21a8", bg: "#f3e8ff" },
+              ].map(({ key, label, color, bg }) => {
+                const schoolPending = HIERARCHY_SCHOOLS[key].reduce((a, s) => a + getSchoolPending(s), 0);
+                const isActive = deanTypeFilter === key;
+                return (
+                  <button key={key} onClick={() => switchDeanType(key)}
+                    style={{ padding: "10px 22px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "Georgia, serif", fontSize: 13, fontWeight: 700, transition: "all .2s", background: isActive ? bg : "none", color: isActive ? color : "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
+                    {label}
+                    {schoolPending > 0 && (
+                      <span style={{ background: isActive ? color : "#94a3b8", color: "#fff", borderRadius: 10, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>{schoolPending}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
-              {filtered.map(person => (
-                <PersonCard
-                  key={person.id} person={person}
-                  personMode={personModeFor(activeTab)}
-                  onReview={(p, m) => setReviewing({ person: p, personMode: m })}
-                  onDelete={handleDeleteSubmission}
-                />
-              ))}
+            {/* School Tabs */}
+            <div style={{ display: "flex", gap: 0, background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,.07)", borderBottom: `3px solid ${activeSchool.color}` }}>
+              {currentSchools.map((school, idx) => {
+                const pending = getSchoolPending(school);
+                const isActive = school.id === activeSchoolId;
+                return (
+                  <button key={school.id} onClick={() => switchSchool(school.id)}
+                    style={{ flex: 1, padding: "12px 8px", border: "none", cursor: "pointer", fontFamily: "Georgia, serif", fontSize: 11, fontWeight: 700, transition: "all .2s", background: isActive ? `${school.color}15` : "none", color: isActive ? school.color : "#64748b", borderBottom: isActive ? `3px solid ${school.color}` : "3px solid transparent", borderRight: idx < currentSchools.length - 1 ? "1px solid #f1f5f9" : "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <span style={{ fontSize: 18 }}>{school.icon}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700 }}>{school.code}</span>
+                    <span style={{ fontSize: 9, color: isActive ? school.color : "#94a3b8", fontWeight: 400, maxWidth: 90, textAlign: "center", lineHeight: 1.3 }}>{school.name.split(" ").slice(0, 3).join(" ")}</span>
+                    {pending > 0 && (
+                      <span style={{ background: "#f59e0b", color: "#fff", borderRadius: 8, padding: "1px 6px", fontSize: 9, fontWeight: 800 }}>{pending} pending</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
-            {filtered.length === 0 && (
-              <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
-                <div style={{ fontWeight: 700, color: "#0f172a" }}>All caught up!</div>
-                <div style={{ color: "#64748b", fontSize: 12 }}>No records match the selected filter.</div>
-              </div>
-            )}
+            <SchoolPanel
+              school={activeSchool}
+              deanList={deanList}
+              dirList={dirList}
+              hodList={hodList}
+              facList={facList}
+              onReview={(person, personMode) => setReviewing({ person, personMode })}
+            />
           </>
         )}
 
-        {/* VC REVIEW PANEL */}
         {reviewing && (
           <VCReviewPanel
             person={reviewing.person}
             personMode={reviewing.personMode}
             onBack={() => setReviewing(null)}
             onSubmit={handleSubmit}
+            readOnly={isVcReviewed(reviewing.person)}
           />
         )}
       </main>
+
+      {/* Logout Modal */}
       {showLogoutModal && (
-        <div
-          style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={() => setShowLogoutModal(false)}
-        >
-          <div
-            style={{ background: "#fff", borderRadius: 14, padding: "32px 36px", maxWidth: 380, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 18, fontFamily: "Georgia, serif" }}
-            onClick={e => e.stopPropagation()}
-          >
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setShowLogoutModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 14, padding: "32px 36px", maxWidth: 380, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 18, fontFamily: "Georgia, serif" }}
+            onClick={e => e.stopPropagation()}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🚪</div>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontWeight: 800, fontSize: 17, color: "#0f172a", marginBottom: 6 }}>Confirm Logout</div>
@@ -1029,20 +1170,12 @@ export default function VCDashboard() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 12, width: "100%" }}>
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                style={{ flex: 1, padding: "10px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}
-              >
+              <button onClick={() => setShowLogoutModal(false)}
+                style={{ flex: 1, padding: "10px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
                 Cancel
               </button>
-              <button
-                onClick={() => {
-                  setShowLogoutModal(false);
-                  localStorage.clear();
-                  navigate("/", { replace: true });
-                }}
-                style={{ flex: 1, padding: "10px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}
-              >
+              <button onClick={() => { setShowLogoutModal(false); localStorage.clear(); navigate("/", { replace: true }); }}
+                style={{ flex: 1, padding: "10px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
                 Yes, Logout
               </button>
             </div>
@@ -1052,3 +1185,4 @@ export default function VCDashboard() {
     </div>
   );
 }
+

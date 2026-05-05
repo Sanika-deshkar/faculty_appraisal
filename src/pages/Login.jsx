@@ -9,10 +9,10 @@ export default function Login() {
   const navigate = useNavigate();
   const [username, setUsername] = useState(""); // This will be treated as email for Supabase
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [error, setError]       = useState("");
-  const [message, setMessage]   = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -248,7 +248,7 @@ export default function Login() {
           <div style={s.right}>
             <h2 style={s.panelTitle}>Welcome! Please login to continue.</h2>
 
-            {error   && <div style={s.error}>{error}</div>}
+            {error && <div style={s.error}>{error}</div>}
             {message && <div style={s.success}>{message}</div>}
 
             <input
@@ -278,7 +278,7 @@ export default function Login() {
                 tabIndex={-1}
                 aria-label={showPw ? "Hide password" : "Show password"}
               >
-                {showPw ? "🙈" : "👁"}
+                {showPw ? "" : "👁"}
               </button>
             </div>
 

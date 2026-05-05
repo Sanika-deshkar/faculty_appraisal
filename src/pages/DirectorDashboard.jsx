@@ -5,8 +5,8 @@ import { SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/f
 import { DIRECTOR_USER, HOD_LIST, FACULTY_LIST, DIRECTOR_SELF_DATA } from "../data/mockData";
 import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal } from "../services/appraisalPersistence";
 import { uploadToCloudinary } from "../services/cloudinary";
-import { deleteWorkflowSubmission, fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
-import { rejectedStatusFor, reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
+import { reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -264,7 +264,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, dirData, setDirData }
     }
     return faculty[section]?.[idx]?.director ?? "";
   };
-  const getDirS = (key) => dirData[key] ?? "";
+  const getDirS = (key) => dirData[key] ?? faculty.innovDirector ?? faculty.innovDir ?? "";
 
   const { info, lectures, courseFile, projects, quals, feedback, deptActs, uniActs, society, industry, acr, journals, books, ict, research, patents, awards, confs, proposals, fdps, training, docs } = faculty;
   const courseFileRow = Array.isArray(courseFile) ? (courseFile[0] || {}) : (courseFile || {});
@@ -840,12 +840,14 @@ function FacultyReviewForm({ faculty, hodData, setHodData, dirData, setDirData }
 }
 
 // ─── Full Review Panel (opened when HOD clicks Review) ────────────────────────
-function ReviewPanel({ faculty, onBack, onSubmit }) {
+function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
   const [hodData, setHodData] = useState({});
   const [dirData, setDirData] = useState({});
   const [hodRemarks] = useState(faculty.hodRemarks || "");
   const [dirRemarks, setDirRemarks] = useState(faculty.directorRemarks || "");
   const [tab, setTab] = useState("form");
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const reviewLocked = readOnly || /Reviewed|Rejected/.test(faculty.status || "");
 
   // Compute HOD total from hodData
   const calcHodScore = () => {
@@ -898,7 +900,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
       const source = faculty[section];
       return idx === null ? n(Array.isArray(source) ? source[0]?.director : source?.director) : n(source?.[idx]?.director);
     };
-    const getDirS = (key) => n(dirData[key]);
+    const getDirS = (key) => n(dirData[key] ?? faculty.innovDirector ?? faculty.innovDir);
 
     const lec = (faculty.lectures || []).reduce((a, _, i) => a + getD("lectures", i, "dir"), 0);
     const cf = getD("courseFile", null, "dir");
@@ -977,11 +979,15 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
         ))}
       </div>
 
-      {tab === "form" && <FacultyReviewForm faculty={faculty} hodData={hodData} setHodData={setHodData} dirData={dirData} setDirData={setDirData} />}
+      {tab === "form" && (
+        <fieldset disabled={reviewLocked} style={{ border: "none", padding: 0, margin: 0 }}>
+          <FacultyReviewForm faculty={faculty} hodData={hodData} setHodData={setHodData} dirData={dirData} setDirData={setDirData} />
+        </fieldset>
+      )}
 
       {tab === "remarks" && (
         <div style={{ background: "#fff", borderRadius: 10, padding: "22px 24px", boxShadow: "0 1px 6px rgba(0,0,0,.06)" }}>
-          <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>Director Remarks & Final Submission</h3>
+          <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>{reviewLocked ? "Director Submitted Review" : "Director Remarks & Final Submission"}</h3>
 
           {/* Score Summary */}
           <table style={{ ...T, marginBottom: 18 }}>
@@ -1024,26 +1030,31 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
 
           {/* Director Remarks — editable */}
           <label style={{ fontWeight: 700, fontSize: 13, color: "#065f46", display: "block", marginBottom: 6 }}>Director Remarks</label>
-          <textarea value={dirRemarks} onChange={e => setDirRemarks(e.target.value)} rows={4}
+          <textarea value={dirRemarks} onChange={e => setDirRemarks(e.target.value)} rows={4} readOnly={reviewLocked}
             placeholder="Enter your director remarks, observations, and recommendations..."
-            style={{ width: "100%", border: "1.5px solid #86efac", borderRadius: 7, padding: "10px 12px", fontSize: 12, fontFamily: "Georgia, serif", resize: "vertical", boxSizing: "border-box", marginBottom: 16, background: "#f0fdf4", outline: "none" }} />
+            style={{ width: "100%", border: "1.5px solid #86efac", borderRadius: 7, padding: "10px 12px", fontSize: 12, fontFamily: "Georgia, serif", resize: "vertical", boxSizing: "border-box", marginBottom: 16, background: reviewLocked ? "#f8fafc" : "#f0fdf4", outline: "none" }} />
+
+          {!reviewLocked && (
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={reviewConfirmed}
+                onChange={(e) => setReviewConfirmed(e.target.checked)}
+                style={{ marginTop: 3 }}
+              />
+              <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+            </label>
+          )}
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-            <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "Georgia, serif" }}>Cancel</button>
-            <button onClick={() => {
-              if (!dirRemarks.trim()) {
-                alert("Please enter a rejection comment before rejecting this appraisal.");
-                return;
-              }
-              onSubmit(faculty.id, { partA: dirPartA, partB: dirPartB, total: dirTotal || total }, dirRemarks, buildDirectorSectionScores(faculty, dirData), "rejected");
-            }}
-              style={{ padding: "10px 24px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
-              Reject
-            </button>
-            <button onClick={() => onSubmit(faculty.id, { partA: dirPartA, partB: dirPartB, total: dirTotal || total }, dirRemarks, buildDirectorSectionScores(faculty, dirData), "approved")}
-              style={{ padding: "10px 28px", background: "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
+            <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "Georgia, serif" }}>{reviewLocked ? "Close" : "Cancel"}</button>
+            {!reviewLocked && (
+            <button onClick={() => onSubmit(faculty.id, { partA: dirPartA, partB: dirPartB, total: dirTotal || total }, dirRemarks, buildDirectorSectionScores(faculty, dirData), reviewConfirmed)}
+              disabled={!reviewConfirmed}
+              style={{ padding: "10px 28px", background: reviewConfirmed ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
               ✔ Submit Director Review
             </button>
+            )}
           </div>
         </div>
       )}
@@ -1327,8 +1338,13 @@ export default function DirectorDashboard() {
     { id: "hodApprovals", icon: "👥", label: "HOD Approvals", sub: `${hodPendingCount} awaiting review`, badge: hodPendingCount },
   ];
   const [submitting, setSubmitting] = useState(false);
+  const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
 
   const handleSubmitAppraisal = async () => {
+    if (!accuracyConfirmed) {
+      alert("Please verify and confirm the accuracy declaration before submitting.");
+      return;
+    }
     if (!info.name || !info.ay) {
       alert("Please fill in basic faculty information (Name, Academic Year).");
       setHodAppraisalTab("partA");
@@ -1644,11 +1660,14 @@ export default function DirectorDashboard() {
   win.print();
 };
 
-  const handleSubmitReview = async (type, id, scores, remarks, sectionScores, decision = "approved") => {
+  const handleSubmitReview = async (type, id, scores, remarks, sectionScores, reviewConfirmed = false) => {
+    if (!reviewConfirmed) {
+      alert("Please verify and confirm the accuracy declaration before submitting the review.");
+      return;
+    }
     const sourceList = type === "hod" ? hodList : facultyList;
     const item = sourceList.find((entry) => entry.id === id);
     if (!item) return;
-    const rejected = decision === "rejected";
 
     try {
       await submitWorkflowReview({
@@ -1660,47 +1679,20 @@ export default function DirectorDashboard() {
         totalScore: scores.total,
         remarks,
         sectionScores,
-        decision,
       });
 
       if (type === "hod") {
-        setHodList(prev => prev.map(h => h.id === id ? { ...h, ...sectionScores, innovDirector: sectionScores?.innovativeTeaching?.director ?? h.innovDirector, status: rejected ? "Rejected" : "Reviewed", workflowStatus: rejected ? rejectedStatusFor("director") : reviewedStatusFor("director"), directorPartA: scores.partA, directorPartB: scores.partB, directorTotal: scores.total, directorRemarks: remarks } : h));
+        setHodList(prev => prev.map(h => h.id === id ? { ...h, ...sectionScores, innovDirector: sectionScores?.innovativeTeaching?.director ?? h.innovDirector, status: "Reviewed", workflowStatus: reviewedStatusFor("director"), directorPartA: scores.partA, directorPartB: scores.partB, directorTotal: scores.total, directorRemarks: remarks } : h));
         setReviewingHod(null);
       } else {
-        setFacultyList(prev => prev.map(f => f.id === id ? { ...f, ...sectionScores, innovDirector: sectionScores?.innovativeTeaching?.director ?? f.innovDirector, status: rejected ? "Rejected" : "Reviewed", workflowStatus: rejected ? rejectedStatusFor("director") : reviewedStatusFor("director"), directorPartA: scores.partA, directorPartB: scores.partB, directorTotal: scores.total, directorRemarks: remarks } : f));
+        setFacultyList(prev => prev.map(f => f.id === id ? { ...f, ...sectionScores, innovDirector: sectionScores?.innovativeTeaching?.director ?? f.innovDirector, status: "Reviewed", workflowStatus: reviewedStatusFor("director"), directorPartA: scores.partA, directorPartB: scores.partB, directorTotal: scores.total, directorRemarks: remarks } : f));
         setReviewingFaculty(null);
       }
 
-      alert(rejected ? "Director rejected this appraisal." : "Director review approved and forwarded to Dean.");
+      alert("Director review approved and forwarded to Dean.");
     } catch (err) {
       console.error("Could not submit Director review:", err);
       alert(`Unable to submit Director review.\n\n${err.message}`);
-    }
-  };
-
-  const handleDeleteSubmission = async (type, item) => {
-    if (!item) return;
-    const confirmed = window.confirm(`Delete ${item.name}'s submitted appraisal and unlock it for editing? Their saved form data will remain available for resubmission.`);
-    if (!confirmed) return;
-
-    try {
-      await deleteWorkflowSubmission({
-        subjectEmail: item.email,
-        academicYear: item.academicYear || item.info?.ay,
-      });
-
-      if (type === "hod") {
-        setHodList(prev => prev.filter(entry => entry.id !== item.id));
-        if (reviewingHod?.id === item.id) setReviewingHod(null);
-      } else {
-        setFacultyList(prev => prev.filter(entry => entry.id !== item.id));
-        if (reviewingFaculty?.id === item.id) setReviewingFaculty(null);
-      }
-
-      alert("Submission deleted. The user can now edit and submit the appraisal again.");
-    } catch (err) {
-      console.error("Could not delete appraisal submission:", err);
-      alert(`Unable to delete appraisal submission.\n\n${err.message}`);
     }
   };
 
@@ -2541,14 +2533,22 @@ export default function DirectorDashboard() {
                   <div style={{ fontSize: 20, fontWeight: 800, color: g.color, marginTop: 4 }}>{g.label}</div>
                 </div>
 
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={accuracyConfirmed}
+                    onChange={(e) => setAccuracyConfirmed(e.target.checked)}
+                    disabled={submitting}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+                </label>
+
                 <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
-                  <button onClick={generateReport} style={{ padding: "10px 24px", background: "#e2e8f0", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
-                    Generate Report
-                  </button>
                   <button 
                     onClick={handleSubmitAppraisal}
-                    disabled={submitting}
-                    style={{ padding: "10px 28px", background: "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
+                    disabled={submitting || !accuracyConfirmed}
+                    style={{ padding: "10px 28px", background: accuracyConfirmed ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: accuracyConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
                   >
                     {submitting ? "Submitting..." : "✔ Submit Appraisal"}
                   </button>
@@ -2646,13 +2646,9 @@ export default function DirectorDashboard() {
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
                       <div style={{ fontSize: 10, color: "#94a3b8" }}>Submitted: {item.submittedOn}</div>
-                      <button onClick={() => handleDeleteSubmission(activeMainTab === "facultyApprovals" ? "faculty" : "hod", item)}
-                        style={{ fontSize: 11, padding: "7px 14px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif", marginRight: 8 }}>
-                        Delete
-                      </button>
                       <button onClick={() => activeMainTab === "facultyApprovals" ? setReviewingFaculty(item) : setReviewingHod(item)}
-                        style={{ fontSize: 11, padding: "7px 18px", background: item.status === "Reviewed" ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
-                        {item.status === "Reviewed" ? "✎ Edit Review" : "🔍 Review Form →"}
+                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Rejected/.test(item.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
+                        {/Reviewed|Rejected/.test(item.status) ? "View Review" : "Review Form"}
                       </button>
                     </div>
                   </div>
@@ -2675,14 +2671,16 @@ export default function DirectorDashboard() {
           <ReviewPanel
             faculty={reviewingFaculty}
             onBack={() => setReviewingFaculty(null)}
-            onSubmit={(id, total, remarks, sectionScores, decision) => handleSubmitReview("faculty", id, total, remarks, sectionScores, decision)}
+            onSubmit={(id, total, remarks, sectionScores, reviewConfirmed) => handleSubmitReview("faculty", id, total, remarks, sectionScores, reviewConfirmed)}
+            readOnly={/Reviewed|Rejected/.test(reviewingFaculty.status || "")}
           />
         )}
         {activeMainTab === "hodApprovals" && reviewingHod && (
           <ReviewPanel
             faculty={reviewingHod}
             onBack={() => setReviewingHod(null)}
-            onSubmit={(id, total, remarks, sectionScores, decision) => handleSubmitReview("hod", id, total, remarks, sectionScores, decision)}
+            onSubmit={(id, total, remarks, sectionScores, reviewConfirmed) => handleSubmitReview("hod", id, total, remarks, sectionScores, reviewConfirmed)}
+            readOnly={/Reviewed|Rejected/.test(reviewingHod.status || "")}
           />
         )}
       </main>
@@ -2748,3 +2746,4 @@ export default function DirectorDashboard() {
     </div>
   );
 }
+

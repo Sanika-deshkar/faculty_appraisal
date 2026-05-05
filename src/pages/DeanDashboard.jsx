@@ -5,9 +5,9 @@ import { HodInput } from "../components/Inputs";
 import { DEAN_USER } from "../data/mockData";
 import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal } from "../services/appraisalPersistence";
 import { uploadToCloudinary } from "../services/cloudinary";
-import { deleteWorkflowSubmission, fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
+import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { supabase } from "../services/supabase";
-import { rejectedStatusFor, reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -1308,10 +1308,12 @@ function DeanReviewScoreForm({ approval, deanData, setDeanData }) {
   );
 }
 
-function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit }) {
+function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnly = false }) {
   const [remarks, setRemarks] = useState(approval?.deanRemarks || approval?.directorRemarks || approval?.hodRemarks || "");
   const [deanData, setDeanData] = useState({});
   const [tab, setTab] = useState("form");
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const reviewLocked = readOnly || /Reviewed|Approved|Rejected/.test(approval?.status || "");
   const sectionScores = deanScorePayload(approval, deanData);
   const deanScores = deanScoreTotals(sectionScores);
   const previousTotal = n(approval?.directorTotal || approval?.hodTotal || approval?.declaration?.grand_total);
@@ -1359,7 +1361,11 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit }) {
         ))}
       </div>
 
-      {tab === "form" && <DeanReviewScoreForm approval={approval} deanData={deanData} setDeanData={setDeanData} />}
+      {tab === "form" && (
+        <fieldset disabled={reviewLocked} style={{ border: "none", padding: 0, margin: 0 }}>
+          <DeanReviewScoreForm approval={approval} deanData={deanData} setDeanData={setDeanData} />
+        </fieldset>
+      )}
 
       {tab === "remarks" && (
         <>
@@ -1374,23 +1380,30 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit }) {
 
           <div style={{ marginBottom: 18 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Dean Remarks</div>
-            <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={7}
-              style={{ width: "100%", borderRadius: 12, border: "1px solid #cbd5e1", padding: "14px", fontFamily: "Georgia, serif", fontSize: 13, color: "#1f2937", resize: "vertical" }}
+            <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={7} readOnly={reviewLocked}
+              style={{ width: "100%", borderRadius: 12, border: "1px solid #cbd5e1", padding: "14px", fontFamily: "Georgia, serif", fontSize: 13, color: "#1f2937", resize: "vertical", background: reviewLocked ? "#f8fafc" : "#fff" }}
             />
           </div>
         </>
       )}
 
+      {!reviewLocked && (
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={reviewConfirmed}
+            onChange={(e) => setReviewConfirmed(e.target.checked)}
+            style={{ marginTop: 3 }}
+          />
+          <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+        </label>
+      )}
+
       <div style={{ display: "flex", gap: 12 }}>
-        <button onClick={onBack} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#f8fafc", color: "#475569", fontWeight: 700, cursor: "pointer" }}>Cancel</button>
-        <button onClick={() => {
-          if (!remarks.trim()) {
-            alert("Please enter a rejection comment before rejecting this appraisal.");
-            return;
-          }
-          onSubmit(approval.id, deanScores, remarks, sectionScores, "rejected");
-        }} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: "#dc2626", color: "#f8fafc", fontWeight: 700, cursor: "pointer" }}>Reject</button>
-        <button onClick={() => onSubmit(approval.id, deanScores, remarks, sectionScores, "approved")} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: "#0f172a", color: "#f8fafc", fontWeight: 700, cursor: "pointer" }}>Approve & Forward</button>
+        <button onClick={onBack} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#f8fafc", color: "#475569", fontWeight: 700, cursor: "pointer" }}>{reviewLocked ? "Close" : "Cancel"}</button>
+        {!reviewLocked && (
+          <button onClick={() => onSubmit(approval.id, deanScores, remarks, sectionScores, reviewConfirmed)} disabled={!reviewConfirmed} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: reviewConfirmed ? "#0f172a" : "#64748b", color: "#f8fafc", fontWeight: 700, cursor: reviewConfirmed ? "pointer" : "not-allowed" }}>Approve & Forward</button>
+        )}
       </div>
     </div>
   );
@@ -1968,10 +1981,15 @@ export default function DeanDashboard() {
 };
 
   const [submitting, setSubmitting] = useState(false);
+  const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
 
   const handleSubmitAppraisal = async () => {
     if (appraisalLocked) {
       alert("This appraisal has already been submitted and is locked for review.");
+      return;
+    }
+    if (!accuracyConfirmed) {
+      alert("Please verify and confirm the accuracy declaration before submitting.");
       return;
     }
 
@@ -2035,7 +2053,11 @@ export default function DeanDashboard() {
     }
   };
 
-  const handleSubmitReview = async (id, scores, remarks, sectionScores, decision = "approved") => {
+  const handleSubmitReview = async (id, scores, remarks, sectionScores, reviewConfirmed = false) => {
+    if (!reviewConfirmed) {
+      alert("Please verify and confirm the accuracy declaration before submitting the review.");
+      return;
+    }
     const sourceList = activeMainTab === "facultyApprovals"
       ? facultyList
       : activeMainTab === "hodApprovals"
@@ -2043,7 +2065,6 @@ export default function DeanDashboard() {
         : directorList;
     const item = sourceList.find((entry) => entry.id === id);
     if (!item) return;
-    const rejected = decision === "rejected";
 
     try {
       await submitWorkflowReview({
@@ -2055,11 +2076,10 @@ export default function DeanDashboard() {
         totalScore: scores.total,
         remarks,
         sectionScores,
-        decision,
       });
 
       const markReviewed = (entry) => entry.id === id
-        ? { ...entry, ...sectionScores, innovDean: sectionScores?.innovativeTeaching?.dean ?? entry.innovDean, status: rejected ? "Rejected" : "Reviewed", workflowStatus: rejected ? rejectedStatusFor("dean") : reviewedStatusFor("dean"), deanPartA: scores.partA, deanPartB: scores.partB, deanTotal: scores.total, deanRemarks: remarks }
+        ? { ...entry, ...sectionScores, innovDean: sectionScores?.innovativeTeaching?.dean ?? entry.innovDean, status: "Reviewed", workflowStatus: reviewedStatusFor("dean"), deanPartA: scores.partA, deanPartB: scores.partB, deanTotal: scores.total, deanRemarks: remarks }
         : entry;
 
       if (activeMainTab === "facultyApprovals") {
@@ -2072,33 +2092,10 @@ export default function DeanDashboard() {
         setDirectorList(prev => prev.map(markReviewed));
       }
       setReviewingApproval(null);
-      alert(rejected ? "Dean rejected this appraisal." : "Dean review approved and forwarded to VC.");
+      alert("Dean review approved and forwarded to VC.");
     } catch (err) {
       console.error("Could not submit Dean review:", err);
       alert(`Unable to submit Dean review.\n\n${err.message}`);
-    }
-  };
-
-  const handleDeleteSubmission = async (item) => {
-    if (!item) return;
-    const confirmed = window.confirm(`Delete ${item.name}'s submitted appraisal and unlock it for editing? Their saved form data will remain available for resubmission.`);
-    if (!confirmed) return;
-
-    try {
-      await deleteWorkflowSubmission({
-        subjectEmail: item.email,
-        academicYear: item.academicYear || item.info?.ay,
-      });
-
-      setFacultyList(prev => prev.filter(entry => entry.id !== item.id));
-      setHodList(prev => prev.filter(entry => entry.id !== item.id));
-      setDirectorList(prev => prev.filter(entry => entry.id !== item.id));
-      if (reviewingApproval?.id === item.id) setReviewingApproval(null);
-
-      alert("Submission deleted. The user can now edit and submit the appraisal again.");
-    } catch (err) {
-      console.error("Could not delete appraisal submission:", err);
-      alert(`Unable to delete appraisal submission.\n\n${err.message}`);
     }
   };
 
@@ -2180,7 +2177,7 @@ export default function DeanDashboard() {
 
             {appraisalLocked && (
               <div style={{ padding: "12px 16px", background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 8, color: "#312e81", fontSize: 12, fontWeight: 700 }}>
-                Submitted and locked for review. Your superior must delete/unlock this submission before you can edit and resubmit.
+                Submitted and locked for review. This submission can no longer be edited or resubmitted.
               </div>
             )}
 
@@ -2941,14 +2938,22 @@ export default function DeanDashboard() {
                   <div style={{ fontSize: 20, fontWeight: 800, color: g.color, marginTop: 4 }}>{g.label}</div>
                 </div>
 
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={accuracyConfirmed}
+                    onChange={(e) => setAccuracyConfirmed(e.target.checked)}
+                    disabled={submitting || appraisalLocked}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+                </label>
+
                 <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
-                  <button onClick={generateReport} style={{ padding: "10px 24px", background: "#e2e8f0", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
-                    Generate Report
-                  </button>
                   <button
                     onClick={handleSubmitAppraisal}
-                    disabled={submitting || appraisalLocked}
-                    style={{ padding: "10px 28px", background: appraisalLocked ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: appraisalLocked ? "not-allowed" : submitting ? "wait" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
+                    disabled={submitting || appraisalLocked || !accuracyConfirmed}
+                    style={{ padding: "10px 28px", background: appraisalLocked || !accuracyConfirmed ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: appraisalLocked || !accuracyConfirmed ? "not-allowed" : submitting ? "wait" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
                   >
                     {submitting ? "Submitting..." : "✔ Submit Appraisal"}
                   </button>
@@ -3043,13 +3048,9 @@ export default function DeanDashboard() {
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
                       <div style={{ fontSize: 10, color: "#94a3b8" }}>Submitted: {faculty.submittedOn}</div>
-                      <button onClick={() => handleDeleteSubmission(faculty)}
-                        style={{ fontSize: 11, padding: "7px 14px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif", marginRight: 8 }}>
-                        Delete
-                      </button>
                       <button onClick={() => setReviewingApproval(faculty)}
-                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Approved/.test(faculty.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
-                        {/Reviewed|Approved/.test(faculty.status) ? "✎ Edit Review" : "🔍 Review Form →"}
+                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Approved|Rejected/.test(faculty.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
+                        {/Reviewed|Approved|Rejected/.test(faculty.status) ? "View Review" : "Review Form"}
                       </button>
                     </div>
                   </div>
@@ -3074,6 +3075,7 @@ export default function DeanDashboard() {
             approvalType={activeMainTab}
             onBack={() => setReviewingApproval(null)}
             onSubmit={handleSubmitReview}
+            readOnly={/Reviewed|Approved|Rejected/.test(reviewingApproval.status || "")}
           />
         )}
       </main>
@@ -3139,3 +3141,4 @@ export default function DeanDashboard() {
     </div>
   );
 }
+

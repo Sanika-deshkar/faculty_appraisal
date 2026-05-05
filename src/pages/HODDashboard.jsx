@@ -4,8 +4,8 @@ import { APP_INFO } from "../constants/formConfig";
 import { HOD_USER, FACULTY_LIST } from "../data/mockData";
 import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal } from "../services/appraisalPersistence";
 import { uploadToCloudinary } from "../services/cloudinary";
-import { deleteWorkflowSubmission, fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
-import { rejectedStatusFor, reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
+import { reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -804,10 +804,12 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
 }
 
 // ─── Full Review Panel (opened when HOD clicks Review) ────────────────────────
-function ReviewPanel({ faculty, onBack, onSubmit }) {
+function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
   const [hodData, setHodData] = useState({});
   const [remarks, setRemarks] = useState(faculty.hodRemarks || "");
   const [tab, setTab] = useState("form");
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const reviewLocked = readOnly || /Reviewed|Rejected/.test(faculty.status || "");
 
   // Compute HOD total from hodData
   const calcHodScore = () => {
@@ -889,11 +891,15 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
         ))}
       </div>
 
-      {tab === "form" && <FacultyReviewForm faculty={faculty} hodData={hodData} setHodData={setHodData} />}
+      {tab === "form" && (
+        <fieldset disabled={reviewLocked} style={{ border: "none", padding: 0, margin: 0 }}>
+          <FacultyReviewForm faculty={faculty} hodData={hodData} setHodData={setHodData} />
+        </fieldset>
+      )}
 
       {tab === "remarks" && (
         <div style={{ background: "#fff", borderRadius: 10, padding: "22px 24px", boxShadow: "0 1px 6px rgba(0,0,0,.06)" }}>
-          <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>HOD Remarks & Final Submission</h3>
+          <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>{reviewLocked ? "HOD Submitted Review" : "HOD Remarks & Final Submission"}</h3>
 
           {/* Score Summary */}
           <table style={{ ...T, marginBottom: 18 }}>
@@ -927,26 +933,31 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
           </table>
 
           <label style={{ fontWeight: 700, fontSize: 13, color: "#334155", display: "block", marginBottom: 6 }}>HOD Remarks</label>
-          <textarea value={remarks} onChange={e => setRemarks(e.target.value)} rows={4}
+          <textarea value={remarks} onChange={e => setRemarks(e.target.value)} rows={4} readOnly={reviewLocked}
             placeholder="Enter your remarks, observations, and recommendations for this faculty member..."
-            style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 7, padding: "10px 12px", fontSize: 12, fontFamily: "Georgia, serif", resize: "vertical", boxSizing: "border-box", marginBottom: 16 }} />
+            style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 7, padding: "10px 12px", fontSize: 12, fontFamily: "Georgia, serif", resize: "vertical", boxSizing: "border-box", marginBottom: 16, background: reviewLocked ? "#f8fafc" : "#fff" }} />
+
+          {!reviewLocked && (
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={reviewConfirmed}
+                onChange={(e) => setReviewConfirmed(e.target.checked)}
+                style={{ marginTop: 3 }}
+              />
+              <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+            </label>
+          )}
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-            <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "Georgia, serif" }}>Cancel</button>
-            <button onClick={() => {
-              if (!remarks.trim()) {
-                alert("Please enter a rejection comment before rejecting this appraisal.");
-                return;
-              }
-              onSubmit(faculty.id, { partA, partB, total }, remarks, buildHodSectionScores(faculty, hodData), "rejected");
-            }}
-              style={{ padding: "10px 24px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
-              Reject
-            </button>
-            <button onClick={() => onSubmit(faculty.id, { partA, partB, total }, remarks, buildHodSectionScores(faculty, hodData), "approved")}
-              style={{ padding: "10px 28px", background: "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
+            <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "Georgia, serif" }}>{reviewLocked ? "Close" : "Cancel"}</button>
+            {!reviewLocked && (
+            <button onClick={() => onSubmit(faculty.id, { partA, partB, total }, remarks, buildHodSectionScores(faculty, hodData), reviewConfirmed)}
+              disabled={!reviewConfirmed}
+              style={{ padding: "10px 28px", background: reviewConfirmed ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
               ✔ Submit HOD Review
             </button>
+            )}
           </div>
         </div>
       )}
@@ -1222,8 +1233,13 @@ export default function HODDashboard() {
     { id: "approvals", icon: "📋", label: "Pending Approvals", sub: `${pendingCount} awaiting review`, badge: pendingCount },
   ];
   const [submitting, setSubmitting] = useState(false);
+  const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
 
   const handleSubmitAppraisal = async () => {
+    if (!accuracyConfirmed) {
+      alert("Please verify and confirm the accuracy declaration before submitting.");
+      return;
+    }
     if (!info.name || !info.ay) {
       alert("Please fill in basic faculty information (Name, Academic Year).");
       setHodAppraisalTab("partA");
@@ -1539,10 +1555,13 @@ export default function HODDashboard() {
   win.print();
 };
 
-  const handleSubmitReview = async (id, scores, remarks, sectionScores, decision = "approved") => {
+  const handleSubmitReview = async (id, scores, remarks, sectionScores, reviewConfirmed = false) => {
+    if (!reviewConfirmed) {
+      alert("Please verify and confirm the accuracy declaration before submitting the review.");
+      return;
+    }
     const item = facultyList.find((faculty) => faculty.id === id);
     if (!item) return;
-    const rejected = decision === "rejected";
 
     try {
       await submitWorkflowReview({
@@ -1554,34 +1573,14 @@ export default function HODDashboard() {
         totalScore: scores.total,
         remarks,
         sectionScores,
-        decision,
       });
 
-      setFacultyList(prev => prev.map(f => f.id === id ? { ...f, ...sectionScores, innovHod: sectionScores?.innovativeTeaching?.hod ?? f.innovHod, status: rejected ? "Rejected" : "Reviewed", workflowStatus: rejected ? rejectedStatusFor("hod") : reviewedStatusFor("hod"), hodPartA: scores.partA, hodPartB: scores.partB, hodTotal: scores.total, hodRemarks: remarks } : f));
+      setFacultyList(prev => prev.map(f => f.id === id ? { ...f, ...sectionScores, innovHod: sectionScores?.innovativeTeaching?.hod ?? f.innovHod, status: "Reviewed", workflowStatus: reviewedStatusFor("hod"), hodPartA: scores.partA, hodPartB: scores.partB, hodTotal: scores.total, hodRemarks: remarks } : f));
       setReviewingFaculty(null);
-      alert(rejected ? "HOD rejected this appraisal." : "HOD review approved and forwarded to Director.");
+      alert("HOD review approved and forwarded to Director.");
     } catch (err) {
       console.error("Could not submit HOD review:", err);
       alert(`Unable to submit HOD review.\n\n${err.message}`);
-    }
-  };
-
-  const handleDeleteSubmission = async (faculty) => {
-    if (!faculty) return;
-    const confirmed = window.confirm(`Delete ${faculty.name}'s submitted appraisal and unlock it for editing? Their saved form data will remain available for resubmission.`);
-    if (!confirmed) return;
-
-    try {
-      await deleteWorkflowSubmission({
-        subjectEmail: faculty.email,
-        academicYear: faculty.academicYear || faculty.info?.ay,
-      });
-      setFacultyList(prev => prev.filter(item => item.id !== faculty.id));
-      if (reviewingFaculty?.id === faculty.id) setReviewingFaculty(null);
-      alert("Submission deleted. The faculty can now edit and submit the appraisal again.");
-    } catch (err) {
-      console.error("Could not delete appraisal submission:", err);
-      alert(`Unable to delete appraisal submission.\n\n${err.message}`);
     }
   };
 
@@ -2420,14 +2419,22 @@ export default function HODDashboard() {
                   <div style={{ fontSize: 20, fontWeight: 800, color: g.color, marginTop: 4 }}>{g.label}</div>
                 </div>
 
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={accuracyConfirmed}
+                    onChange={(e) => setAccuracyConfirmed(e.target.checked)}
+                    disabled={submitting}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+                </label>
+
                 <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
-                  <button onClick={generateReport} style={{ padding: "10px 24px", background: "#e2e8f0", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
-                    Generate Report
-                  </button>
                   <button 
                     onClick={handleSubmitAppraisal}
-                    disabled={submitting}
-                    style={{ padding: "10px 28px", background: "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
+                    disabled={submitting || !accuracyConfirmed}
+                    style={{ padding: "10px 28px", background: accuracyConfirmed ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: accuracyConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
                   >
                     {submitting ? "Submitting..." : "✔ Submit Appraisal"}
                   </button>
@@ -2520,13 +2527,9 @@ export default function HODDashboard() {
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
                       <div style={{ fontSize: 10, color: "#94a3b8" }}>Submitted: {faculty.submittedOn}</div>
-                      <button onClick={() => handleDeleteSubmission(faculty)}
-                        style={{ fontSize: 11, padding: "7px 14px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif", marginRight: 8 }}>
-                        Delete
-                      </button>
                       <button onClick={() => setReviewingFaculty(faculty)}
-                        style={{ fontSize: 11, padding: "7px 18px", background: faculty.status === "Reviewed" ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
-                        {faculty.status === "Reviewed" ? "✎ Edit Review" : "🔍 Review Form →"}
+                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Rejected/.test(faculty.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
+                        {/Reviewed|Rejected/.test(faculty.status) ? "View Review" : "Review Form"}
                       </button>
                     </div>
                   </div>
@@ -2550,6 +2553,7 @@ export default function HODDashboard() {
             faculty={reviewingFaculty}
             onBack={() => setReviewingFaculty(null)}
             onSubmit={handleSubmitReview}
+            readOnly={/Reviewed|Rejected/.test(reviewingFaculty.status || "")}
           />
         )}
       </main>
@@ -2615,3 +2619,4 @@ export default function HODDashboard() {
     </div>
   );
 }
+

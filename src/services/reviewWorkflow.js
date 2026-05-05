@@ -6,9 +6,7 @@ import {
   isRejectedStatus,
   pendingStatusFor,
   profileFromLocalStorage,
-  rejectedStatusFor,
   reviewedStatusFor,
-  reviewStatusForDecision,
   roleLabel,
   normalizeRoleForWorkflow,
 } from "../utils/hierarchy";
@@ -337,11 +335,9 @@ export const submitWorkflowReview = async ({
   totalScore = 0,
   remarks = "",
   sectionScores,
-  decision = "approved",
 }) => {
   const role = normalizeRoleForWorkflow(reviewerRole);
   const reviewerEmail = localStorage.getItem("username") || "";
-  const reviewDecision = decision === "rejected" ? "rejected" : "approved";
 
   const { data: subjectProfile, error: profileError } = await supabase
     .from("faculty_profiles")
@@ -360,10 +356,6 @@ export const submitWorkflowReview = async ({
     throw new Error(`${roleLabel(role)} is not authorized to review this submission.`);
   }
 
-  if (reviewDecision === "rejected" && !String(remarks || "").trim()) {
-    throw new Error("A rejection comment is required.");
-  }
-
   const { data: existingReviews, error: existingReviewsError } = await supabase
     .from("appraisal_reviews")
     .select("*")
@@ -376,11 +368,11 @@ export const submitWorkflowReview = async ({
   const rejectedReview = (existingReviews || []).find((review) => isRejectedStatus(review.status));
 
   if (rejectedReview && rejectedReview.reviewer_role !== role) {
-    throw new Error(`This submission was already rejected by ${roleLabel(rejectedReview.reviewer_role)}.`);
+    throw new Error(`This submission was previously rejected by ${roleLabel(rejectedReview.reviewer_role)} and cannot continue in the locked workflow.`);
   }
 
-  if (existingReviewForRole && isRejectedStatus(existingReviewForRole.status) && reviewDecision !== "rejected") {
-    throw new Error("This submission has already been rejected. Delete/unlock it before starting a new review chain.");
+  if (existingReviewForRole && isRejectedStatus(existingReviewForRole.status)) {
+    throw new Error("This submission was previously rejected and cannot continue in the locked workflow.");
   }
 
   const reviewedRoles = new Set((existingReviews || []).map((review) => review.reviewer_role));
@@ -391,12 +383,8 @@ export const submitWorkflowReview = async ({
       : "This submission has already completed the approval chain.");
   }
 
-  const nextReviewer = reviewDecision === "rejected" ? null : chain[chain.indexOf(role) + 1];
-  const nextStatus = reviewDecision === "rejected"
-    ? rejectedStatusFor(role)
-    : nextReviewer
-      ? pendingStatusFor(nextReviewer)
-      : "VC Reviewed";
+  const nextReviewer = chain[chain.indexOf(role) + 1];
+  const nextStatus = nextReviewer ? pendingStatusFor(nextReviewer) : "VC Reviewed";
 
   await saveReviewerSectionScores({
     subjectEmail,
@@ -416,7 +404,7 @@ export const submitWorkflowReview = async ({
       part_b_score: n(partBScore),
       total_score: n(totalScore),
       remarks,
-      status: reviewStatusForDecision(role, reviewDecision),
+      status: reviewedStatusFor(role),
       reviewed_at: new Date().toISOString(),
     }, { onConflict: "faculty_email,academic_year,reviewer_role" });
 
@@ -430,65 +418,4 @@ export const submitWorkflowReview = async ({
   if (declarationError) throw declarationError;
 
   return { nextStatus };
-};
-
-export const deleteWorkflowSubmission = async ({
-  subjectEmail,
-  academicYear,
-}) => {
-  if (!subjectEmail || !academicYear) {
-    throw new Error("Subject email and academic year are required to unlock this appraisal.");
-  }
-
-  const scoreReset = {
-    hod_score: null,
-    director_score: null,
-    dean_score: null,
-    vc_score: null,
-    updated_at: new Date().toISOString(),
-  };
-
-  for (const [, tableName] of REVIEW_SECTION_TABLES) {
-    const { error } = await supabase
-      .from(tableName)
-      .update(scoreReset)
-      .match({
-        faculty_email: subjectEmail,
-        academic_year: academicYear,
-      });
-
-    requireSupabase(error, `Could not reset review scores for ${tableName}`);
-  }
-
-  const { error: innovativeError } = await supabase
-    .from("innovative_teaching")
-    .update(scoreReset)
-    .match({
-      faculty_email: subjectEmail,
-      academic_year: academicYear,
-    });
-
-  requireSupabase(innovativeError, "Could not reset innovative teaching review scores");
-
-  const { error: reviewsError } = await supabase
-    .from("appraisal_reviews")
-    .delete()
-    .match({
-      faculty_email: subjectEmail,
-      academic_year: academicYear,
-    });
-
-  requireSupabase(reviewsError, "Could not delete review chain");
-
-  const { error: declarationError } = await supabase
-    .from("declarations")
-    .delete()
-    .match({
-      faculty_email: subjectEmail,
-      academic_year: academicYear,
-    });
-
-  requireSupabase(declarationError, "Could not delete appraisal submission");
-
-  return true;
 };
