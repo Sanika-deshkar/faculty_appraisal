@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { fetchSavedAppraisal } from "./appraisalPersistence";
+import { fetchSavedAppraisal, loadAppraisalSnapshot } from "./appraisalPersistence";
 import {
   canAuthorityReviewProfile,
   getReviewChain,
@@ -51,6 +51,41 @@ const REVIEW_SCORE_COLUMNS = {
   director: "director_score",
   dean: "dean_score",
   vc: "vc_score",
+};
+
+const SNAPSHOT_REVIEW_ARRAY_KEYS = [
+  "lectures",
+  "courseFile",
+  "projects",
+  "quals",
+  "feedback",
+  "deptActs",
+  "uniActs",
+  "society",
+  "industry",
+  "acr",
+  "journals",
+  "popularWritings",
+  "books",
+  "ict",
+  "research",
+  "projects2",
+  "internalProjects",
+  "externalProjects",
+  "patents",
+  "awards",
+  "confs",
+  "proposals",
+  "products",
+  "fdps",
+  "training",
+];
+
+const INNOVATIVE_REVIEW_KEYS = {
+  hod: "innovHod",
+  director: "innovDirector",
+  dean: "innovDean",
+  vc: "innovVc",
 };
 
 const REVIEW_SCORE_FIELD_ALIASES = {
@@ -193,6 +228,53 @@ const saveReviewerSectionScores = async ({
 
     requireSupabase(error, `Could not save ${reviewerRole} innovative teaching score`);
   }
+};
+
+const saveReviewerScoresToSnapshot = async ({
+  subjectEmail,
+  academicYear,
+  reviewerRole,
+  sectionScores,
+}) => {
+  if (!sectionScores) return;
+
+  const snapshotPayload = await loadAppraisalSnapshot({
+    facultyEmail: subjectEmail,
+    academicYear,
+  });
+  const currentForm = snapshotPayload?.form && typeof snapshotPayload.form === "object"
+    ? snapshotPayload.form
+    : {};
+  const nextForm = { ...currentForm };
+
+  SNAPSHOT_REVIEW_ARRAY_KEYS.forEach((key) => {
+    if (!Array.isArray(sectionScores[key])) return;
+    const existingRows = Array.isArray(nextForm[key]) ? nextForm[key] : [];
+    nextForm[key] = sectionScores[key].map((row, index) => ({
+      ...(existingRows[index] || {}),
+      ...row,
+      [reviewerRole]: scoreValueForRole(row, reviewerRole) ?? row?.[reviewerRole] ?? "",
+    }));
+  });
+
+  const innovativeKey = INNOVATIVE_REVIEW_KEYS[reviewerRole];
+  if (innovativeKey && Object.prototype.hasOwnProperty.call(sectionScores, "innovativeTeaching")) {
+    nextForm[innovativeKey] = scoreValueForRole(sectionScores.innovativeTeaching, reviewerRole) ?? "";
+  }
+
+  const { error } = await supabase
+    .from("appraisal_snapshots")
+    .upsert({
+      faculty_email: subjectEmail,
+      academic_year: academicYear,
+      payload: {
+        ...(snapshotPayload || {}),
+        form: nextForm,
+        reviewedAt: new Date().toISOString(),
+      },
+    }, { onConflict: "faculty_email,academic_year" });
+
+  requireSupabase(error, "Could not save reviewer scores to appraisal snapshot");
 };
 
 export const fetchReviewQueueForRole = async ({
@@ -387,6 +469,13 @@ export const submitWorkflowReview = async ({
   const nextStatus = nextReviewer ? pendingStatusFor(nextReviewer) : "VC Reviewed";
 
   await saveReviewerSectionScores({
+    subjectEmail,
+    academicYear,
+    reviewerRole: role,
+    sectionScores,
+  });
+
+  await saveReviewerScoresToSnapshot({
     subjectEmail,
     academicYear,
     reviewerRole: role,

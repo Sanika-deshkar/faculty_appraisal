@@ -39,6 +39,96 @@ const docRowFromKey = (docKey) => {
   return match ? Number(match[1]) + 1 : null;
 };
 
+const SNAPSHOT_SETTERS = {
+  info: "setInfo",
+  lectures: "setLectures",
+  courseFile: "setCourseFile",
+  innovDetails: "setInnovDetails",
+  innovScore: "setInnovScore",
+  innovHod: "setInnovHod",
+  innovDirector: "setInnovDirector",
+  innovDean: "setInnovDean",
+  innovVc: "setInnovVc",
+  projects: "setProjects",
+  quals: "setQuals",
+  feedback: "setFeedback",
+  deptActs: "setDeptActs",
+  uniActs: "setUniActs",
+  society: "setSociety",
+  industry: "setIndustry",
+  acr: "setAcr",
+  journals: "setJournals",
+  popularWritings: "setPopularWritings",
+  books: "setBooks",
+  ict: "setIct",
+  research: "setResearch",
+  projects2: "setProjects2",
+  internalProjects: "setInternalProjects",
+  externalProjects: "setExternalProjects",
+  patents: "setPatents",
+  awards: "setAwards",
+  confs: "setConfs",
+  proposals: "setProposals",
+  products: "setProducts",
+  fdps: "setFdps",
+  training: "setTraining",
+};
+
+const snapshotFormFromPayload = (payload) => {
+  if (!payload) return null;
+  if (payload.form && typeof payload.form === "object") return payload.form;
+  if (payload.data && typeof payload.data === "object") return payload.data;
+  return null;
+};
+
+export const loadAppraisalSnapshot = async ({ facultyEmail, academicYear }) => {
+  if (!facultyEmail || !academicYear) return null;
+
+  const { data, error } = await supabase
+    .from("appraisal_snapshots")
+    .select("payload")
+    .eq("faculty_email", facultyEmail)
+    .eq("academic_year", academicYear)
+    .maybeSingle();
+
+  requireSupabase(error, "Could not load appraisal snapshot");
+  return data?.payload || null;
+};
+
+const applySnapshotToSetters = (snapshotPayload, setters) => {
+  const snapshotForm = snapshotFormFromPayload(snapshotPayload);
+  if (!snapshotForm || !setters) return;
+
+  Object.entries(SNAPSHOT_SETTERS).forEach(([formKey, setterKey]) => {
+    if (Object.prototype.hasOwnProperty.call(snapshotForm, formKey)) {
+      setters[setterKey]?.(snapshotForm[formKey]);
+    }
+  });
+};
+
+const saveAppraisalSnapshot = async ({
+  facultyEmail,
+  academicYear,
+  form,
+  totals,
+  submitterProfile,
+}) => {
+  const { error } = await supabase
+    .from("appraisal_snapshots")
+    .upsert({
+      faculty_email: facultyEmail,
+      academic_year: academicYear,
+      payload: {
+        form,
+        totals,
+        submitterProfile,
+        savedAt: new Date().toISOString(),
+      },
+    }, { onConflict: "faculty_email,academic_year" });
+
+  requireSupabase(error, "Could not save appraisal snapshot");
+};
+
 export const docsToRows = (docs, facultyEmail, academicYear) =>
   Object.entries(docs || {}).flatMap(([docKey, files]) =>
     (files || [])
@@ -417,6 +507,9 @@ export const loadSavedAppraisal = async ({
       ...reviewerScores(row),
     })));
   }
+
+  const snapshotPayload = await loadAppraisalSnapshot({ facultyEmail, academicYear });
+  applySnapshotToSetters(snapshotPayload, setters);
 };
 
 export const fetchSavedAppraisal = async ({ facultyEmail, academicYear }) => {
@@ -443,10 +536,14 @@ export const fetchSavedAppraisal = async ({ facultyEmail, academicYear }) => {
     ict: [],
     research: [],
     projects2: [],
+    popularWritings: [],
+    internalProjects: [],
+    externalProjects: [],
     patents: [],
     awards: [],
     confs: [],
     proposals: [],
+    products: [],
     fdps: [],
     training: [],
     docs: {},
@@ -478,10 +575,14 @@ export const fetchSavedAppraisal = async ({ facultyEmail, academicYear }) => {
         setIct: (value) => { appraisal.ict = value; },
         setResearch: (value) => { appraisal.research = value; },
         setProjects2: (value) => { appraisal.projects2 = value; },
+        setPopularWritings: (value) => { appraisal.popularWritings = value; },
+        setInternalProjects: (value) => { appraisal.internalProjects = value; },
+        setExternalProjects: (value) => { appraisal.externalProjects = value; },
         setPatents: (value) => { appraisal.patents = value; },
         setAwards: (value) => { appraisal.awards = value; },
         setConfs: (value) => { appraisal.confs = value; },
         setProposals: (value) => { appraisal.proposals = value; },
+        setProducts: (value) => { appraisal.products = value; },
         setFdps: (value) => { appraisal.fdps = value; },
         setTraining: (value) => { appraisal.training = value; },
       },
@@ -525,10 +626,14 @@ export const saveAppraisal = async ({
     ict = [],
     research = [],
     projects2 = [],
+    popularWritings = [],
+    internalProjects = [],
+    externalProjects = [],
     patents = [],
     awards = [],
     confs = [],
     proposals = [],
+    products = [],
     fdps = [],
     training = [],
   } = form;
@@ -876,4 +981,18 @@ export const saveAppraisal = async ({
       .insert(documentRows);
     requireSupabase(documentInsertError, "Could not save document rows");
   }
+
+  await saveAppraisalSnapshot({
+    facultyEmail,
+    academicYear,
+    form: {
+      ...form,
+      popularWritings,
+      internalProjects,
+      externalProjects,
+      products,
+    },
+    totals,
+    submitterProfile: activeProfile,
+  });
 };

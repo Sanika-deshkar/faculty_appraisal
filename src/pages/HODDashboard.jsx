@@ -1590,7 +1590,7 @@ export default function HODDashboard() {
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "Georgia, serif", background: "#f8fafc", color: "#1e293b" }}>
 
       {/* ── Sidebar ── */}
-      <aside style={{ width: 252, height: "100vh", overflowY: "auto", background: "#0f172a", display: "flex", flexDirection: "column", padding: "22px 16px", gap: 14, flexShrink: 0, boxShadow: "6px 0 20px rgba(15,23,42,0.18)" }}>
+      <aside style={{ width: 252, height: "100vh", minHeight: "100vh", boxSizing: "border-box", overflow: "hidden", background: "#0f172a", display: "flex", flexDirection: "column", padding: "22px 16px", gap: 14, position: "sticky", top: 0, alignSelf: "flex-start", flexShrink: 0, boxShadow: "6px 0 20px rgba(15,23,42,0.18)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 38, height: 38, borderRadius: 9, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 13 }}>FA</div>
           <div>

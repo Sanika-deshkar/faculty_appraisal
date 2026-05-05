@@ -5,6 +5,7 @@ import { SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/f
 import { VC_USER } from "../data/mockData";
 import { DEAN_TRACKS, UNIVERSITY_SCHOOLS } from "../constants/universityHierarchy";
 import { getSchoolKey, reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -1000,7 +1001,7 @@ export default function VCDashboard() {
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "Georgia, serif", background: "#f0ede8", color: "#1e293b" }}>
 
       {/* ── Sidebar ── */}
-      <aside style={{ width: 248, minHeight: "100vh", background: "#0f172a", display: "flex", flexDirection: "column", padding: "20px 16px", gap: 12, position: "sticky", top: 0, alignSelf: "flex-start", flexShrink: 0 }}>
+      <aside style={{ width: 248, height: "100vh", minHeight: "100vh", boxSizing: "border-box", overflow: "hidden", background: "#0f172a", display: "flex", flexDirection: "column", padding: "20px 16px", gap: 12, position: "sticky", top: 0, alignSelf: "flex-start", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <div style={{ width: 38, height: 38, borderRadius: 9, background: "linear-gradient(135deg,#7c3aed,#a78bfa)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 13 }}>FA</div>
           <div>
@@ -1151,13 +1152,24 @@ export default function VCDashboard() {
         )}
 
         {reviewing && (
-          <VCReviewPanel
-            person={reviewing.person}
-            personMode={reviewing.personMode}
-            onBack={() => setReviewing(null)}
-            onSubmit={handleSubmit}
-            readOnly={isVcReviewed(reviewing.person)}
-          />
+          getSchoolKey(reviewing.person?.school) === "SoMCS" ? (
+            <MediaCommAuthorityReviewPanel
+              person={reviewing.person}
+              reviewerRole="vc"
+              onBack={() => setReviewing(null)}
+              onSubmit={(id, scores, remarks, sectionScores, reviewConfirmed) => handleSubmit(id, scores, remarks, reviewing.personMode, sectionScores, reviewConfirmed)}
+              readOnly={isVcReviewed(reviewing.person)}
+              showReport
+            />
+          ) : (
+            <VCReviewPanel
+              person={reviewing.person}
+              personMode={reviewing.personMode}
+              onBack={() => setReviewing(null)}
+              onSubmit={handleSubmit}
+              readOnly={isVcReviewed(reviewing.person)}
+            />
+          )
         )}
       </main>
 
