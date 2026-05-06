@@ -55,21 +55,21 @@ const initialsFromName = (name = "") =>
 
 export default function EditProfile() {
   const navigate = useNavigate();
-  const initialRole = normalizeRole(localStorage.getItem("role"), "faculty");
-  const initialSchool = canonicalSchoolValue(localStorage.getItem("school"));
+  const initialRole = normalizeRole(sessionStorage.getItem("role"), "faculty");
+  const initialSchool = canonicalSchoolValue(sessionStorage.getItem("school"));
   const initialDepartment = isNonTeachingRole(initialRole)
-    ? localStorage.getItem("department") || ""
-    : canonicalDepartmentValue(localStorage.getItem("department"));
+    ? sessionStorage.getItem("department") || ""
+    : canonicalDepartmentValue(sessionStorage.getItem("department"));
 
   const [formData, setFormData] = useState({
     staffType: isNonTeachingRole(initialRole) ? "non_teaching" : "teaching",
-    email: localStorage.getItem("username") || "",
-    name: localStorage.getItem("name") || "",
-    employeeId: localStorage.getItem("employeeId") || "",
-    designation: localStorage.getItem("designation") || "",
-    qualification: localStorage.getItem("qualification") || "",
-    experience: localStorage.getItem("experience") || "",
-    phone: localStorage.getItem("phone") || "",
+    email: sessionStorage.getItem("username") || "",
+    name: sessionStorage.getItem("name") || "",
+    employeeId: sessionStorage.getItem("employeeId") || "",
+    designation: sessionStorage.getItem("designation") || "",
+    qualification: sessionStorage.getItem("qualification") || "",
+    experience: sessionStorage.getItem("experience") || "",
+    phone: sessionStorage.getItem("phone") || "",
     school: initialSchool,
     department: initialDepartment,
     role: initialRole,
@@ -510,3 +510,4 @@ const S = {
     marginBottom: 16,
   },
 };
+

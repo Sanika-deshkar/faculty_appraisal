@@ -162,3 +162,4 @@ export const openFullFormReport = ({
   win.document.close();
   win.print();
 };
+

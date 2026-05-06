@@ -6,3 +6,4 @@ export const SCHOOL_CONFIG = Object.fromEntries(
     { hasHod: school.value === SOEMR_SCHOOL.label },
   ])
 );
+

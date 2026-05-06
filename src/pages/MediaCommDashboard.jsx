@@ -8,7 +8,7 @@ import { uploadToCloudinary } from "../services/cloudinary";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { supabase } from "../services/supabase";
 import { openFullFormReport } from "../utils/fullFormReport";
-import { getReviewChain, pendingStatusFor, profileFromLocalStorage, reviewedStatusFor, roleLabel } from "../utils/hierarchy";
+import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel } from "../utils/hierarchy";
 
 const ACCENT = "#b45309";
 const ACCENT2 = "#0f766e";
@@ -53,11 +53,11 @@ const ACR_LABELS = [
 
 const emptyMediaForm = () => ({
   info: {
-    name: localStorage.getItem("name") || "",
-    qual: localStorage.getItem("qualification") || "",
-    desig: localStorage.getItem("designation") || "",
-    ay: localStorage.getItem("academicYear") || "2025-2026",
-    school: localStorage.getItem("school") || "SoMCS - School of Media & Communication Studies",
+    name: sessionStorage.getItem("name") || "",
+    qual: sessionStorage.getItem("qualification") || "",
+    desig: sessionStorage.getItem("designation") || "",
+    ay: sessionStorage.getItem("academicYear") || "2025-2026",
+    school: sessionStorage.getItem("school") || "SoMCS - School of Media & Communication Studies",
   },
   lectures: [{ sem: "", code: "", planned: "", conducted: "", score: "" }],
   courseFile: [{ course: "", title: "", details: "", score: "" }],
@@ -518,7 +518,7 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
       status: person?.status,
       remarksLabel: `${roleLabel(reviewerRole)} Remarks`,
       remarks: person?.[`${reviewerRole}Remarks`] || remarks,
-      generatedBy: localStorage.getItem("name") || roleLabel(reviewerRole),
+      generatedBy: sessionStorage.getItem("name") || roleLabel(reviewerRole),
     });
   };
 
@@ -583,8 +583,8 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
 
 export default function MediaCommDashboard({ fixedRole }) {
   const navigate = useNavigate();
-  const role = fixedRole || localStorage.getItem("role") || "faculty";
-  const profile = profileFromLocalStorage();
+  const role = fixedRole || sessionStorage.getItem("role") || "faculty";
+  const profile = profileFromsessionStorage();
   const [activeTab, setActiveTab] = useState(role === "faculty" ? "my" : "approvals");
   const [selfSectionView, setSelfSectionView] = useState("partA");
   const [form, setForm] = useState(emptyMediaForm);
@@ -596,7 +596,7 @@ export default function MediaCommDashboard({ fixedRole }) {
   const [confirmed, setConfirmed] = useState(false);
   const [declaration, setDeclaration] = useState(null);
   const [reviews, setReviews] = useState([]);
-  const userEmail = localStorage.getItem("username") || "";
+  const userEmail = sessionStorage.getItem("username") || "";
   const academicYear = form.info?.ay || "2025-2026";
   const locked = Boolean(declaration);
   const totals = calculateMediaTotals(form, "score");
@@ -721,7 +721,7 @@ export default function MediaCommDashboard({ fixedRole }) {
       scoreRoles: ["score"],
       roleLabel,
       status: declaration?.status || "Draft / Pre-submit Review",
-      generatedBy: localStorage.getItem("name") || roleLabel(role),
+      generatedBy: sessionStorage.getItem("name") || roleLabel(role),
     });
   };
 
@@ -759,13 +759,13 @@ export default function MediaCommDashboard({ fixedRole }) {
             title="Edit profile"
             style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "Georgia, serif", textAlign: "left" }}
           >
-            <Avatar initials={userInitials(localStorage.getItem("name"))} color={ACCENT} size={34} />
+            <Avatar initials={userInitials(sessionStorage.getItem("name"))} color={ACCENT} size={34} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {(localStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}
+                {(sessionStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}
               </div>
               <div style={{ color: "#475569", fontSize: 9, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {roleLabel(role)} {localStorage.getItem("department")?.split(" ")[0] || ""}
+                {roleLabel(role)} {sessionStorage.getItem("department")?.split(" ")[0] || ""}
               </div>
             </div>
           </button>
@@ -861,3 +861,4 @@ const tdStyle = { border: "1px solid #e2e8f0", padding: "5px 7px", verticalAlign
 const tdCenter = { ...tdStyle, textAlign: "center", minWidth: 70 };
 const smallButton = (background) => ({ padding: "8px 14px", background, color: "#fff", border: "none", borderRadius: 7, cursor: background === "#94a3b8" ? "not-allowed" : "pointer", fontWeight: 800, fontSize: 12, fontFamily: "Georgia, serif" });
 const navButton = (active) => ({ width: "100%", border: "none", borderLeft: `3px solid ${active ? ACCENT : "transparent"}`, background: active ? `${ACCENT}33` : "transparent", color: active ? "#fbbf24" : "#cbd5e1", borderRadius: 8, padding: "10px 12px", cursor: "pointer", textAlign: "left", fontWeight: 800, fontFamily: "Georgia, serif" });
+

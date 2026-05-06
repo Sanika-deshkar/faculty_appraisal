@@ -21,7 +21,7 @@ import {
   submitNonTeachingSelfAppraisal,
   validateNonTeachingForm,
 } from "../services/nonTeachingWorkflow";
-import { profileFromLocalStorage } from "../utils/hierarchy";
+import { profileFromsessionStorage } from "../utils/hierarchy";
 
 const ACCENT = "#1d4ed8";
 const REG_ACCENT = "#155e75";
@@ -466,10 +466,10 @@ function SummaryPanel({ form, role, onSubmit, onReport, submitting, locked, conf
   );
 }
 
-export function NonTeachingAppraisalForm({ role = localStorage.getItem("role"), embedded = false }) {
+export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role"), embedded = false }) {
   const normalizedRole = normalizeNonTeachingRole(role, "non_teaching_staff");
   const navigate = useNavigate();
-  const [form, setForm] = useState(() => emptyNonTeachingForm(profileFromLocalStorage(), normalizedRole));
+  const [form, setForm] = useState(() => emptyNonTeachingForm(profileFromsessionStorage(), normalizedRole));
   const [tab, setTab] = useState("info");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -482,7 +482,7 @@ export function NonTeachingAppraisalForm({ role = localStorage.getItem("role"), 
     let active = true;
     const loadForm = async () => {
       try {
-        const profile = profileFromLocalStorage();
+        const profile = profileFromsessionStorage();
         const saved = await loadNonTeachingAppraisal({
           email: profile.email,
           academicYear: APP_INFO.DEFAULT_AY,
@@ -527,7 +527,7 @@ export function NonTeachingAppraisalForm({ role = localStorage.getItem("role"), 
       const saved = await submitNonTeachingSelfAppraisal({
         form,
         role: normalizedRole,
-        profile: profileFromLocalStorage(),
+        profile: profileFromsessionStorage(),
       });
       setForm(saved.form);
       setConfirmed(false);
@@ -634,9 +634,9 @@ export function NonTeachingAppraisalForm({ role = localStorage.getItem("role"), 
     <div style={{ minHeight: "100vh", display: "flex", background: "#f1f5f9", fontFamily: "Georgia, serif", color: "#0f172a" }}>
       <aside style={{ width: 230, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 20, boxSizing: "border-box", background: "#0f172a", padding: "18px 14px 110px", color: "#e2e8f0", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Avatar name={localStorage.getItem("name") || "Staff"} color={accent} />
+          <Avatar name={sessionStorage.getItem("name") || "Staff"} color={accent} />
           <div>
-            <div style={{ fontWeight: 800, fontSize: 13 }}>{localStorage.getItem("name") || "Staff"}</div>
+            <div style={{ fontWeight: 800, fontSize: 13 }}>{sessionStorage.getItem("name") || "Staff"}</div>
             <div style={{ color: "#94a3b8", fontSize: 10 }}>{nonTeachingRoleLabel(normalizedRole)}</div>
           </div>
         </div>
@@ -648,7 +648,7 @@ export function NonTeachingAppraisalForm({ role = localStorage.getItem("role"), 
         </div>
       </aside>
       {content}
-      {showLogoutModal && <LogoutModal onCancel={() => setShowLogoutModal(false)} onConfirm={() => { localStorage.clear(); navigate("/login", { replace: true }); }} />}
+      {showLogoutModal && <LogoutModal onCancel={() => setShowLogoutModal(false)} onConfirm={() => { sessionStorage.clear(); navigate("/login", { replace: true }); }} />}
     </div>
   );
 }
@@ -964,7 +964,7 @@ export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, acce
     <div style={{ minHeight: "100vh", display: "flex", background: "#f1f5f9", color: "#0f172a", fontFamily: "Georgia, serif" }}>
       <aside style={{ width: 244, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 20, boxSizing: "border-box", background: "#0f172a", color: "#e2e8f0", display: "flex", flexDirection: "column", padding: "18px 14px 86px", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Avatar name={localStorage.getItem("name") || title} color={accent} />
+          <Avatar name={sessionStorage.getItem("name") || title} color={accent} />
           <div>
             <div style={{ fontSize: 13, fontWeight: 900 }}>{title}</div>
             <div style={{ color: "#94a3b8", fontSize: 10 }}>{subtitle}</div>
@@ -1027,7 +1027,7 @@ export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, acce
         )}
       </main>
 
-      {showLogoutModal && <LogoutModal onCancel={() => setShowLogoutModal(false)} onConfirm={() => { localStorage.clear(); navigate("/login", { replace: true }); }} />}
+      {showLogoutModal && <LogoutModal onCancel={() => setShowLogoutModal(false)} onConfirm={() => { sessionStorage.clear(); navigate("/login", { replace: true }); }} />}
     </div>
   );
 }
@@ -1088,3 +1088,4 @@ const S = {
 export default function NonTeachingStaffDashboard() {
   return <NonTeachingAppraisalForm role="non_teaching_staff" />;
 }
+

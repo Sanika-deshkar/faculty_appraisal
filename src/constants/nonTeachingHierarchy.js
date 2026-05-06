@@ -37,3 +37,4 @@ export const normalizeNonTeachingRole = (role, fallback = "") => {
 
 export const isNonTeachingRole = (role) =>
   NON_TEACHING_ROLES.includes(normalizeNonTeachingRole(role, role));
+

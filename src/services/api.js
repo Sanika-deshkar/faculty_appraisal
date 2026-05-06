@@ -15,9 +15,9 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use((config) => {
   const token =
-    localStorage.getItem("supabaseToken") ||
-    localStorage.getItem("accessToken") ||
-    localStorage.getItem("token");
+    sessionStorage.getItem("supabaseToken") ||
+    sessionStorage.getItem("accessToken") ||
+    sessionStorage.getItem("token");
 
   if (token) {
     config.headers = config.headers || {};
@@ -84,9 +84,10 @@ export const getStaffForVC = () => {
 };
 
 export const fetchFormData = async () => {
-  return JSON.parse(localStorage.getItem("formData")) || {};
+  return JSON.parse(sessionStorage.getItem("formData")) || {};
 };
 
 export const saveFormData = async (data) => {
-  localStorage.setItem("formData", JSON.stringify(data));
+  sessionStorage.setItem("formData", JSON.stringify(data));
 };
+

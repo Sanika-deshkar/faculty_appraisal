@@ -7,7 +7,7 @@ import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal } from "../se
 import { uploadToCloudinary } from "../services/cloudinary";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { supabase } from "../services/supabase";
-import { reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -1071,8 +1071,8 @@ export default function DirectorDashboard() {
   const [reviewingFaculty, setReviewingFaculty] = useState(null);
   const [reviewingHod, setReviewingHod] = useState(null);
   
-  const dirSchool = localStorage.getItem("school");
-  const hasHOD = localStorage.getItem("hasHod") === "true";
+  const dirSchool = sessionStorage.getItem("school");
+  const hasHOD = sessionStorage.getItem("hasHod") === "true";
   
   const [facultyList, setFacultyList] = useState([]);
   const [hodList, setHodList] = useState([]);
@@ -1082,7 +1082,7 @@ export default function DirectorDashboard() {
       try {
         const items = await fetchReviewQueueForRole({
           reviewerRole: "director",
-          reviewerProfile: { ...profileFromLocalStorage(), school: dirSchool },
+          reviewerProfile: { ...profileFromsessionStorage(), school: dirSchool },
         });
         setFacultyList(items.filter((item) => item.appraisalRole === "faculty"));
         setHodList(items.filter((item) => item.appraisalRole === "hod"));
@@ -1102,9 +1102,9 @@ export default function DirectorDashboard() {
 
   // ── HOD's own appraisal form state ──
   const [info, setInfo] = useState({ 
-    name: localStorage.getItem("name") || "", 
+    name: sessionStorage.getItem("name") || "", 
     qual: "", 
-    desig: localStorage.getItem("role") === "director" ? "Director" : "", 
+    desig: sessionStorage.getItem("role") === "director" ? "Director" : "", 
     ay: "2025-2026" 
   });
   const inf = (k) => (v) => setInfo((p) => ({ ...p, [k]: v }));
@@ -1241,7 +1241,7 @@ export default function DirectorDashboard() {
   const [appraisalLocked, setAppraisalLocked] = useState(false);
 
   useEffect(() => {
-    const userEmail = localStorage.getItem("username");
+    const userEmail = sessionStorage.getItem("username");
     if (!userEmail || !info.ay) return;
 
     const loadOwnAppraisal = async () => {
@@ -1374,7 +1374,7 @@ export default function DirectorDashboard() {
       return;
     }
 
-    const userEmail = localStorage.getItem("username");
+    const userEmail = sessionStorage.getItem("username");
     if (!userEmail) {
       alert("Please login again before submitting. Your email was not found in this session.");
       navigate("/login", { replace: true });
@@ -1777,10 +1777,10 @@ export default function DirectorDashboard() {
           title="Edit profile"
           style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "Georgia, serif", textAlign: "left" }}
         >
-          <Avatar initials={(localStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
+          <Avatar initials={(sessionStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
           <div style={{ flex: 1 }}>
-            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{(localStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}</div>
-            <div style={{ color: "#475569", fontSize: 9 }}>Director · {localStorage.getItem("department")?.split(" ")[0] || ""}</div>
+            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{(sessionStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}</div>
+            <div style={{ color: "#475569", fontSize: 9 }}>Director · {sessionStorage.getItem("department")?.split(" ")[0] || ""}</div>
           </div>
         </button>
         <button
@@ -2755,7 +2755,7 @@ export default function DirectorDashboard() {
 <button
   onClick={() => {
     setShowLogoutModal(false);
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     sessionStorage.clear();
     navigate("/login", { replace: true });
   }}
@@ -2781,4 +2781,5 @@ export default function DirectorDashboard() {
     </div>
   );
 }
+
 

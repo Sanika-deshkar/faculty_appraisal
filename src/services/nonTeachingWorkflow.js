@@ -4,7 +4,7 @@ import {
   isNonTeachingRole,
   normalizeNonTeachingRole,
 } from "../constants/nonTeachingHierarchy";
-import { profileFromLocalStorage } from "../utils/hierarchy";
+import { profileFromsessionStorage } from "../utils/hierarchy";
 import { supabase } from "./supabase";
 
 export const NON_TEACHING_STATUS = {
@@ -118,10 +118,10 @@ export const nonTeachingRoleLabel = (role) =>
 export const createEmptyPartB = () =>
   Object.fromEntries(RATING_SECTIONS.map((section) => [section.key, {}]));
 
-export const emptyNonTeachingForm = (profile = profileFromLocalStorage(), role = "non_teaching_staff") => {
+export const emptyNonTeachingForm = (profile = profileFromsessionStorage(), role = "non_teaching_staff") => {
   const normalizedRole = normalizeNonTeachingRole(role, role);
-  const name = profile.full_name || profile.name || localStorage.getItem("name") || "";
-  const email = emailKey(profile.email || localStorage.getItem("username") || "");
+  const name = profile.full_name || profile.name || sessionStorage.getItem("name") || "";
+  const email = emailKey(profile.email || sessionStorage.getItem("username") || "");
 
   return {
     appraisalType: "non-teaching",
@@ -130,9 +130,9 @@ export const emptyNonTeachingForm = (profile = profileFromLocalStorage(), role =
     info: {
       name,
       email,
-      employeeId: profile.employee_id || profile.employeeId || localStorage.getItem("employeeId") || "",
-      designation: profile.designation || localStorage.getItem("designation") || nonTeachingRoleLabel(normalizedRole),
-      department: profile.department || localStorage.getItem("department") || "",
+      employeeId: profile.employee_id || profile.employeeId || sessionStorage.getItem("employeeId") || "",
+      designation: profile.designation || sessionStorage.getItem("designation") || nonTeachingRoleLabel(normalizedRole),
+      department: profile.department || sessionStorage.getItem("department") || "",
       reportingHead: "",
       ay: academicYear(profile.academic_year || profile.ay || APP_INFO.DEFAULT_AY),
     },
@@ -168,7 +168,7 @@ export const normalizeNonTeachingForm = (payload = {}, profile = {}, role = "non
   merged.status = form.status || base.status;
   merged.submittedByRole = normalizeNonTeachingRole(form.submittedByRole, normalizeNonTeachingRole(role, role));
   merged.info.ay = academicYear(merged.info.ay || profile.academic_year);
-  merged.info.email = emailKey(merged.info.email || profile.email || localStorage.getItem("username"));
+  merged.info.email = emailKey(merged.info.email || profile.email || sessionStorage.getItem("username"));
 
   SELF_ITEMS.forEach(({ key }) => {
     merged[key] = {
@@ -275,10 +275,10 @@ export const validateNonTeachingForm = (form, authority = "self", requireRatings
 };
 
 export const loadNonTeachingAppraisal = async ({
-  email = localStorage.getItem("username"),
+  email = sessionStorage.getItem("username"),
   academicYear = APP_INFO.DEFAULT_AY,
-  profile = profileFromLocalStorage(),
-  role = localStorage.getItem("role"),
+  profile = profileFromsessionStorage(),
+  role = sessionStorage.getItem("role"),
 } = {}) => {
   const staffEmail = emailKey(email);
   if (!staffEmail) return null;
@@ -315,8 +315,8 @@ const rowPayloadForForm = ({ form, status }) => {
 
 export const submitNonTeachingSelfAppraisal = async ({
   form,
-  role = localStorage.getItem("role"),
-  profile = profileFromLocalStorage(),
+  role = sessionStorage.getItem("role"),
+  profile = profileFromsessionStorage(),
 } = {}) => {
   const normalizedRole = normalizeNonTeachingRole(role, role);
   const status = statusAfterSelfSubmit(normalizedRole);
@@ -324,7 +324,7 @@ export const submitNonTeachingSelfAppraisal = async ({
 
   validateNonTeachingForm(finalForm, "self", false);
 
-  const staffEmail = emailKey(finalForm.info.email || profile.email || localStorage.getItem("username"));
+  const staffEmail = emailKey(finalForm.info.email || profile.email || sessionStorage.getItem("username"));
   const ay = academicYear(finalForm.info.ay);
   const rowPayload = rowPayloadForForm({ form: finalForm, status });
 
@@ -551,7 +551,7 @@ const ratingLabel = (value) => {
 export const openNonTeachingReport = ({
   item = {},
   form = item.form,
-  generatedBy = localStorage.getItem("name") || "Authority",
+  generatedBy = sessionStorage.getItem("name") || "Authority",
 } = {}) => {
   const reportForm = normalizeNonTeachingForm(form || item.form, item, item.appraisalRole);
   const totals = {
@@ -674,3 +674,4 @@ export const openNonTeachingReport = ({
   `);
   reportWindow.document.close();
 };
+

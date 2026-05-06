@@ -5,7 +5,7 @@ import {
   getReviewChain,
   isRejectedStatus,
   pendingStatusFor,
-  profileFromLocalStorage,
+  profileFromsessionStorage,
   reviewedStatusFor,
   roleLabel,
   normalizeRoleForWorkflow,
@@ -283,7 +283,7 @@ const saveReviewerScoresToSnapshot = async ({
 
 export const fetchReviewQueueForRole = async ({
   reviewerRole,
-  reviewerProfile = profileFromLocalStorage(),
+  reviewerProfile = profileFromsessionStorage(),
   academicYear,
   schoolValues = [],
 } = {}) => {
@@ -452,7 +452,7 @@ export const submitWorkflowReview = async ({
   sectionScores,
 }) => {
   const role = normalizeRoleForWorkflow(reviewerRole);
-  const reviewerEmail = localStorage.getItem("username") || "";
+  const reviewerEmail = sessionStorage.getItem("username") || "";
 
   const { data: subjectProfile, error: profileError } = await supabase
     .from("faculty_profiles")
@@ -467,7 +467,7 @@ export const submitWorkflowReview = async ({
     throw new Error(`${roleLabel(role)} is not in the approval chain for this submission.`);
   }
 
-  if (!canAuthorityReviewProfile({ ...profileFromLocalStorage(), appraisal_role: role }, subjectProfile || {})) {
+  if (!canAuthorityReviewProfile({ ...profileFromsessionStorage(), appraisal_role: role }, subjectProfile || {})) {
     throw new Error(`${roleLabel(role)} is not authorized to review this submission.`);
   }
 
@@ -541,3 +541,4 @@ export const submitWorkflowReview = async ({
 
   return { nextStatus };
 };
+

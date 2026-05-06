@@ -6,7 +6,7 @@ import { SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/f
 import { VC_USER } from "../data/mockData";
 import { DEAN_TRACKS, UNIVERSITY_SCHOOLS } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
-import { getSchoolKey, reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { getSchoolKey, reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
 import { openFullFormReport } from "../utils/fullFormReport";
 import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
@@ -570,7 +570,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
       status: person.status,
       remarksLabel: "VC Remarks",
       remarks: person.vcRemarks || remarks,
-      generatedBy: localStorage.getItem("name") || "Vice Chancellor",
+      generatedBy: sessionStorage.getItem("name") || "Vice Chancellor",
     });
   };
 
@@ -1024,7 +1024,7 @@ export default function VCDashboard() {
       try {
         const items = await fetchReviewQueueForRole({
           reviewerRole: "vc",
-          reviewerProfile: { ...profileFromLocalStorage(), appraisal_role: "vc" },
+          reviewerProfile: { ...profileFromsessionStorage(), appraisal_role: "vc" },
         });
         let nonTeachingItems = [];
         try {
@@ -1186,9 +1186,9 @@ export default function VCDashboard() {
           title="Edit profile"
           style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "Georgia, serif", textAlign: "left" }}
         >
-          <Avatar initials={(localStorage.getItem("name") || "U").split(" ").map(w => w[0]).join("").toUpperCase()} color="#7c3aed" size={34} />
+          <Avatar initials={(sessionStorage.getItem("name") || "U").split(" ").map(w => w[0]).join("").toUpperCase()} color="#7c3aed" size={34} />
           <div>
-            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{localStorage.getItem("name") || "Vice Chancellor"}</div>
+            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{sessionStorage.getItem("name") || "Vice Chancellor"}</div>
             <div style={{ color: "#475569", fontSize: 9 }}>Vice Chancellor · {APP_INFO.SHORT_NAME}</div>
           </div>
         </button>
@@ -1339,7 +1339,7 @@ export default function VCDashboard() {
                 style={{ flex: 1, padding: "10px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
                 Cancel
               </button>
-              <button onClick={() => { setShowLogoutModal(false); localStorage.clear(); navigate("/", { replace: true }); }}
+              <button onClick={() => { setShowLogoutModal(false); sessionStorage.clear(); navigate("/", { replace: true }); }}
                 style={{ flex: 1, padding: "10px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
                 Yes, Logout
               </button>
@@ -1350,4 +1350,5 @@ export default function VCDashboard() {
     </div>
   );
 }
+
 

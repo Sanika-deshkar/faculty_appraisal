@@ -6,7 +6,7 @@ import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal } from "../se
 import { uploadToCloudinary } from "../services/cloudinary";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { supabase } from "../services/supabase";
-import { reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -979,15 +979,15 @@ export default function HODDashboard({
   const [reviewingFaculty, setReviewingFaculty] = useState(null);
   const [facultyList, setFacultyList] = useState([]);
 
-  const hodSchool = localStorage.getItem("school");
-  const hodDept = localStorage.getItem("department");
+  const hodSchool = sessionStorage.getItem("school");
+  const hodDept = sessionStorage.getItem("department");
 
   useEffect(() => {
     const loadReviewQueue = async () => {
       try {
         const items = await fetchReviewQueueForRole({
           reviewerRole,
-          reviewerProfile: { ...profileFromLocalStorage(), appraisal_role: reviewerRole, school: hodSchool, department: hodDept },
+          reviewerProfile: { ...profileFromsessionStorage(), appraisal_role: reviewerRole, school: hodSchool, department: hodDept },
         });
         setFacultyList(items);
       } catch (err) {
@@ -1005,9 +1005,9 @@ export default function HODDashboard({
 
   // ── HOD's own appraisal form state ──
   const [info, setInfo] = useState({ 
-    name: localStorage.getItem("name") || "", 
+    name: sessionStorage.getItem("name") || "", 
     qual: "", 
-    desig: localStorage.getItem("role") === reviewerRole ? reviewerDesignation : "", 
+    desig: sessionStorage.getItem("role") === reviewerRole ? reviewerDesignation : "", 
     ay: "2025-2026" 
   });
   const inf = (k) => (v) => setInfo((p) => ({ ...p, [k]: v }));
@@ -1144,7 +1144,7 @@ export default function HODDashboard({
   const [appraisalLocked, setAppraisalLocked] = useState(false);
 
   useEffect(() => {
-    const userEmail = localStorage.getItem("username");
+    const userEmail = sessionStorage.getItem("username");
     if (!userEmail || !info.ay) return;
 
     const loadOwnAppraisal = async () => {
@@ -1274,7 +1274,7 @@ export default function HODDashboard({
       return;
     }
 
-    const userEmail = localStorage.getItem("username");
+    const userEmail = sessionStorage.getItem("username");
     if (!userEmail) {
       alert("Please login again before submitting. Your email was not found in this session.");
       navigate("/login", { replace: true });
@@ -1668,10 +1668,10 @@ export default function HODDashboard({
           title="Edit profile"
           style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "Georgia, serif", textAlign: "left" }}
         >
-          <Avatar initials={(localStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
+          <Avatar initials={(sessionStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
           <div style={{ flex: 1 }}>
-            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{(localStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}</div>
-            <div style={{ color: "#475569", fontSize: 9 }}>HOD · {localStorage.getItem("department")?.split(" ")[0] || ""}</div>
+            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{(sessionStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}</div>
+            <div style={{ color: "#475569", fontSize: 9 }}>HOD · {sessionStorage.getItem("department")?.split(" ")[0] || ""}</div>
           </div>
         </button>
         <button
@@ -2634,7 +2634,7 @@ export default function HODDashboard({
 <button
   onClick={() => {
     setShowLogoutModal(false);
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     sessionStorage.clear();
     navigate("/login", { replace: true });
   }}
@@ -2660,4 +2660,5 @@ export default function HODDashboard({
     </div>
   );
 }
+
 

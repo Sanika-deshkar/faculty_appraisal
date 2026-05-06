@@ -170,3 +170,4 @@ export const canonicalDepartmentValue = (department) =>
 
 export const isValidSoemrDepartment = (department) =>
   SOEMR_DEPARTMENTS.includes(department);
+

@@ -95,23 +95,24 @@ export const storeUserSession = ({ session, user, profile = {}, fallbackEmail = 
   const normalizedDepartment = nonTeachingRole || !isCisrSchool(school) ? department : "";
 
   if (session?.access_token) {
-    localStorage.setItem("supabaseToken", session.access_token);
+    sessionStorage.setItem("supabaseToken", session.access_token);
   }
 
-  localStorage.setItem("role", role);
-  localStorage.setItem("username", email);
-  localStorage.setItem("name", name);
-  localStorage.setItem("department", normalizedDepartment);
-  localStorage.setItem("school", school);
-  localStorage.setItem("employeeId", firstValue(safeProfile.employee_id, metadata.employeeId, metadata.employee_id));
-  localStorage.setItem("designation", firstValue(safeProfile.designation, metadata.designation));
-  localStorage.setItem("qualification", firstValue(safeProfile.qualification, metadata.qualification));
-  localStorage.setItem("experience", firstValue(safeProfile.teaching_experience, metadata.experience, metadata.teaching_experience));
-  localStorage.setItem("phone", firstValue(safeProfile.phone, metadata.phone));
+  sessionStorage.setItem("role", role);
+  sessionStorage.setItem("username", email);
+  sessionStorage.setItem("name", name);
+  sessionStorage.setItem("department", normalizedDepartment);
+  sessionStorage.setItem("school", school);
+  sessionStorage.setItem("employeeId", firstValue(safeProfile.employee_id, metadata.employeeId, metadata.employee_id));
+  sessionStorage.setItem("designation", firstValue(safeProfile.designation, metadata.designation));
+  sessionStorage.setItem("qualification", firstValue(safeProfile.qualification, metadata.qualification));
+  sessionStorage.setItem("experience", firstValue(safeProfile.teaching_experience, metadata.experience, metadata.teaching_experience));
+  sessionStorage.setItem("phone", firstValue(safeProfile.phone, metadata.phone));
 
   const hasHod = departmentHasHod(school, normalizedDepartment);
-  localStorage.setItem("hasHod", hasHod ? "true" : "false");
-  localStorage.setItem("hasHOD", hasHod ? "true" : "false");
+  sessionStorage.setItem("hasHod", hasHod ? "true" : "false");
+  sessionStorage.setItem("hasHOD", hasHod ? "true" : "false");
 
   return { email, role, school, department: normalizedDepartment };
 };
+

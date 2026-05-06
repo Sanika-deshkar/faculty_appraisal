@@ -31,12 +31,12 @@ function UnknownSchoolDashboard() {
 }
 
 export default function RoleDashboard() {
-  const role = normalizeRole(localStorage.getItem("role"), "");
-  const school = localStorage.getItem("school") || "";
-  const department = localStorage.getItem("department") || "";
+  const role = normalizeRole(sessionStorage.getItem("role"), "");
+  const school = sessionStorage.getItem("school") || "";
+  const department = sessionStorage.getItem("department") || "";
   const formType = formTypeForSchool(getSchoolKey(school));
 
-  localStorage.setItem("role", role);
+  sessionStorage.setItem("role", role);
 
   switch (role) {
     case "faculty":
@@ -69,7 +69,7 @@ export default function RoleDashboard() {
       
     case "dean":
       if (!formType) return <UnknownSchoolDashboard />;
-      if (getDeanTrack({ school, department, designation: localStorage.getItem("designation") || "" }) === DEAN_TRACKS.NON_ENGINEERING) {
+      if (getDeanTrack({ school, department, designation: sessionStorage.getItem("designation") || "" }) === DEAN_TRACKS.NON_ENGINEERING) {
         return <NonEngineeringDeanDashboard />;
       }
       return <DeanDashboard />;
@@ -90,3 +90,4 @@ export default function RoleDashboard() {
       return <Navigate to="/login" />;
   }
 }
+

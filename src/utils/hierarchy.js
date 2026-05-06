@@ -182,12 +182,13 @@ export const canAuthorityReviewProfile = (reviewerProfile = {}, subjectProfile =
   return false;
 };
 
-export const profileFromLocalStorage = () => ({
-  email: localStorage.getItem("username") || "",
-  full_name: localStorage.getItem("name") || "",
-  appraisal_role: localStorage.getItem("role") || "",
-  school: localStorage.getItem("school") || "",
-  department: localStorage.getItem("department") || "",
-  designation: localStorage.getItem("designation") || "",
-  employee_id: localStorage.getItem("employeeId") || "",
+export const profileFromsessionStorage = () => ({
+  email: sessionStorage.getItem("username") || "",
+  full_name: sessionStorage.getItem("name") || "",
+  appraisal_role: sessionStorage.getItem("role") || "",
+  school: sessionStorage.getItem("school") || "",
+  department: sessionStorage.getItem("department") || "",
+  designation: sessionStorage.getItem("designation") || "",
+  employee_id: sessionStorage.getItem("employeeId") || "",
 });
+

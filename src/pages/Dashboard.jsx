@@ -7,7 +7,7 @@ import {
   getReviewChain,
   isRejectedStatus,
   pendingStatusFor,
-  profileFromLocalStorage,
+  profileFromsessionStorage,
   roleLabel,
   workflowValidationError,
 } from "../utils/hierarchy";
@@ -1038,9 +1038,9 @@ export default function HODDashboard() {
 
   // ── HOD's own appraisal form state ──
   const [info, setInfo] = useState({ 
-    name: localStorage.getItem("name") || "", 
+    name: sessionStorage.getItem("name") || "", 
     qual: "", 
-    desig: localStorage.getItem("role") === "faculty" ? "Assistant Professor" : "", 
+    desig: sessionStorage.getItem("role") === "faculty" ? "Assistant Professor" : "", 
     ay: "2025-2026" 
   });
   const inf = (k) => (v) => setInfo((p) => ({ ...p, [k]: v }));
@@ -1179,7 +1179,7 @@ export default function HODDashboard() {
   const [workflowReviews, setWorkflowReviews] = useState([]);
 
   useEffect(() => {
-    const userEmail = localStorage.getItem("username");
+    const userEmail = sessionStorage.getItem("username");
     if (!userEmail || !info.ay) return undefined;
 
     const loadWorkflowStatus = async () => {
@@ -1224,7 +1224,7 @@ export default function HODDashboard() {
 
   useEffect(() => {
     const loadDocuments = async () => {
-      const userEmail = localStorage.getItem("username");
+      const userEmail = sessionStorage.getItem("username");
       if (!userEmail || !info.ay) return;
 
       const { data, error } = await supabase
@@ -1264,7 +1264,7 @@ export default function HODDashboard() {
 
   useEffect(() => {
     const loadExistingAppraisal = async () => {
-      const userEmail = localStorage.getItem("username");
+      const userEmail = sessionStorage.getItem("username");
       if (!userEmail || !info.ay) return;
 
       const fetchRows = async (table, shouldOrder = true) => {
@@ -1660,14 +1660,14 @@ export default function HODDashboard() {
       return;
     }
 
-    const userEmail = localStorage.getItem("username");
+    const userEmail = sessionStorage.getItem("username");
     if (!userEmail) {
       alert("Please login again before submitting. Your email was not found in this session.");
       navigate("/login", { replace: true });
       return;
     }
 
-    const workflowError = workflowValidationError(profileFromLocalStorage());
+    const workflowError = workflowValidationError(profileFromsessionStorage());
     if (workflowError) {
       alert(workflowError);
       return;
@@ -1678,7 +1678,7 @@ export default function HODDashboard() {
 
     setSubmitting(true);
     try {
-      const reviewChain = getReviewChain(profileFromLocalStorage());
+      const reviewChain = getReviewChain(profileFromsessionStorage());
       const nextReviewer = reviewChain[0];
       const workflowStatus = nextReviewer ? pendingStatusFor(nextReviewer) : "Submitted";
 
@@ -2419,10 +2419,10 @@ export default function HODDashboard() {
           title="Edit profile"
           style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "Georgia, serif", textAlign: "left" }}
         >
-          <Avatar initials={(localStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
+          <Avatar initials={(sessionStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
           <div style={{ flex: 1 }}>
-            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{(localStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}</div>
-            <div style={{ color: "#475569", fontSize: 9 }}>{localStorage.getItem("role") || "Faculty"} {localStorage.getItem("department")?.split(" ")[0] || ""}</div>
+            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{(sessionStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}</div>
+            <div style={{ color: "#475569", fontSize: 9 }}>{sessionStorage.getItem("role") || "Faculty"} {sessionStorage.getItem("department")?.split(" ")[0] || ""}</div>
           </div>
         </button>
         <button
@@ -2449,7 +2449,7 @@ export default function HODDashboard() {
             <WorkflowStatusTracker
               declaration={workflowDeclaration}
               reviews={workflowReviews}
-              profile={profileFromLocalStorage()}
+              profile={profileFromsessionStorage()}
             />
             {appraisalLocked && (
               <div style={{ background: workflowRejected ? "#fef2f2" : "#ecfdf5", border: `1px solid ${workflowRejected ? "#fecaca" : "#bbf7d0"}`, color: workflowRejected ? "#991b1b" : "#166534", borderRadius: 9, padding: "10px 14px", fontSize: 12, fontWeight: 700 }}>
@@ -3288,7 +3288,7 @@ export default function HODDashboard() {
 <button
   onClick={() => {
     setShowLogoutModal(false);
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     sessionStorage.clear();
     navigate("/login", { replace: true });
   }}
@@ -3314,4 +3314,5 @@ export default function HODDashboard() {
     </div>
   );
 }
+
 

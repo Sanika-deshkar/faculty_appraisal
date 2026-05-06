@@ -100,15 +100,15 @@ const MOCK_USERS = {
 // ─── Profile Loader ───────────────────────────────────────────────────────────
 function ProfileLoader() {
   const navigate = useNavigate();
-  const role = normalizeRole(localStorage.getItem("role"), "faculty");
-  const name = localStorage.getItem("name") || "";
-  const dept = localStorage.getItem("department") || "";
-  const school = localStorage.getItem("school") || "";
-  const empId = localStorage.getItem("employeeId") || "";
-  const desig = localStorage.getItem("designation") || "";
-  const qual = localStorage.getItem("qualification") || "";
-  const exp = localStorage.getItem("experience") || "";
-  const phone = localStorage.getItem("phone") || "";
+  const role = normalizeRole(sessionStorage.getItem("role"), "faculty");
+  const name = sessionStorage.getItem("name") || "";
+  const dept = sessionStorage.getItem("department") || "";
+  const school = sessionStorage.getItem("school") || "";
+  const empId = sessionStorage.getItem("employeeId") || "";
+  const desig = sessionStorage.getItem("designation") || "";
+  const qual = sessionStorage.getItem("qualification") || "";
+  const exp = sessionStorage.getItem("experience") || "";
+  const phone = sessionStorage.getItem("phone") || "";
 
   const baseUser = MOCK_USERS[role] || MOCK_USERS.faculty;
   const user = {
@@ -184,3 +184,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+

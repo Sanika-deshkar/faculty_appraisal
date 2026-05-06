@@ -76,7 +76,7 @@ export default function ResetPassword() {
     }
 
     await supabase.auth.signOut();
-    localStorage.clear();
+    sessionStorage.clear();
     sessionStorage.clear();
     setMessage("Password updated successfully. Redirecting to login...");
 
@@ -282,3 +282,4 @@ const s = {
     textDecoration: "none",
   },
 };
+

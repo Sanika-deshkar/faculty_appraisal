@@ -2,8 +2,8 @@
 // ─── School HOD flag ──────────────────────────────────────────────────────────
 // Returns true  → school has an HOD layer (Faculty → HOD → Director → ...)
 // Returns false → no HOD layer (Faculty → Director → ...)
-// The flag is written to localStorage by Login.jsx at sign-in time.
-export const schoolHasHOD = () => localStorage.getItem("hasHOD") !== "false";
+// The flag is written to sessionStorage by Login.jsx at sign-in time.
+export const schoolHasHOD = () => sessionStorage.getItem("hasHOD") !== "false";
 
 // ─── Field / score editing permissions ───────────────────────────────────────
 export const canEditFacultyFields = (role) => role === "faculty";

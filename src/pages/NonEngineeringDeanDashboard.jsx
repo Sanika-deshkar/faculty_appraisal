@@ -8,7 +8,7 @@ import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/revie
 import { supabase } from "../services/supabase";
 import { DEAN_TRACKS, getSchoolKey, getSchoolsByDeanTrack } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
-import { reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
 import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
 
@@ -1440,7 +1440,7 @@ export default function NonEngineeringDeanDashboard() {
       try {
         const items = await fetchReviewQueueForRole({
           reviewerRole: "dean",
-          reviewerProfile: { ...profileFromLocalStorage(), school: NON_ENGINEERING_SCHOOLS[0]?.label || "" },
+          reviewerProfile: { ...profileFromsessionStorage(), school: NON_ENGINEERING_SCHOOLS[0]?.label || "" },
           schoolValues: NON_ENGINEERING_SCHOOL_VALUES,
         });
         const scopedItems = items.filter((item) => NON_ENGINEERING_SCHOOL_CODES.includes(getSchoolKey(item.school)));
@@ -1463,10 +1463,10 @@ export default function NonEngineeringDeanDashboard() {
 
   // ── Dean's own appraisal form state ──
   const [info, setInfo] = useState({ 
-    name: localStorage.getItem("name") || "", 
+    name: sessionStorage.getItem("name") || "", 
     qual: "", 
-    desig: localStorage.getItem("role") === "dean" ? "Dean" : "", 
-    ay: localStorage.getItem("academicYear") || "2025-2026" 
+    desig: sessionStorage.getItem("role") === "dean" ? "Dean" : "", 
+    ay: sessionStorage.getItem("academicYear") || "2025-2026" 
   });
   const inf = (k) => (v) => setInfo((p) => ({ ...p, [k]: v }));
 
@@ -1602,7 +1602,7 @@ export default function NonEngineeringDeanDashboard() {
   const [appraisalLocked, setAppraisalLocked] = useState(false);
 
   useEffect(() => {
-    const userEmail = localStorage.getItem("username");
+    const userEmail = sessionStorage.getItem("username");
     if (!userEmail || !info.ay) return;
 
     const loadOwnAppraisal = async () => {
@@ -2025,7 +2025,7 @@ export default function NonEngineeringDeanDashboard() {
       return;
     }
 
-    const userEmail = localStorage.getItem("username");
+    const userEmail = sessionStorage.getItem("username");
     if (!userEmail) {
       alert("Please login again before submitting. Your email was not found in this session.");
       navigate("/login", { replace: true });
@@ -2190,10 +2190,10 @@ export default function NonEngineeringDeanDashboard() {
           title="Edit profile"
           style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "Georgia, serif", textAlign: "left" }}
         >
-          <Avatar initials={(localStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
+          <Avatar initials={(sessionStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
           <div style={{ flex: 1 }}>
-            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{(localStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}</div>
-            <div style={{ color: "#475569", fontSize: 9 }}>Dean · {localStorage.getItem("department")?.split(" ")[0] || ""}</div>
+            <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{(sessionStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}</div>
+            <div style={{ color: "#475569", fontSize: 9 }}>Dean · {sessionStorage.getItem("department")?.split(" ")[0] || ""}</div>
           </div>
         </button>
         <button
@@ -3220,7 +3220,7 @@ export default function NonEngineeringDeanDashboard() {
 <button
   onClick={() => {
     setShowLogoutModal(false);
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     sessionStorage.clear();
     navigate("/login", { replace: true });
   }}
@@ -3246,4 +3246,5 @@ export default function NonEngineeringDeanDashboard() {
     </div>
   );
 }
+
 
