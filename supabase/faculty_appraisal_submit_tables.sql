@@ -45,8 +45,9 @@ create table public.faculty_profiles (
       'SoEMR — School of Engineering Management & Research',
       'SoC — School of Commerce & Management',
       'SoMCS — School of Media & Communication Studies',
-      'SoD — School of Design',
-      'SoAA — School of Applied Arts'
+      'CioD — School of Design',
+      'SoAA — School of Applied Arts',
+      'CISR — Center for Interdisciplinary Studies and Research'
     )
   ),
   constraint faculty_profiles_soemr_department_allowed check (
@@ -63,6 +64,143 @@ create table public.faculty_profiles (
 create trigger faculty_profiles_set_updated_at
 before update on public.faculty_profiles
 for each row execute function public.set_updated_at();
+
+-- Development-only login users.
+-- These users bypass Supabase Auth signup rate limits through the dev_login RPC.
+-- Do not use this table for production passwords.
+create table public.dev_login_users (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  password text not null,
+  employee_id text,
+  full_name text not null,
+  qualification text,
+  designation text,
+  department text,
+  school text,
+  teaching_experience text,
+  phone text,
+  academic_year text not null default '2025-2026',
+  appraisal_role text not null default 'faculty',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger dev_login_users_set_updated_at
+before update on public.dev_login_users
+for each row execute function public.set_updated_at();
+
+create or replace function public.dev_login(p_email text, p_password text)
+returns table (
+  email text,
+  employee_id text,
+  full_name text,
+  qualification text,
+  designation text,
+  department text,
+  school text,
+  teaching_experience text,
+  phone text,
+  academic_year text,
+  appraisal_role text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  matched public.dev_login_users%rowtype;
+begin
+  select *
+  into matched
+  from public.dev_login_users
+  where lower(dev_login_users.email) = lower(trim(p_email))
+    and dev_login_users.password = p_password
+  limit 1;
+
+  if not found then
+    return;
+  end if;
+
+  insert into public.faculty_profiles (
+    email,
+    employee_id,
+    full_name,
+    qualification,
+    designation,
+    department,
+    school,
+    teaching_experience,
+    phone,
+    academic_year,
+    appraisal_role
+  )
+  values (
+    lower(trim(matched.email)),
+    matched.employee_id,
+    matched.full_name,
+    matched.qualification,
+    matched.designation,
+    matched.department,
+    matched.school,
+    matched.teaching_experience,
+    matched.phone,
+    matched.academic_year,
+    matched.appraisal_role
+  )
+  on conflict (email) do update set
+    employee_id = excluded.employee_id,
+    full_name = excluded.full_name,
+    qualification = excluded.qualification,
+    designation = excluded.designation,
+    department = excluded.department,
+    school = excluded.school,
+    teaching_experience = excluded.teaching_experience,
+    phone = excluded.phone,
+    academic_year = excluded.academic_year,
+    appraisal_role = excluded.appraisal_role,
+    updated_at = now();
+
+  return query
+  select
+    fp.email,
+    fp.employee_id,
+    fp.full_name,
+    fp.qualification,
+    fp.designation,
+    fp.department,
+    fp.school,
+    fp.teaching_experience,
+    fp.phone,
+    fp.academic_year,
+    fp.appraisal_role
+  from public.faculty_profiles fp
+  where fp.email = lower(trim(matched.email));
+end;
+$$;
+
+insert into public.dev_login_users (
+  email,
+  password,
+  employee_id,
+  full_name,
+  qualification,
+  designation,
+  department,
+  school,
+  teaching_experience,
+  phone,
+  appraisal_role
+)
+values
+  ('faculty@test.local', 'test123', 'DEV-FAC-001', 'Dr. Test Faculty', 'Ph.D', 'Assistant Professor', 'Mechanical Engineering', 'SoEMR — School of Engineering Management & Research', '8 Years', '9000000001', 'faculty'),
+  ('hod@test.local', 'test123', 'DEV-HOD-001', 'Prof. Test HOD', 'Ph.D', 'Professor & Head', 'Mechanical Engineering', 'SoEMR — School of Engineering Management & Research', '15 Years', '9000000002', 'hod'),
+  ('director@test.local', 'test123', 'DEV-DIR-001', 'Dr. Test Director', 'Ph.D', 'Director', null, 'SoEMR — School of Engineering Management & Research', '18 Years', '9000000003', 'director'),
+  ('dean.eng@test.local', 'test123', 'DEV-DEN-001', 'Prof. Test Engineering Dean', 'Ph.D', 'Dean', null, 'SoCSEA — School of Computer Science, Engineering & Applications', '20 Years', '9000000004', 'dean'),
+  ('dean.noneng@test.local', 'test123', 'DEV-DNN-001', 'Prof. Test Non-Engineering Dean', 'Ph.D', 'Dean', null, 'SoC — School of Commerce & Management', '20 Years', '9000000005', 'dean'),
+  ('vc@test.local', 'test123', 'DEV-VC-001', 'Prof. Test VC', 'Ph.D', 'Vice Chancellor', null, null, '25 Years', '9000000006', 'vc'),
+  ('cisr.faculty@test.local', 'test123', 'DEV-CF-001', 'Dr. Test CISR Faculty', 'Ph.D', 'Assistant Professor', null, 'CISR — Center for Interdisciplinary Studies and Research', '7 Years', '9000000007', 'faculty'),
+  ('cisr.head@test.local', 'test123', 'DEV-CH-001', 'Dr. Test CISR Center Head', 'Ph.D', 'Center Head', null, 'CISR — Center for Interdisciplinary Studies and Research', '16 Years', '9000000008', 'center_head');
 
 -- Current frontend submit button writes to this table.
 create table public.declarations (
@@ -483,7 +621,7 @@ create table public.appraisal_reviews (
   faculty_email text not null,
   academic_year text not null,
   reviewer_email text,
-  reviewer_role text not null check (reviewer_role in ('hod', 'director', 'dean', 'vc')),
+  reviewer_role text not null check (reviewer_role in ('hod', 'center_head', 'director', 'dean', 'vc')),
   part_a_score numeric not null default 0,
   part_b_score numeric not null default 0,
   total_score numeric not null default 0,
@@ -579,4 +717,9 @@ grant select, insert, update, delete on all tables in schema public to anon, aut
 grant usage, select on all sequences in schema public to anon, authenticated;
 alter default privileges in schema public grant select, insert, update, delete on tables to anon, authenticated;
 alter default privileges in schema public grant usage, select on sequences to anon, authenticated;
+
+-- Keep dev test passwords out of direct frontend table reads. The frontend only
+-- needs execute access to dev_login(), which returns profile data after a match.
+revoke all on public.dev_login_users from anon, authenticated;
+grant execute on function public.dev_login(text, text) to anon, authenticated;
 

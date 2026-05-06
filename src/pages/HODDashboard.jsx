@@ -805,7 +805,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
 }
 
 // ─── Full Review Panel (opened when HOD clicks Review) ────────────────────────
-function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
+function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false, reviewerLabel = "HOD" }) {
   const [hodData, setHodData] = useState({});
   const [remarks, setRemarks] = useState(faculty.hodRemarks || "");
   const [tab, setTab] = useState("form");
@@ -868,15 +868,15 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ background: "#1e293b", borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
-            <div style={{ color: "#94a3b8", fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6 }}>HOD Part A</div>
+            <div style={{ color: "#94a3b8", fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6 }}>{reviewerLabel} Part A</div>
             <div style={{ color: "#818cf8", fontWeight: 800, fontSize: 16 }}>{partA.toFixed(1)}</div>
           </div>
           <div style={{ background: "#1e293b", borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
-            <div style={{ color: "#94a3b8", fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6 }}>HOD Part B</div>
+            <div style={{ color: "#94a3b8", fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6 }}>{reviewerLabel} Part B</div>
             <div style={{ color: "#38bdf8", fontWeight: 800, fontSize: 16 }}>{partB.toFixed(1)}</div>
           </div>
           <div style={{ background: g.bg, border: `2px solid ${g.color}40`, borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
-            <div style={{ color: g.color, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 700 }}>HOD Total</div>
+            <div style={{ color: g.color, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 700 }}>{reviewerLabel} Total</div>
             <div style={{ color: g.color, fontWeight: 800, fontSize: 16 }}>{total.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/575</span></div>
           </div>
         </div>
@@ -900,13 +900,13 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
 
       {tab === "remarks" && (
         <div style={{ background: "#fff", borderRadius: 10, padding: "22px 24px", boxShadow: "0 1px 6px rgba(0,0,0,.06)" }}>
-          <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>{reviewLocked ? "HOD Submitted Review" : "HOD Remarks & Final Submission"}</h3>
+          <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>{reviewLocked ? `${reviewerLabel} Submitted Review` : `${reviewerLabel} Remarks & Final Submission`}</h3>
 
           {/* Score Summary */}
           <table style={{ ...T, marginBottom: 18 }}>
             <thead><tr>
               <th style={TH}>Section</th><th style={TH}>Max</th>
-              <th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
+              <th style={TH}>Faculty Score</th><th style={TH_HOD}>{reviewerLabel} Score</th>
             </tr></thead>
             <tbody>
               {[
@@ -933,7 +933,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
             </tbody>
           </table>
 
-          <label style={{ fontWeight: 700, fontSize: 13, color: "#334155", display: "block", marginBottom: 6 }}>HOD Remarks</label>
+          <label style={{ fontWeight: 700, fontSize: 13, color: "#334155", display: "block", marginBottom: 6 }}>{reviewerLabel} Remarks</label>
           <textarea value={remarks} onChange={e => setRemarks(e.target.value)} rows={4} readOnly={reviewLocked}
             placeholder="Enter your remarks, observations, and recommendations for this faculty member..."
             style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 7, padding: "10px 12px", fontSize: 12, fontFamily: "Georgia, serif", resize: "vertical", boxSizing: "border-box", marginBottom: 16, background: reviewLocked ? "#f8fafc" : "#fff" }} />
@@ -956,7 +956,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
             <button onClick={() => onSubmit(faculty.id, { partA, partB, total }, remarks, buildHodSectionScores(faculty, hodData), reviewConfirmed)}
               disabled={!reviewConfirmed}
               style={{ padding: "10px 28px", background: reviewConfirmed ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
-              ✔ Submit HOD Review
+              ✔ Submit {reviewerLabel} Review
             </button>
             )}
           </div>
@@ -967,7 +967,12 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
 }
 
 // ─── Main HOD Dashboard ───────────────────────────────────────────────────────
-export default function HODDashboard() {
+export default function HODDashboard({
+  reviewerRole = "hod",
+  reviewerLabel = "HOD",
+  reviewerDesignation = "Professor & Head",
+  forwardedToLabel = "Director",
+} = {}) {
   const navigate = useNavigate();
   const [activeMainTab, setActiveMainTab] = useState("myAppraisal");
   const [hodAppraisalTab, setHodAppraisalTab] = useState("partA");
@@ -981,18 +986,18 @@ export default function HODDashboard() {
     const loadReviewQueue = async () => {
       try {
         const items = await fetchReviewQueueForRole({
-          reviewerRole: "hod",
-          reviewerProfile: { ...profileFromLocalStorage(), school: hodSchool, department: hodDept },
+          reviewerRole,
+          reviewerProfile: { ...profileFromLocalStorage(), appraisal_role: reviewerRole, school: hodSchool, department: hodDept },
         });
         setFacultyList(items);
       } catch (err) {
-        console.error("Could not load HOD review queue:", err);
+        console.error(`Could not load ${reviewerLabel} review queue:`, err);
         setFacultyList([]);
       }
     };
 
     loadReviewQueue();
-  }, [hodDept, hodSchool]);
+  }, [hodDept, hodSchool, reviewerLabel, reviewerRole]);
 
   const [filterStatus, setFilterStatus] = useState("All");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -1002,7 +1007,7 @@ export default function HODDashboard() {
   const [info, setInfo] = useState({ 
     name: localStorage.getItem("name") || "", 
     qual: "", 
-    desig: localStorage.getItem("role") === "hod" ? "Professor & Head" : "", 
+    desig: localStorage.getItem("role") === reviewerRole ? reviewerDesignation : "", 
     ay: "2025-2026" 
   });
   const inf = (k) => (v) => setInfo((p) => ({ ...p, [k]: v }));
@@ -1591,7 +1596,7 @@ export default function HODDashboard() {
       await submitWorkflowReview({
         subjectEmail: item.email,
         academicYear: item.academicYear || item.info?.ay,
-        reviewerRole: "hod",
+        reviewerRole,
         partAScore: scores.partA,
         partBScore: scores.partB,
         totalScore: scores.total,
@@ -1599,12 +1604,12 @@ export default function HODDashboard() {
         sectionScores,
       });
 
-      setFacultyList(prev => prev.map(f => f.id === id ? { ...f, ...sectionScores, innovHod: sectionScores?.innovativeTeaching?.hod ?? f.innovHod, status: "Reviewed", workflowStatus: reviewedStatusFor("hod"), hodPartA: scores.partA, hodPartB: scores.partB, hodTotal: scores.total, hodRemarks: remarks } : f));
+      setFacultyList(prev => prev.map(f => f.id === id ? { ...f, ...sectionScores, innovHod: sectionScores?.innovativeTeaching?.hod ?? f.innovHod, status: "Reviewed", workflowStatus: reviewedStatusFor(reviewerRole), hodPartA: scores.partA, hodPartB: scores.partB, hodTotal: scores.total, hodRemarks: remarks } : f));
       setReviewingFaculty(null);
-      alert("HOD review approved and forwarded to Director.");
+      alert(`${reviewerLabel} review approved and forwarded to ${forwardedToLabel}.`);
     } catch (err) {
-      console.error("Could not submit HOD review:", err);
-      alert(`Unable to submit HOD review.\n\n${err.message}`);
+      console.error(`Could not submit ${reviewerLabel} review:`, err);
+      alert(`Unable to submit ${reviewerLabel} review.\n\n${err.message}`);
     }
   };
 
@@ -2589,6 +2594,7 @@ export default function HODDashboard() {
             onBack={() => setReviewingFaculty(null)}
             onSubmit={handleSubmitReview}
             readOnly={/Reviewed|Rejected/.test(reviewingFaculty.status || "")}
+            reviewerLabel={reviewerLabel}
           />
         )}
       </main>

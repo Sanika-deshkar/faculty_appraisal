@@ -32,6 +32,15 @@ const MOCK_USERS = {
     role: "hod",
     avatar: "RK",
   },
+  center_head: {
+    employeeId: "EMP-2025-040",
+    name: "Dr. CISR Center Head",
+    designation: "Center Head",
+    department: "",
+    school: schoolLabel("CISR"),
+    role: "center_head",
+    avatar: "CH",
+  },
   dean: {
     employeeId: "EMP-2025-020",
     name: "Prof. Suresh Patil",

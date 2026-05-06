@@ -1,6 +1,7 @@
 export const DEAN_TRACKS = {
   ENGINEERING: "engineering",
   NON_ENGINEERING: "non_engineering",
+  DIRECT_VC: "direct_vc",
 };
 
 export const SOEMR_DEPARTMENTS = [
@@ -66,9 +67,9 @@ export const UNIVERSITY_SCHOOLS = [
     aliases: ["somcs", "media", "communication studies"],
   },
   {
-    code: "SoD",
+    code: "CioD",
     name: "School of Design",
-    label: "SoD — School of Design",
+    label: "CioD — School of Design",
     deanTrack: DEAN_TRACKS.NON_ENGINEERING,
     hodDepartments: [],
     aliases: ["sod", "ciod", "design", "school of design"],
@@ -80,6 +81,19 @@ export const UNIVERSITY_SCHOOLS = [
     deanTrack: DEAN_TRACKS.NON_ENGINEERING,
     hodDepartments: [],
     aliases: ["soaa", "applied arts"],
+  },
+  {
+    code: "CISR",
+    name: "Center for Interdisciplinary Studies and Research",
+    label: "CISR — Center for Interdisciplinary Studies and Research",
+    deanTrack: DEAN_TRACKS.DIRECT_VC,
+    hodDepartments: [],
+    aliases: [
+      "cisr",
+      "center for interdisciplinary studies and research",
+      "centre for interdisciplinary studies and research",
+      "interdisciplinary studies and research",
+    ],
   },
 ];
 
@@ -136,6 +150,8 @@ export const isValidSchool = (school) =>
   SCHOOL_OPTIONS.some((option) => option.value === school);
 
 export const isSoemrSchool = (school) => getSchoolKey(school) === "SoEMR";
+
+export const isCisrSchool = (school) => getSchoolKey(school) === "CISR";
 
 export const getDepartmentByValue = (department) => {
   const normalized = normalizeHierarchyText(department);

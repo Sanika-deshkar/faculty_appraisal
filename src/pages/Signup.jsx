@@ -6,6 +6,7 @@ import {
   SOEMR_DEPARTMENTS,
   canonicalDepartmentValue,
   canonicalSchoolValue,
+  isCisrSchool,
   isSoemrSchool,
   isValidSchool,
   isValidSoemrDepartment,
@@ -16,6 +17,7 @@ import { buildProfilePayload, storeUserSession } from "../auth/session";
 const BASE_ROLE_OPTIONS = [
   { value: "faculty", label: "Faculty" },
   { value: "hod", label: "HOD" },
+  { value: "center_head", label: "Center Head" },
   { value: "dean", label: "Dean" },
   { value: "director", label: "Director" },
   { value: "vc", label: "Vice Chancellor" },
@@ -40,7 +42,13 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const selectedSchool = canonicalSchoolValue(formData.school);
   const needsDepartment = isSoemrSchool(selectedSchool);
-  const roleOptions = BASE_ROLE_OPTIONS.filter((role) => needsDepartment || role.value !== "hod");
+  const isCisr = isCisrSchool(selectedSchool);
+  const roleOptions = BASE_ROLE_OPTIONS.filter((role) => {
+    if (role.value === "hod") return needsDepartment;
+    if (role.value === "center_head") return isCisr;
+    if (isCisr && (role.value === "director" || role.value === "dean")) return false;
+    return true;
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -69,7 +77,7 @@ export default function Signup() {
     }
 
     if (!isValidSchool(formData.school)) {
-      setError("Please select one of the 8 approved schools from the dropdown.");
+      setError("Please select one of the approved schools or centers from the dropdown.");
       return;
     }
 
@@ -80,6 +88,16 @@ export default function Signup() {
 
     if (formData.role === "hod" && !isSoemrSchool(school)) {
       setError("HOD accounts are allowed only for SoEMR departments in this hierarchy.");
+      return;
+    }
+
+    if (formData.role === "center_head" && !isCisrSchool(school)) {
+      setError("Center Head accounts are allowed only for CISR.");
+      return;
+    }
+
+    if (isCisrSchool(school) && (formData.role === "director" || formData.role === "dean" || formData.role === "hod")) {
+      setError("CISR uses only Center Head and Faculty roles below VC.");
       return;
     }
 

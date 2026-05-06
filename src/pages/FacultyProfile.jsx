@@ -6,6 +6,7 @@ export default function FacultyProfile({ user, onProceed }) {
   const ROLE_LABEL = {
   faculty: "Faculty (Self-Appraisal)",
   hod: "Head of Department",
+  center_head: "Center Head",
   dean: "Dean",
   director: "Director",
   vc: "Vice Chancellor",
@@ -26,6 +27,7 @@ export default function FacultyProfile({ user, onProceed }) {
 const roleColor = {
   faculty:  { bg: "#ede9fe", color: "#6d28d9" },
   hod:      { bg: "#fef3c7", color: "#b45309" },
+  center_head: { bg: "#e0f2fe", color: "#0369a1" },
   dean:     { bg: "#d1fae5", color: "#065f46" },
   director: { bg: "#cffafe", color: "#0e7490" },
   vc:       { bg: "#fee2e2", color: "#991b1b" },

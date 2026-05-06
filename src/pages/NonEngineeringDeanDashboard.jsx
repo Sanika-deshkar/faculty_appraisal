@@ -22,7 +22,7 @@ const NON_ENGINEERING_SCHOOL_CODES = NON_ENGINEERING_SCHOOLS.map((school) => sch
 const SCHOOL_VISUALS = {
   SoC: { icon: "▣", color: "#14b8a6", bg: "#ecfeff" },
   SoMCS: { icon: "◰", color: "#6366f1", bg: "#eef2ff" },
-  SoD: { icon: "▰", color: "#ec4899", bg: "#fdf2f8" },
+  CioD: { icon: "▰", color: "#ec4899", bg: "#fdf2f8" },
   SoAA: { icon: "●", color: "#7c3aed", bg: "#f3e8ff" },
 };
 

@@ -16,9 +16,10 @@ const roles = {
   engineeringDean: { appraisal_role: "dean", school: "SoCSEA" },
   nonEngineeringDean: { appraisal_role: "dean", school: "SoC" },
   soemrDirector: { appraisal_role: "director", school: SOEMR_SCHOOL.label },
+  cisrCenterHead: { appraisal_role: "center_head", school: "CISR" },
 };
 
-assert.equal(SCHOOL_OPTIONS.length, 8, "Signup must expose exactly 8 schools");
+assert.equal(SCHOOL_OPTIONS.length, 9, "Signup must expose exactly 8 schools plus CISR");
 assert.deepEqual(
   SCHOOL_OPTIONS.map((school) => school.value),
   [
@@ -28,13 +29,14 @@ assert.deepEqual(
     "SoEMR — School of Engineering Management & Research",
     "SoC — School of Commerce & Management",
     "SoMCS — School of Media & Communication Studies",
-    "SoD — School of Design",
+    "CioD — School of Design",
     "SoAA — School of Applied Arts",
+    "CISR — Center for Interdisciplinary Studies and Research",
   ],
-  "School dropdown values must match the approved list exactly"
+  "School/center dropdown values must match the approved list exactly"
 );
 
-for (const school of UNIVERSITY_SCHOOLS.filter((item) => item.code !== "SoEMR")) {
+for (const school of UNIVERSITY_SCHOOLS.filter((item) => item.code !== "SoEMR" && item.code !== "CISR")) {
   const faculty = { appraisal_role: "faculty", school: school.label, department: "" };
   assert.deepEqual(
     getReviewChain(faculty),
@@ -42,6 +44,21 @@ for (const school of UNIVERSITY_SCHOOLS.filter((item) => item.code !== "SoEMR"))
     `${school.code} faculty must route Director -> Dean -> VC`
   );
 }
+
+const cisrFaculty = { appraisal_role: "faculty", school: "CISR", department: "" };
+assert.deepEqual(
+  getReviewChain(cisrFaculty),
+  ["center_head", "vc"],
+  "CISR faculty must route Center Head -> VC"
+);
+assert.deepEqual(
+  getReviewChain(roles.cisrCenterHead),
+  ["vc"],
+  "CISR Center Head self-appraisal must route directly to VC"
+);
+assert.equal(canAuthorityReviewProfile(roles.cisrCenterHead, cisrFaculty), true, "CISR Center Head must review CISR faculty");
+assert.equal(canAuthorityReviewProfile(roles.engineeringDean, cisrFaculty), false, "Engineering dean must not review CISR faculty");
+assert.equal(canAuthorityReviewProfile(roles.nonEngineeringDean, cisrFaculty), false, "Non-engineering dean must not review CISR faculty");
 
 for (const department of SOEMR_DEPARTMENTS) {
   const faculty = { appraisal_role: "faculty", school: SOEMR_SCHOOL.label, department };
@@ -73,14 +90,15 @@ assert.equal(canAuthorityReviewProfile(sobbDirector, socseaFaculty), false, "Oth
 for (const school of UNIVERSITY_SCHOOLS) {
   const faculty = { appraisal_role: "faculty", school: school.label, department: school.code === "SoEMR" ? SOEMR_DEPARTMENTS[0] : "" };
   const engineering = school.deanTrack === "engineering";
+  const directVc = school.deanTrack === "direct_vc";
   assert.equal(
     canAuthorityReviewProfile(roles.engineeringDean, faculty),
-    engineering,
+    engineering && !directVc,
     `Engineering dean visibility mismatch for ${school.code}`
   );
   assert.equal(
     canAuthorityReviewProfile(roles.nonEngineeringDean, faculty),
-    !engineering,
+    !engineering && !directVc,
     `Non-engineering dean visibility mismatch for ${school.code}`
   );
   assert.equal(canAuthorityReviewProfile(roles.vc, faculty), true, `VC must review ${school.code}`);

@@ -6,6 +6,7 @@ import {
   SOEMR_DEPARTMENTS,
   canonicalDepartmentValue,
   canonicalSchoolValue,
+  isCisrSchool,
   isSoemrSchool,
   isValidSchool,
   isValidSoemrDepartment,
@@ -16,6 +17,7 @@ import { supabase } from "../services/supabase";
 const ROLE_LABEL = {
   faculty: "Faculty",
   hod: "Head of Department",
+  center_head: "Center Head",
   director: "Director",
   dean: "Dean",
   vc: "Vice Chancellor",
@@ -24,6 +26,7 @@ const ROLE_LABEL = {
 const BASE_ROLE_OPTIONS = [
   { value: "faculty", label: "Faculty" },
   { value: "hod", label: "HOD" },
+  { value: "center_head", label: "Center Head" },
   { value: "dean", label: "Dean" },
   { value: "director", label: "Director" },
   { value: "vc", label: "Vice Chancellor" },
@@ -60,7 +63,13 @@ export default function EditProfile() {
 
   const selectedSchool = useMemo(() => canonicalSchoolValue(formData.school), [formData.school]);
   const needsDepartment = isSoemrSchool(selectedSchool);
-  const roleOptions = BASE_ROLE_OPTIONS.filter((role) => needsDepartment || role.value !== "hod");
+  const isCisr = isCisrSchool(selectedSchool);
+  const roleOptions = BASE_ROLE_OPTIONS.filter((role) => {
+    if (role.value === "hod") return needsDepartment;
+    if (role.value === "center_head") return isCisr;
+    if (isCisr && (role.value === "director" || role.value === "dean")) return false;
+    return true;
+  });
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -94,7 +103,7 @@ export default function EditProfile() {
     }
 
     if (!isValidSchool(school)) {
-      setError("Please select one of the approved schools from the dropdown.");
+      setError("Please select one of the approved schools or centers from the dropdown.");
       return;
     }
 
@@ -105,6 +114,16 @@ export default function EditProfile() {
 
     if (formData.role === "hod" && !isSoemrSchool(school)) {
       setError("HOD profiles must remain assigned to a SoEMR department in this hierarchy.");
+      return;
+    }
+
+    if (formData.role === "center_head" && !isCisrSchool(school)) {
+      setError("Center Head profiles must remain assigned to CISR.");
+      return;
+    }
+
+    if (isCisrSchool(school) && (formData.role === "director" || formData.role === "dean" || formData.role === "hod")) {
+      setError("CISR uses only Center Head and Faculty roles below VC.");
       return;
     }
 

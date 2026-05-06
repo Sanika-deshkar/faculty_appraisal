@@ -1,6 +1,8 @@
 import { Navigate } from "react-router-dom";
 import Dashboard from "./Dashboard"; // Faculty
 import HODDashboard from "./HODDashboard";
+import CISRFacultyDashboard from "./CISRFacultyDashboard";
+import CISRCenterHeadDashboard from "./CISRCenterHeadDashboard";
 import DeanDashboard from "./DeanDashboard";
 import NonEngineeringDeanDashboard from "./NonEngineeringDeanDashboard";
 import DirectorDashboard from "./DirectorDashboard";
@@ -9,7 +11,7 @@ import MediaCommDashboard from "./MediaCommDashboard";
 import DesignArtsDashboard from "./DesignArtsDashboard";
 import { normalizeRole } from "../auth/session";
 import { departmentHasHod, getDeanTrack } from "../utils/hierarchy";
-import { DEAN_TRACKS, getSchoolKey } from "../constants/universityHierarchy";
+import { DEAN_TRACKS, getSchoolKey, isCisrSchool } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
 
 function UnknownSchoolDashboard() {
@@ -35,10 +37,15 @@ export default function RoleDashboard() {
 
   switch (role) {
     case "faculty":
+      if (isCisrSchool(school)) return <CISRFacultyDashboard />;
       if (formType === FORM_TYPES.MEDIA_COMM) return <MediaCommDashboard fixedRole="faculty" />;
       if (formType === FORM_TYPES.DESIGN_ARTS) return <DesignArtsDashboard fixedRole="faculty" />;
       if (!formType) return <UnknownSchoolDashboard />;
       return <Dashboard />;
+
+    case "center_head":
+      if (!isCisrSchool(school)) return <UnknownSchoolDashboard />;
+      return <CISRCenterHeadDashboard />;
     
     case "hod": {
       if (!formType) return <UnknownSchoolDashboard />;

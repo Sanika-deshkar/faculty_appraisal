@@ -48,6 +48,7 @@ const REVIEW_SECTION_TABLES = [
 
 const REVIEW_SCORE_COLUMNS = {
   hod: "hod_score",
+  center_head: "hod_score",
   director: "director_score",
   dean: "dean_score",
   vc: "vc_score",
@@ -84,6 +85,7 @@ const SNAPSHOT_REVIEW_ARRAY_KEYS = [
 
 const INNOVATIVE_REVIEW_KEYS = {
   hod: "innovHod",
+  center_head: "innovHod",
   director: "innovDirector",
   dean: "innovDean",
   vc: "innovVc",
@@ -91,6 +93,7 @@ const INNOVATIVE_REVIEW_KEYS = {
 
 const REVIEW_SCORE_FIELD_ALIASES = {
   hod: ["hod", "hodScore"],
+  center_head: ["center_head", "centerHead", "hod", "hodScore"],
   director: ["director", "dir", "directorScore"],
   dean: ["dean", "deanScore"],
   vc: ["vc", "vcScore", "innovVC", "innovVc"],
@@ -381,7 +384,9 @@ export const fetchReviewQueueForRole = async ({
       academicYear: declaration.academic_year,
     });
 
-    const hodReview = reviewMap.get(reviewKey(declaration.faculty_email, declaration.academic_year, "hod"));
+    const hodReview =
+      reviewMap.get(reviewKey(declaration.faculty_email, declaration.academic_year, "hod")) ||
+      reviewMap.get(reviewKey(declaration.faculty_email, declaration.academic_year, "center_head"));
     const directorReview = reviewMap.get(reviewKey(declaration.faculty_email, declaration.academic_year, "director"));
     const deanReview = reviewMap.get(reviewKey(declaration.faculty_email, declaration.academic_year, "dean"));
     const vcReview = reviewMap.get(reviewKey(declaration.faculty_email, declaration.academic_year, "vc"));

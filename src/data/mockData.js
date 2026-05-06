@@ -43,7 +43,9 @@ export const VC_USER = {
 
 export const CREDENTIALS = {
   faculty: { name: "Dr. Priya Sharma", password: "f1", role: "faculty",  school: schoolLabel("SoEMR"), department: SOEMR_DEPARTMENTS[0] },
+  cisrfaculty: { name: "Dr. CISR Faculty", password: "cf1", role: "faculty", school: schoolLabel("CISR"), department: "" },
   hod:     { name: "Prof. Rajesh Kulkarni", password: "hod1", role: "hod",      school: schoolLabel("SoEMR"), department: SOEMR_DEPARTMENTS[0] },
+  centerhead: { name: "Dr. CISR Center Head", password: "ch1", role: "center_head", school: schoolLabel("CISR"), department: "" },
   dean:    { name: "Prof. Suresh Patil", password: "dean1", role: "dean",      school: schoolLabel("SoCSEA"), department: "Engineering" },
   director:{ name: "Dr. Mehta", password: "dir1", role: "director",  school: schoolLabel("SoEMR"), department: "" },
   vc:      { name: "Prof. Anil Deshmukh", password: "vc1", role: "vc",        school: "University", department: "Management" },

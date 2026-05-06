@@ -1,16 +1,22 @@
 import {
   canonicalDepartmentValue,
   canonicalSchoolValue,
+  isCisrSchool,
   isSoemrSchool,
 } from "../constants/universityHierarchy";
 import { departmentHasHod } from "../utils/hierarchy";
 
-export const VALID_ROLES = ["faculty", "hod", "director", "dean", "vc"];
+export const VALID_ROLES = ["faculty", "hod", "center_head", "director", "dean", "vc"];
 
 const ROLE_ALIASES = {
   faculty: "faculty",
   hod: "hod",
   "head of department": "hod",
+  center_head: "center_head",
+  "center head": "center_head",
+  "centre head": "center_head",
+  "cisr center head": "center_head",
+  "cisr centre head": "center_head",
   director: "director",
   dean: "dean",
   vc: "vc",
@@ -69,6 +75,7 @@ export const storeUserSession = ({ session, user, profile = {}, fallbackEmail = 
   const department = isSoemrSchool(school)
     ? canonicalDepartmentValue(firstValue(safeProfile.department, metadata.department))
     : firstValue(safeProfile.department, metadata.department);
+  const normalizedDepartment = isCisrSchool(school) ? "" : department;
 
   if (session?.access_token) {
     localStorage.setItem("supabaseToken", session.access_token);
@@ -77,7 +84,7 @@ export const storeUserSession = ({ session, user, profile = {}, fallbackEmail = 
   localStorage.setItem("role", role);
   localStorage.setItem("username", email);
   localStorage.setItem("name", name);
-  localStorage.setItem("department", department);
+  localStorage.setItem("department", normalizedDepartment);
   localStorage.setItem("school", school);
   localStorage.setItem("employeeId", firstValue(safeProfile.employee_id, metadata.employeeId, metadata.employee_id));
   localStorage.setItem("designation", firstValue(safeProfile.designation, metadata.designation));
@@ -85,9 +92,9 @@ export const storeUserSession = ({ session, user, profile = {}, fallbackEmail = 
   localStorage.setItem("experience", firstValue(safeProfile.teaching_experience, metadata.experience, metadata.teaching_experience));
   localStorage.setItem("phone", firstValue(safeProfile.phone, metadata.phone));
 
-  const hasHod = departmentHasHod(school, department);
+  const hasHod = departmentHasHod(school, normalizedDepartment);
   localStorage.setItem("hasHod", hasHod ? "true" : "false");
   localStorage.setItem("hasHOD", hasHod ? "true" : "false");
 
-  return { email, role, school, department };
+  return { email, role, school, department: normalizedDepartment };
 };

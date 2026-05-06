@@ -59,7 +59,7 @@ const emptyDesignArtsForm = () => ({
     qual: localStorage.getItem("qualification") || "",
     desig: localStorage.getItem("designation") || "",
     ay: localStorage.getItem("academicYear") || "2025-2026",
-    school: localStorage.getItem("school") || "SoD - School of Design",
+    school: localStorage.getItem("school") || "CioD - School of Design",
   },
   lectures: [{ sem: "", code: "", planned: "", conducted: "", score: "" }],
   courseFile: [{ course: "", title: "", details: "", score: "" }],

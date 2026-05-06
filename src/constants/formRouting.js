@@ -5,9 +5,9 @@ export const FORM_TYPES = {
 };
 
 export const FORM_SCHOOL_CODES = {
-  [FORM_TYPES.DEFAULT]: ["SoCSEA", "SoBB", "SoCE", "SoEMR", "SoC"],
+  [FORM_TYPES.DEFAULT]: ["SoCSEA", "SoBB", "SoCE", "SoEMR", "SoC", "CISR"],
   [FORM_TYPES.MEDIA_COMM]: ["SoMCS"],
-  [FORM_TYPES.DESIGN_ARTS]: ["SoD", "SoAA"],
+  [FORM_TYPES.DESIGN_ARTS]: ["CioD", "SoAA"],
 };
 
 export const formTypeForSchool = (schoolCode) => {
