@@ -83,6 +83,15 @@ export const UNIVERSITY_SCHOOLS = [
   },
 ];
 
+export const getSchoolsByDeanTrack = (deanTrack) =>
+  UNIVERSITY_SCHOOLS.filter((school) => school.deanTrack === deanTrack);
+
+export const getSchoolCodesByDeanTrack = (deanTrack) =>
+  getSchoolsByDeanTrack(deanTrack).map((school) => school.code);
+
+export const getSchoolLabelsByDeanTrack = (deanTrack) =>
+  getSchoolsByDeanTrack(deanTrack).map((school) => school.label);
+
 export const SCHOOL_OPTIONS = UNIVERSITY_SCHOOLS.map((school) => ({
   value: school.label,
   label: school.label,

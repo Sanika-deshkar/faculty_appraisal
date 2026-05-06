@@ -282,9 +282,31 @@ export const fetchReviewQueueForRole = async ({
   reviewerRole,
   reviewerProfile = profileFromLocalStorage(),
   academicYear,
+  schoolValues = [],
 } = {}) => {
   const role = normalizeRoleForWorkflow(reviewerRole || reviewerProfile.appraisal_role || reviewerProfile.role);
   if (!role || role === "faculty") return [];
+
+  const scopedSchoolValues = [...new Set((schoolValues || []).filter(Boolean))];
+
+  let profileQuery = supabase.from("faculty_profiles").select("*");
+  if (scopedSchoolValues.length > 0) {
+    profileQuery = profileQuery.in("school", scopedSchoolValues);
+  }
+
+  const { data: profiles, error: profilesError } = await profileQuery;
+  if (profilesError) throw profilesError;
+
+  if (scopedSchoolValues.length > 0 && !(profiles || []).length) {
+    return [];
+  }
+
+  const scopedEmails = scopedSchoolValues.length > 0
+    ? [...new Set((profiles || []).map((profile) => profile.email).filter(Boolean))]
+    : [];
+  if (scopedSchoolValues.length > 0 && scopedEmails.length === 0) {
+    return [];
+  }
 
   let declarationQuery = supabase
     .from("declarations")
@@ -294,19 +316,24 @@ export const fetchReviewQueueForRole = async ({
   if (academicYear) {
     declarationQuery = declarationQuery.eq("academic_year", academicYear);
   }
+  if (scopedEmails.length > 0) {
+    declarationQuery = declarationQuery.in("faculty_email", scopedEmails);
+  }
+
+  let reviewsQuery = supabase.from("appraisal_reviews").select("*");
+  if (scopedEmails.length > 0) {
+    reviewsQuery = reviewsQuery.in("faculty_email", scopedEmails);
+  }
 
   const [
     { data: declarations, error: declarationsError },
-    { data: profiles, error: profilesError },
     { data: reviews, error: reviewsError },
   ] = await Promise.all([
     declarationQuery,
-    supabase.from("faculty_profiles").select("*"),
-    supabase.from("appraisal_reviews").select("*"),
+    reviewsQuery,
   ]);
 
   if (declarationsError) throw declarationsError;
-  if (profilesError) throw profilesError;
   if (reviewsError) throw reviewsError;
 
   const reviewMap = new Map(

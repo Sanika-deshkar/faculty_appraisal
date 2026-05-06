@@ -7,20 +7,23 @@ import { uploadToCloudinary } from "../services/cloudinary";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { supabase } from "../services/supabase";
 import { DEAN_TRACKS, getSchoolKey, getSchoolsByDeanTrack } from "../constants/universityHierarchy";
+import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
 import { reviewedStatusFor, profileFromLocalStorage } from "../utils/hierarchy";
+import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
+import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
 
-const ENGINEERING_SCHOOLS = getSchoolsByDeanTrack(DEAN_TRACKS.ENGINEERING);
-const ENGINEERING_SCHOOL_VALUES = ENGINEERING_SCHOOLS.flatMap((school) => [
+const NON_ENGINEERING_SCHOOLS = getSchoolsByDeanTrack(DEAN_TRACKS.NON_ENGINEERING);
+const NON_ENGINEERING_SCHOOL_VALUES = NON_ENGINEERING_SCHOOLS.flatMap((school) => [
   school.code,
   school.name,
   school.label,
 ]);
-const ENGINEERING_SCHOOL_CODES = ENGINEERING_SCHOOLS.map((school) => school.code);
+const NON_ENGINEERING_SCHOOL_CODES = NON_ENGINEERING_SCHOOLS.map((school) => school.code);
 const SCHOOL_VISUALS = {
-  SoCSEA: { icon: "CS", color: "#6366f1", bg: "#eef2ff" },
-  SoBB: { icon: "BB", color: "#10b981", bg: "#ecfdf5" },
-  SoCE: { icon: "CE", color: "#0ea5e9", bg: "#eff6ff" },
-  SoEMR: { icon: "EM", color: "#f59e0b", bg: "#fffbeb" },
+  SoC: { icon: "▣", color: "#14b8a6", bg: "#ecfeff" },
+  SoMCS: { icon: "◰", color: "#6366f1", bg: "#eef2ff" },
+  SoD: { icon: "▰", color: "#ec4899", bg: "#fdf2f8" },
+  SoAA: { icon: "●", color: "#7c3aed", bg: "#f3e8ff" },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1332,7 +1335,6 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
   const deanScores = deanScoreTotals(sectionScores);
   const previousTotal = n(approval?.directorTotal || approval?.hodTotal || approval?.declaration?.grand_total);
   const titleMap = {
-    hodApprovals: "HOD Approval Review",
     directorApprovals: "Director Approval Review",
     facultyApprovals: "Faculty Approval Review",
   };
@@ -1424,14 +1426,13 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
 }
 
 // ─── Main Dean Dashboard ───────────────────────────────────────────────────────
-export default function DeanDashboard() {
+export default function NonEngineeringDeanDashboard() {
   const navigate = useNavigate();
   const [activeMainTab, setActiveMainTab] = useState("myAppraisal");
   const [hodAppraisalTab, setHodAppraisalTab] = useState("partA");
   const [reviewingApproval, setReviewingApproval] = useState(null);
   
   const [facultyList, setFacultyList] = useState([]);
-  const [hodList, setHodList] = useState([]);
   const [directorList, setDirectorList] = useState([]);
 
   useEffect(() => {
@@ -1439,17 +1440,15 @@ export default function DeanDashboard() {
       try {
         const items = await fetchReviewQueueForRole({
           reviewerRole: "dean",
-          reviewerProfile: { ...profileFromLocalStorage(), school: ENGINEERING_SCHOOLS[0]?.label || "" },
-          schoolValues: ENGINEERING_SCHOOL_VALUES,
+          reviewerProfile: { ...profileFromLocalStorage(), school: NON_ENGINEERING_SCHOOLS[0]?.label || "" },
+          schoolValues: NON_ENGINEERING_SCHOOL_VALUES,
         });
-        const scopedItems = items.filter((item) => ENGINEERING_SCHOOL_CODES.includes(getSchoolKey(item.school)));
+        const scopedItems = items.filter((item) => NON_ENGINEERING_SCHOOL_CODES.includes(getSchoolKey(item.school)));
         setFacultyList(scopedItems.filter((item) => item.appraisalRole === "faculty"));
-        setHodList(scopedItems.filter((item) => item.appraisalRole === "hod" && getSchoolKey(item.school) === "SoEMR"));
         setDirectorList(scopedItems.filter((item) => item.appraisalRole === "director"));
       } catch (err) {
-        console.error("Could not load Dean review queue:", err);
+        console.error("Could not load Non-Engineering Dean review queue:", err);
         setFacultyList([]);
-        setHodList([]);
         setDirectorList([]);
       }
     };
@@ -1467,7 +1466,7 @@ export default function DeanDashboard() {
     name: localStorage.getItem("name") || "", 
     qual: "", 
     desig: localStorage.getItem("role") === "dean" ? "Dean" : "", 
-    ay: "2025-2026" 
+    ay: localStorage.getItem("academicYear") || "2025-2026" 
   });
   const inf = (k) => (v) => setInfo((p) => ({ ...p, [k]: v }));
 
@@ -1711,14 +1710,10 @@ export default function DeanDashboard() {
 
   const facultyPendingCount = facultyList.filter(f => f.status === "Pending Review").length;
   const facultyReviewedCount = facultyList.filter(f => f.status === "Reviewed").length;
-  const hodPendingCount = hodList.filter(h => h.status === "Pending Review").length;
-  const hodReviewedCount = hodList.filter(h => h.status === "Reviewed").length;
   const directorPendingCount = directorList.filter(d => d.status === "Pending Review").length;
   const directorReviewedCount = directorList.filter(d => d.status === "Reviewed").length;
 
-  const activeApprovalList = activeMainTab === "hodApprovals"
-    ? hodList
-    : activeMainTab === "directorApprovals"
+  const activeApprovalList = activeMainTab === "directorApprovals"
       ? directorList
       : activeMainTab === "facultyApprovals"
         ? facultyList
@@ -1740,7 +1735,7 @@ export default function DeanDashboard() {
 
   const schoolTabs = [
     { code: "all", label: "All Schools", count: activeApprovalList.length, icon: "All", color: "#0f172a", bg: "#e2e8f0" },
-    ...ENGINEERING_SCHOOLS.map((school) => ({
+    ...NON_ENGINEERING_SCHOOLS.map((school) => ({
       code: school.code,
       label: school.code,
       count: activeApprovalList.filter((item) => getSchoolKey(item.school) === school.code).length,
@@ -1751,10 +1746,9 @@ export default function DeanDashboard() {
   ];
 
   const navItems = [
-    { id: "myAppraisal", icon: "👤", label: "My Appraisal", sub: "View your self-appraisal form" },
-    { id: "hodApprovals", icon: "📝", label: "HOD Approval", sub: `${hodPendingCount} awaiting review`, badge: hodPendingCount },
-    { id: "directorApprovals", icon: "📌", label: "Director Approval", sub: `${directorPendingCount} awaiting review`, badge: directorPendingCount },
-    { id: "facultyApprovals", icon: "👩‍🏫", label: "Faculty Approval", sub: `${facultyPendingCount} awaiting review`, badge: facultyPendingCount },
+    { id: "myAppraisal", icon: "👤", label: "My Appraisal", sub: "Self-assessment form" },
+    { id: "directorApprovals", icon: "🏛", label: "Director Reviews", sub: `${directorPendingCount} awaiting review`, badge: directorPendingCount },
+    { id: "facultyApprovals", icon: "📋", label: "Faculty Reviews", sub: `${facultyPendingCount} awaiting review`, badge: facultyPendingCount },
   ];
   const generateReport = () => {
   const win = window.open('', '_blank');
@@ -2092,9 +2086,7 @@ export default function DeanDashboard() {
     }
     const sourceList = activeMainTab === "facultyApprovals"
       ? facultyList
-      : activeMainTab === "hodApprovals"
-        ? hodList
-        : directorList;
+      : directorList;
     const item = sourceList.find((entry) => entry.id === id);
     if (!item) return;
 
@@ -2116,9 +2108,6 @@ export default function DeanDashboard() {
 
       if (activeMainTab === "facultyApprovals") {
         setFacultyList(prev => prev.map(markReviewed));
-      }
-      if (activeMainTab === "hodApprovals") {
-        setHodList(prev => prev.map(markReviewed));
       }
       if (activeMainTab === "directorApprovals") {
         setDirectorList(prev => prev.map(markReviewed));
@@ -2147,31 +2136,35 @@ export default function DeanDashboard() {
         <div style={{ height: 1, background: "#1e293b" }} />
 
         {navItems.map(tab => (
-          <button key={tab.id} onClick={() => { setActiveMainTab(tab.id); setReviewingApproval(null); setSelectedSchoolCode("all"); }}
-            style={{ background: activeMainTab === tab.id ? "#1e293b" : "none", border: "none", borderRadius: 9, padding: "10px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, width: "100%", fontFamily: "Georgia, serif" }}>
-            <span style={{ fontSize: 16 }}>{tab.icon}</span>
-            <div style={{ flex: 1, textAlign: "left" }}>
-              <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 12 }}>{tab.label}</div>
-              <div style={{ color: "#64748b", fontSize: 10, marginTop: 1 }}>{tab.sub}</div>
-            </div>
-            {tab.badge > 0 && (
-              <div style={{ background: "#f59e0b", color: "#fff", fontWeight: 800, fontSize: 10, minWidth: 18, height: 18, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{tab.badge}</div>
-            )}
-          </button>
-        ))}
-        <div style={{ background: "#1e293b", borderRadius: 9, padding: "12px 13px", display: "grid", gap: 8 }}>
-          <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.9 }}>Schools Overseen</div>
-          {ENGINEERING_SCHOOLS.map((school) => {
-            const visual = SCHOOL_VISUALS[school.code] || {};
-            return (
-              <div key={school.code} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: "#cbd5e1" }}>
-                <span style={{ width: 9, height: 9, borderRadius: 2, background: visual.color || "#64748b", display: "inline-block" }} />
-                <span style={{ color: visual.color || "#cbd5e1", fontWeight: 800 }}>{visual.icon || "•"}</span>
-                <span>{school.code}</span>
+          <div key={tab.id} style={{ display: "grid", gap: 10 }}>
+            <button onClick={() => { setActiveMainTab(tab.id); setReviewingApproval(null); setSelectedSchoolCode("all"); }}
+              style={{ background: activeMainTab === tab.id ? "#1e293b" : "none", border: "none", borderRadius: 9, padding: "10px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, width: "100%", fontFamily: "Georgia, serif" }}>
+              <span style={{ fontSize: 16 }}>{tab.icon}</span>
+              <div style={{ flex: 1, textAlign: "left" }}>
+                <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 12 }}>{tab.label}</div>
+                <div style={{ color: "#64748b", fontSize: 10, marginTop: 1 }}>{tab.sub}</div>
               </div>
-            );
-          })}
-        </div>
+              {tab.badge > 0 && (
+                <div style={{ background: "#f59e0b", color: "#fff", fontWeight: 800, fontSize: 10, minWidth: 18, height: 18, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>{tab.badge}</div>
+              )}
+            </button>
+            {tab.id === "myAppraisal" && (
+              <div style={{ background: "#1e293b", borderRadius: 9, padding: "12px 13px", display: "grid", gap: 8 }}>
+                <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.9 }}>Schools Overseen</div>
+                {NON_ENGINEERING_SCHOOLS.map((school) => {
+                  const visual = SCHOOL_VISUALS[school.code] || {};
+                  return (
+                    <div key={school.code} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: "#cbd5e1" }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 2, background: visual.color || "#64748b", display: "inline-block" }} />
+                      <span style={{ color: visual.color || "#cbd5e1", fontWeight: 800 }}>{visual.icon || "•"}</span>
+                      <span>{school.code}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
         {activeMainTab === "myAppraisal" && (
           <div style={{ marginTop: 6, background: "#1e293b", borderRadius: 8, padding: "9px 10px" }}>
             <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 }}>
@@ -3022,18 +3015,18 @@ export default function DeanDashboard() {
         )}
 
         {/* APPROVALS TAB */}
-        {(activeMainTab === "hodApprovals" || activeMainTab === "directorApprovals" || activeMainTab === "facultyApprovals") && !reviewingApproval && (
+        {(activeMainTab === "directorApprovals" || activeMainTab === "facultyApprovals") && !reviewingApproval && (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, color: "#0f172a", letterSpacing: -0.5 }}>
-                  {activeMainTab === "hodApprovals" ? "HOD Reviews" : activeMainTab === "directorApprovals" ? "Director Reviews" : "Faculty Reviews"}
+                  {activeMainTab === "directorApprovals" ? "Director Reviews" : "Faculty Reviews"}
                 </h1>
-                <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>{ENGINEERING_SCHOOLS.length} Engineering Schools · {APP_INFO.UNIVERSITY_NAME} · AY {info.ay}</p>
+                <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 11 }}>{NON_ENGINEERING_SCHOOLS.length} Non-Engineering Schools · AY {info.ay}</p>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 800, padding: "8px 18px", borderRadius: 20, background: "#fef3c7", color: "#92400e" }}>{pendingCount} Pending</div>
-                <div style={{ fontSize: 12, fontWeight: 800, padding: "8px 18px", borderRadius: 20, background: "#d1fae5", color: "#065f46" }}>{reviewedCount} Dean Reviewed</div>
+                <div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#fef3c7", color: "#92400e" }}>⏳ {pendingCount} Pending</div>
+                <div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#d1fae5", color: "#065f46" }}>✔ {reviewedCount} Reviewed</div>
               </div>
             </div>
 
@@ -3090,7 +3083,6 @@ export default function DeanDashboard() {
             {/* Faculty Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
               {filtered.map(faculty => {
-                const g = grade(faculty.grandTotal || 350, 575);
                 const facPartA = [
                   ...(faculty.lectures || []).map(r => n(r.score)),
                   n(faculty.courseFile?.score), n(faculty.innovScore),
@@ -3157,21 +3149,39 @@ export default function DeanDashboard() {
               <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>✓</div>
                 <div style={{ fontWeight: 700, color: "#0f172a" }}>All caught up!</div>
-                <div style={{ color: "#64748b", fontSize: 12 }}>No forms match the selected filter.</div>
+                <div style={{ color: "#64748b", fontSize: 12 }}>No records match the selected school / status filter.</div>
               </div>
             )}
           </>
         )}
 
         {/* REVIEW PANEL */}
-        {(activeMainTab === "hodApprovals" || activeMainTab === "directorApprovals" || activeMainTab === "facultyApprovals") && reviewingApproval && (
-          <ApprovalReviewPanel
-            approval={reviewingApproval}
-            approvalType={activeMainTab}
-            onBack={() => setReviewingApproval(null)}
-            onSubmit={handleSubmitReview}
-            readOnly={/Reviewed|Approved|Rejected/.test(reviewingApproval.status || "")}
-          />
+        {(activeMainTab === "directorApprovals" || activeMainTab === "facultyApprovals") && reviewingApproval && (
+          formTypeForSchool(getSchoolKey(reviewingApproval.school)) === FORM_TYPES.MEDIA_COMM ? (
+            <MediaCommAuthorityReviewPanel
+              person={reviewingApproval}
+              reviewerRole="dean"
+              onBack={() => setReviewingApproval(null)}
+              onSubmit={handleSubmitReview}
+              readOnly={/Reviewed|Approved|Rejected/.test(reviewingApproval.status || "")}
+            />
+          ) : formTypeForSchool(getSchoolKey(reviewingApproval.school)) === FORM_TYPES.DESIGN_ARTS ? (
+            <DesignArtsAuthorityReviewPanel
+              person={reviewingApproval}
+              reviewerRole="dean"
+              onBack={() => setReviewingApproval(null)}
+              onSubmit={handleSubmitReview}
+              readOnly={/Reviewed|Approved|Rejected/.test(reviewingApproval.status || "")}
+            />
+          ) : (
+            <ApprovalReviewPanel
+              approval={reviewingApproval}
+              approvalType={activeMainTab}
+              onBack={() => setReviewingApproval(null)}
+              onSubmit={handleSubmitReview}
+              readOnly={/Reviewed|Approved|Rejected/.test(reviewingApproval.status || "")}
+            />
+          )
         )}
       </main>
 

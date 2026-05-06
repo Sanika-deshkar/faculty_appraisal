@@ -2,13 +2,14 @@ import { Navigate } from "react-router-dom";
 import Dashboard from "./Dashboard"; // Faculty
 import HODDashboard from "./HODDashboard";
 import DeanDashboard from "./DeanDashboard";
+import NonEngineeringDeanDashboard from "./NonEngineeringDeanDashboard";
 import DirectorDashboard from "./DirectorDashboard";
 import VCDashboard from "./VCDashboard";
 import MediaCommDashboard from "./MediaCommDashboard";
 import DesignArtsDashboard from "./DesignArtsDashboard";
 import { normalizeRole } from "../auth/session";
-import { departmentHasHod } from "../utils/hierarchy";
-import { getSchoolKey } from "../constants/universityHierarchy";
+import { departmentHasHod, getDeanTrack } from "../utils/hierarchy";
+import { DEAN_TRACKS, getSchoolKey } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
 
 function UnknownSchoolDashboard() {
@@ -57,9 +58,10 @@ export default function RoleDashboard() {
       return <DirectorDashboard />;
       
     case "dean":
-      if (formType === FORM_TYPES.MEDIA_COMM) return <MediaCommDashboard fixedRole="dean" />;
-      if (formType === FORM_TYPES.DESIGN_ARTS) return <DesignArtsDashboard fixedRole="dean" />;
       if (!formType) return <UnknownSchoolDashboard />;
+      if (getDeanTrack({ school, department, designation: localStorage.getItem("designation") || "" }) === DEAN_TRACKS.NON_ENGINEERING) {
+        return <NonEngineeringDeanDashboard />;
+      }
       return <DeanDashboard />;
       
     case "vc":
