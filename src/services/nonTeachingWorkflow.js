@@ -233,7 +233,6 @@ const ratingForAuthority = (section = {}, index, authority) => {
 
 export const calculateNonTeachingTotals = (form = {}, authority = "self") => {
   const normalized = normalizeNonTeachingForm(form);
-<<<<<<< HEAD
   const partA = SELF_ITEMS.reduce(
     (total, item) =>
       total + n(valueForAuthority(normalized[item.key], authority)),
@@ -253,13 +252,6 @@ export const calculateNonTeachingTotals = (form = {}, authority = "self") => {
             )
           );
         }, 0);
-=======
-  const partA = SELF_ITEMS.reduce((total, item) => total + n(valueForAuthority(normalized[item.key], authority)), 0);
-  const partB = authority === "self" ? 0 : RATING_SECTIONS.reduce((sectionTotal, section) => {
-    const rows = normalized.partB?.[section.key] || {};
-    return sectionTotal + section.params.reduce((total, _label, index) => total + n(ratingForAuthority(rows, index, authority)), 0);
-  }, 0);
->>>>>>> e8ced074a7c29e460502bfe25b88c5efc1363597
 
   return {
     partA,
@@ -406,7 +398,6 @@ export const submitNonTeachingSelfAppraisal = async ({
 } = {}) => {
   const normalizedRole = normalizeNonTeachingRole(role, role);
   const status = statusAfterSelfSubmit(normalizedRole);
-<<<<<<< HEAD
   const finalForm = stripSelfPartBRatings(
     normalizeNonTeachingForm(
       { ...form, status, submittedByRole: normalizedRole },
@@ -414,9 +405,6 @@ export const submitNonTeachingSelfAppraisal = async ({
       normalizedRole,
     ),
   );
-=======
-  const finalForm = stripSelfPartBRatings(normalizeNonTeachingForm({ ...form, status, submittedByRole: normalizedRole }, profile, normalizedRole));
->>>>>>> e8ced074a7c29e460502bfe25b88c5efc1363597
 
   validateNonTeachingForm(finalForm, "self", false);
 
@@ -583,12 +571,8 @@ export const primeFormForReviewer = (form = {}, reviewerRole) => {
   const role = normalizeNonTeachingRole(reviewerRole, reviewerRole);
   const nextForm = normalizeNonTeachingForm(form);
 
-<<<<<<< HEAD
   const partBTarget =
     role === "vc" ? "vc" : role === "registrar" ? "reg" : "ro";
-=======
-  const partBTarget = role === "vc" ? "vc" : role === "registrar" ? "reg" : "ro";
->>>>>>> e8ced074a7c29e460502bfe25b88c5efc1363597
 
   SELF_ITEMS.forEach(({ key }) => {
     const item = nextForm[key] || {};
@@ -714,7 +698,6 @@ export const openNonTeachingReport = ({
     registrar: calculateNonTeachingTotals(reportForm, "registrar"),
     vc: calculateNonTeachingTotals(reportForm, "vc"),
   };
-<<<<<<< HEAD
   const normalizeReportRole = (role) =>
     ({
       reporting_officer: "ro",
@@ -726,16 +709,6 @@ export const openNonTeachingReport = ({
   const partBRoles = reportRoles.filter((role) => role !== "self");
   const maxForRole = (role) =>
     role === "self" ? NON_TEACHING_MAX.partA : NON_TEACHING_MAX.grand;
-=======
-  const normalizeReportRole = (role) => ({
-    reporting_officer: "ro",
-    reg: "registrar",
-  }[role] || role);
-  const reportRoles = Array.from(new Set(["self", ...(visibleRoles || []).map(normalizeReportRole)]))
-    .filter((role) => ["self", "ro", "registrar", "vc"].includes(role));
-  const partBRoles = reportRoles.filter((role) => role !== "self");
-  const maxForRole = (role) => role === "self" ? NON_TEACHING_MAX.partA : NON_TEACHING_MAX.grand;
->>>>>>> e8ced074a7c29e460502bfe25b88c5efc1363597
   const reportColumns = {
     self: {
       label: "Self",
@@ -769,7 +742,6 @@ export const openNonTeachingReport = ({
       remarksLabel: "VC",
     },
   };
-<<<<<<< HEAD
   const docsFor = (key) =>
     (reportForm.docs?.[key] || [])
       .map(
@@ -777,11 +749,6 @@ export const openNonTeachingReport = ({
           `<a href="${escapeHtml(file.url)}" target="_blank">${escapeHtml(file.name || file.url)}</a>`,
       )
       .join("<br>") || "-";
-=======
-  const docsFor = (key) => (reportForm.docs?.[key] || [])
-    .map((file) => `<a href="${escapeHtml(file.url)}" target="_blank">${escapeHtml(file.name || file.url)}</a>`)
-    .join("<br>") || "-";
->>>>>>> e8ced074a7c29e460502bfe25b88c5efc1363597
 
   const partARows = SELF_ITEMS.map(
     ({ key, label, max }) => `

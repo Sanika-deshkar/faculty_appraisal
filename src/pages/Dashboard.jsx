@@ -367,7 +367,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
   };
   const getS = (key) => hodData[key] ?? faculty[key] ?? "";
 
-  const { info, lectures, courseFile, projects, quals, feedback, deptActs, uniActs, society, industry, acr, journals, books, ict, research, patents, awards, confs, proposals, fdps, training, docs } = faculty;
+  const { info, lectures, courseFile, projects, quals, feedback, deptActs, uniActs, society, industry, acr, journals, books, ict, research, projects2, externalProjects, patents, awards, confs, proposals, products, fdps, training, docs } = faculty;
 
   const rows = (arr) => arr && arr.length > 0 ? arr : [{}];
 
@@ -404,7 +404,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
           <table style={T}>
             <thead><tr>
               <th style={TH}>SN</th><th style={TH}>Semester</th><th style={TH}>Course Code / Name</th>
-              <th style={TH}>Planned</th><th style={TH}>Conducted</th>
+              <th style={TH}>Classes (as per course structure)</th><th style={TH}>Classes Actually Conducted</th>
               <th style={TH}>View Docs</th>
               <th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
             </tr></thead>
@@ -508,8 +508,8 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
       <SC title="B. Student Feedback (Max 10)" accent="#0ea5e9">
         <table style={T}>
           <thead><tr>
-            <th style={TH}>SN</th><th style={TH}>Course</th><th style={TH}>Feedback 1</th>
-            <th style={TH}>Feedback 2</th><th style={TH}>Average</th>
+            <th style={TH}>SN</th><th style={TH}>Course</th><th style={TH}>First Feedback</th>
+            <th style={TH}>Second Feedback</th><th style={TH}>Average</th>
             <th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
           </tr></thead>
           <tbody>
@@ -672,8 +672,8 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
         <div style={{ overflowX: "auto" }}>
           <table style={T}>
             <thead><tr>
-              <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>Book & Publisher</th>
-              <th style={TH}>ISBN</th><th style={TH}>First Author?</th>
+              <th style={TH}>SN</th><th style={TH}>Title with Page Nos.</th><th style={TH}>Book Title, Editor & Publisher</th>
+              <th style={TH}>ISSN / ISBN No.</th><th style={TH}>Type of Publisher</th><th style={TH}>Co-authors (from DYPIU)</th><th style={TH}>First Author</th>
               <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
             </tr></thead>
             <tbody>
@@ -683,6 +683,8 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
                   <td style={TD}><RO val={r.title} /></td>
                   <td style={TD}><RO val={r.book} /></td>
                   <td style={TDC}><RO val={r.issn} center /></td>
+                  <td style={TD}><RO val={r.pub} /></td>
+                  <td style={TD}><RO val={r.coauth} /></td>
                   <td style={TDC}><RO val={r.first} center /></td>
                   <td style={TDV}><ViewDocsCell docKey={`book-${i}`} docs={docs} /></td>
                   <td style={TDS}><RO val={r.score} center /></td>
@@ -718,7 +720,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
       </SC>
 
       {/* B4: Research Guidance */}
-      <SC title="B4. Research Guidance — PhD / PG (Max 30)" accent="#059669">
+      <SC title="B4(a). Research Guidance — PhD / PG (Max 30)" accent="#059669">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Degree</th><th style={TH}>Student Name</th><th style={TH}>Status</th>
@@ -740,12 +742,70 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
         </table>
       </SC>
 
-      {/* B5: Patents */}
-      <SC title="B5a. Patents / IPR (Max 40)" accent="#f97316">
+      <SC title="B4(b). Research / Consultancy Internal Projects (Max 45)" accent="#059669">
         <div style={{ overflowX: "auto" }}>
           <table style={T}>
             <thead><tr>
-              <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>Type</th>
+              <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>Funding Agency</th>
+              <th style={TH}>Date of Sanction</th><th style={TH}>Grant Amount</th><th style={TH}>Role PI / Co-PI / Consultant</th><th style={TH}>Status</th>
+              <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
+            </tr></thead>
+            <tbody>
+              {rows(projects2).map((r, i) => (
+                <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
+                  <td style={TDC}>{i + 1}</td>
+                  <td style={TD}><RO val={r.title} /></td>
+                  <td style={TD}><RO val={r.agency} /></td>
+                  <td style={TDC}><RO val={r.date} center /></td>
+                  <td style={TDC}><RO val={r.amount} center /></td>
+                  <td style={TD}><RO val={r.role} /></td>
+                  <td style={TD}><RO val={r.status} /></td>
+                  <td style={TDV}><ViewDocsCell docKey={`project2-${i}`} docs={docs} /></td>
+                  <td style={TDS}><RO val={r.score} center /></td>
+                  <td style={TDS_HOD}><HodInput val={get("projects2", i, "hod")} onChange={v => set("projects2", i, "hod", v)} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </SC>
+
+      <SC title="B4(c). Research / Consultancy External Projects (Max 45)" accent="#059669">
+        <div style={{ overflowX: "auto" }}>
+          <table style={T}>
+            <thead><tr>
+              <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>Funding Agency</th>
+              <th style={TH}>Date of Sanction</th><th style={TH}>Grant Amount</th><th style={TH}>Role PI / Co-PI / Consultant</th><th style={TH}>Status</th>
+              <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
+            </tr></thead>
+            <tbody>
+              {rows(externalProjects).map((r, i) => (
+                <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
+                  <td style={TDC}>{i + 1}</td>
+                  <td style={TD}><RO val={r.title} /></td>
+                  <td style={TD}><RO val={r.agency} /></td>
+                  <td style={TDC}><RO val={r.date} center /></td>
+                  <td style={TDC}><RO val={r.amount} center /></td>
+                  <td style={TD}><RO val={r.role} /></td>
+                  <td style={TD}><RO val={r.status} /></td>
+                  <td style={TDV}><ViewDocsCell docKey={`externalProject-${i}`} docs={docs} /></td>
+                  <td style={TDS}><RO val={r.score} center /></td>
+                  <td style={TDS_HOD}><HodInput val={get("externalProjects", i, "hod")} onChange={v => set("externalProjects", i, "hod", v)} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </SC>
+
+
+
+      {/* B5: Patents */}
+      <SC title="B5(a). Patents (IPR) (Max 40)" accent="#f97316">
+        <div style={{ overflowX: "auto" }}>
+          <table style={T}>
+            <thead><tr>
+              <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>National / International</th>
               <th style={TH}>Filed</th><th style={TH}>Status</th><th style={TH}>File No.</th>
               <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
             </tr></thead>
@@ -769,7 +829,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
       </SC>
 
       {/* B5b: Awards */}
-      <SC title="B5b. Awards / Fellowships (Max 10)" accent="#f97316">
+      <SC title="B5(b). Awards (Max 10)" accent="#f97316">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Award Title</th><th style={TH}>Date</th>
@@ -794,7 +854,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
       </SC>
 
       {/* B6: Conferences */}
-      <SC title="B6. Conferences / Papers Presented (Max 30)" accent="#6366f1">
+      <SC title="B6. Invited Lectures / Resource Person / Paper Presentations (Max 30)" accent="#6366f1">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Title / Session</th><th style={TH}>Type</th>
@@ -818,12 +878,12 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
         </table>
       </SC>
 
-      {/* B7: Proposals */}
-      <SC title="B7. Research Proposals / Products (Max 20)" accent="#0ea5e9">
+            {/* B7(a): Proposals */}
+      <SC title="B7(a). Submitted Research Proposals (Max 10)" accent="#0ea5e9">
         <table style={T}>
           <thead><tr>
-            <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>Duration</th>
-            <th style={TH}>Funding Agency</th><th style={TH}>Amount</th>
+            <th style={TH}>SN</th><th style={TH}>Title of Proposal</th><th style={TH}>Duration</th>
+            <th style={TH}>Funding Agency</th><th style={TH}>Grant Amount Requested</th>
             <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
           </tr></thead>
           <tbody>
@@ -837,6 +897,28 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
                 <td style={TDV}><ViewDocsCell docKey={`prop-${i}`} docs={docs} /></td>
                 <td style={TDS}><RO val={r.score} center /></td>
                 <td style={TDS_HOD}><HodInput val={get("proposals", i, "hod")} onChange={v => set("proposals", i, "hod", v)} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </SC>
+
+      {/* B7(b): Product Developed */}
+      <SC title="B7(b). Product Developed and Used by Students in Lab / Commercialized (Max 10)" accent="#0ea5e9">
+        <table style={T}>
+          <thead><tr>
+            <th style={TH}>SN</th><th style={TH}>Details of Product</th><th style={TH}>Used by Students in Lab / Commercialized</th>
+            <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
+          </tr></thead>
+          <tbody>
+            {rows(products).map((r, i) => (
+              <tr key={i}>
+                <td style={TDC}>{i + 1}</td>
+                <td style={TD}><RO val={r.details} /></td>
+                <td style={TD}><RO val={r.usage} /></td>
+                <td style={TDV}><ViewDocsCell docKey={`prod-${i}`} docs={docs} /></td>
+                <td style={TDS}><RO val={r.score} center /></td>
+                <td style={TDS_HOD}><HodInput val={get("products", i, "hod")} onChange={v => set("products", i, "hod", v)} /></td>
               </tr>
             ))}
           </tbody>
@@ -924,19 +1006,22 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
     const bk = (faculty.books || []).reduce((a, _, i) => a + get("books", i, "hod"), 0);
     const ictT = (faculty.ict || []).reduce((a, _, i) => a + get("ict", i, "hod"), 0);
     const res = (faculty.research || []).reduce((a, _, i) => a + get("research", i, "hod"), 0);
+    const resProjects = (faculty.projects2 || []).reduce((a, _, i) => a + get("projects2", i, "hod"), 0);
+    const externalResProjects = (faculty.externalProjects || []).reduce((a, _, i) => a + get("externalProjects", i, "hod"), 0);
     const pat = (faculty.patents || []).reduce((a, _, i) => a + get("patents", i, "hod"), 0);
     const awd = (faculty.awards || []).reduce((a, _, i) => a + get("awards", i, "hod"), 0);
     const conf = (faculty.confs || []).reduce((a, _, i) => a + get("confs", i, "hod"), 0);
     const prop = (faculty.proposals || []).reduce((a, _, i) => a + get("proposals", i, "hod"), 0);
+    const prod = (faculty.products || []).reduce((a, _, i) => a + get("products", i, "hod"), 0);
     const fdp = (faculty.fdps || []).reduce((a, _, i) => a + get("fdps", i, "hod"), 0);
     const train = (faculty.training || []).reduce((a, _, i) => a + get("training", i, "hod"), 0);
-    const partB = jour + bk + ictT + res + pat + awd + conf + prop + fdp + train;
+    const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train;
 
     return { partA, partB, total: partA + partB };
   };
 
   const { partA, partB, total } = calcHodScore();
-  const g = grade(total, 575);
+  const g = grade(total, 620);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: "100%" }}>
@@ -959,7 +1044,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
           </div>
           <div style={{ background: g.bg, border: `2px solid ${g.color}40`, borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
             <div style={{ color: g.color, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 700 }}>HOD Total</div>
-            <div style={{ color: g.color, fontWeight: 800, fontSize: 16 }}>{total.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/575</span></div>
+            <div style={{ color: g.color, fontWeight: 800, fontSize: 16 }}>{total.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/620</span></div>
           </div>
         </div>
       </div>
@@ -989,7 +1074,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
             <tbody>
               {[
                 ["Part A — Teaching & Activities", 200, faculty.lectures?.reduce((a, r) => a + n(r.score), 0) || 0, partA],
-                ["Part B — Research & Contributions", 375, faculty.journals?.reduce((a, r) => a + n(r.score), 0) || 0, partB],
+                ["Part B — Research & Contributions", 420, faculty.journals?.reduce((a, r) => a + n(r.score), 0) || 0, partB],
               ].map(([label, max, fac, hod]) => (
                 <tr key={label}>
                   <td style={TD}>{label}</td>
@@ -1000,7 +1085,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
               ))}
               <tr style={{ background: "#d1fae5", fontWeight: 700 }}>
                 <td style={TD}>Grand Total</td>
-                <td style={TDC}>575</td>
+                <td style={TDC}>620</td>
                 <td style={TDS}>—</td>
                 <td style={{ ...TDS_HOD, color: "#065f46", fontSize: 14 }}>{total.toFixed(1)}</td>
               </tr>
@@ -1037,11 +1122,15 @@ export default function HODDashboard() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // ── HOD's own appraisal form state ──
-  const [info, setInfo] = useState({ 
-    name: sessionStorage.getItem("name") || "", 
-    qual: "", 
-    desig: sessionStorage.getItem("role") === "faculty" ? "Assistant Professor" : "", 
-    ay: "2025-2026" 
+  const [info, setInfo] = useState({
+    name: sessionStorage.getItem("name") || "",
+    qual: "",
+    desig: sessionStorage.getItem("role") === "faculty" ? "Assistant Professor" : "",
+    school: sessionStorage.getItem("school") || sessionStorage.getItem("department") || "",
+    expDyp: "",
+    expPrev: "",
+    expTotal: "",
+    ay: "2025-2026"
   });
   const inf = (k) => (v) => setInfo((p) => ({ ...p, [k]: v }));
 
@@ -1136,6 +1225,12 @@ export default function HODDashboard() {
   ]);
   const setPrj2 = (i, k, v) => setProjects2((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
 
+  const [externalProjects, setExternalProjects] = useState([
+    { title: "", agency: "", date: "", amount: "", role: "", status: "", score: "", hod: "" },
+    { title: "", agency: "", date: "", amount: "", role: "", status: "", score: "", hod: "" },
+  ]);
+  const setExtPrj = (i, k, v) => setExternalProjects((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
+
   const [patents, setPatents] = useState([
     { title: "", type: "", date: "", status: "", fileNo: "", score: "", hod: "", director: "" },
     { title: "", type: "", date: "", status: "", fileNo: "", score: "", hod: "", director: "" },
@@ -1160,6 +1255,12 @@ export default function HODDashboard() {
     { title: "", duration: "", agency: "", amount: "", score: "", hod: "", director: "" },
   ]);
   const setProp = (i, k, v) => setProposals((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
+
+  const [products, setProducts] = useState([
+    { details: "", usage: "", score: "", hod: "", director: "" },
+    { details: "", usage: "", score: "", hod: "", director: "" },
+  ]);
+  const setProd = (i, k, v) => setProducts((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
 
   const [fdps, setFdps] = useState([
     { program: "", duration: "", org: "", score: "", hod: "", director: "" },
@@ -1593,6 +1694,21 @@ export default function HODDashboard() {
             director: inputValue(row.director_score),
           })));
         }
+
+        const { data: snapshotRow, error: snapshotError } = await supabase
+          .from("appraisal_snapshots")
+          .select("payload")
+          .eq("faculty_email", userEmail)
+          .eq("academic_year", info.ay)
+          .maybeSingle();
+        requireSupabase(snapshotError, "Could not load appraisal snapshot");
+
+        const snapshotForm = snapshotRow?.payload?.form || snapshotRow?.payload?.data;
+        if (snapshotForm && typeof snapshotForm === "object") {
+          if (snapshotForm.info) setInfo((current) => ({ ...current, ...snapshotForm.info }));
+          if (Array.isArray(snapshotForm.products)) setProducts(snapshotForm.products);
+          if (Array.isArray(snapshotForm.externalProjects)) setExternalProjects(snapshotForm.externalProjects);
+        }
       } catch (err) {
         console.error("Could not load saved appraisal:", err);
       }
@@ -1621,17 +1737,19 @@ export default function HODDashboard() {
   const ictScore = ict.reduce((a, r) => a + n(r.score), 0);
   const researchScore = research.reduce((a, r) => a + n(r.score), 0);
   const projectBScore = projects2.reduce((a, r) => a + n(r.score), 0);
+  const externalProjectScore = externalProjects.reduce((a, r) => a + n(r.score), 0);
   const patentScore = patents.reduce((a, r) => a + n(r.score), 0);
   const awardScore = awards.reduce((a, r) => a + n(r.score), 0);
   const confScore = confs.reduce((a, r) => a + n(r.score), 0);
   const proposalScore = proposals.reduce((a, r) => a + n(r.score), 0);
+  const productScore = products.reduce((a, r) => a + n(r.score), 0);
   const fdpScore = fdps.reduce((a, r) => a + n(r.score), 0);
   const trainScore = training.reduce((a, r) => a + n(r.score), 0);
-  const partBTotal = journalScore + bookScore + ictScore + researchScore + projectBScore + patentScore + awardScore + confScore + proposalScore + fdpScore + trainScore;
+  const partBTotal = journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + fdpScore + trainScore;
   const grandTotal = partATotal + partBTotal;
 
   const gradeFunc = () => {
-    const p = pct(grandTotal, 575);
+    const p = pct(grandTotal, 620);
     if (p >= 85) return { label: "Outstanding", color: "#10b981" };
     if (p >= 70) return { label: "Very Good", color: "#3b82f6" };
     if (p >= 55) return { label: "Good", color: "#f59e0b" };
@@ -2089,6 +2207,47 @@ export default function HODDashboard() {
         requireSupabase(documentInsertError, "Could not save Cloudinary document rows");
       }
 
+      const { error: snapshotError } = await supabase
+        .from("appraisal_snapshots")
+        .upsert({
+          faculty_email: userEmail,
+          academic_year: info.ay,
+          payload: {
+            form: {
+              info,
+              lectures,
+              courseFile,
+              innovDetails,
+              innovScore,
+              projects,
+              quals,
+              feedback,
+              deptActs,
+              uniActs,
+              society,
+              industry,
+              acr,
+              journals,
+              books,
+              ict,
+              research,
+              projects2,
+              externalProjects,
+              patents,
+              awards,
+              confs,
+              proposals,
+              products,
+              fdps,
+              training,
+            },
+            totals: { partATotal, partBTotal, grandTotal },
+            submitterProfile: profileFromsessionStorage(),
+            savedAt: new Date().toISOString(),
+          },
+        }, { onConflict: "faculty_email,academic_year" });
+      requireSupabase(snapshotError, "Could not save appraisal snapshot");
+
       alert("Appraisal submitted successfully!");
       setAppraisalLocked(true);
       setWorkflowDeclaration({
@@ -2175,7 +2334,7 @@ export default function HODDashboard() {
     <table>
       <tr>
         <th>Semester</th><th>Course</th>
-        <th>Planned</th><th>Conducted</th><th>Score</th>
+        <th>Classes (as per course structure)</th><th>Classes Actually Conducted</th><th>Score</th>
       </tr>
       ${lectures.map(l => `
         <tr>
@@ -2288,10 +2447,10 @@ export default function HODDashboard() {
       ${journals.map(j => `<tr><td>${j.title || "&nbsp;"}</td><td>${j.journal || "&nbsp;"}</td><td>${j.index || "&nbsp;"}</td><td class="center">${j.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>Books</h3>
+    <h3>B2. Books / Book Chapters</h3>
     <table>
-      <tr><th>Title</th><th>Publisher</th><th>Score</th></tr>
-      ${books.map(b => `<tr><td>${b.title || "&nbsp;"}</td><td>${b.book || "&nbsp;"}</td><td class="center">${b.score || "&nbsp;"}</td></tr>`).join('')}
+      <tr><th>Title with Page Nos.</th><th>Book Title, Editor & Publisher</th><th>ISSN / ISBN No.</th><th>Type of Publisher</th><th>Co-authors (from DYPIU)</th><th>First Author</th><th>Score</th></tr>
+      ${books.map(b => `<tr><td>${b.title || "&nbsp;"}</td><td>${b.book || "&nbsp;"}</td><td>${b.issn || "&nbsp;"}</td><td>${b.pub || "&nbsp;"}</td><td>${b.coauth || "&nbsp;"}</td><td>${b.first || "&nbsp;"}</td><td class="center">${b.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
     <h3>ICT</h3>
@@ -2300,49 +2459,62 @@ export default function HODDashboard() {
       ${ict.map(i => `<tr><td>${i.title || "&nbsp;"}</td><td>${i.desc || "&nbsp;"}</td><td class="center">${i.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>Research Guidance</h3>
+    <h3>B4(a). Research Guidance</h3>
     <table>
       <tr><th>Degree</th><th>Name</th><th>Thesis</th><th>Score</th></tr>
       ${research.map(r => `<tr><td>${r.degree || "&nbsp;"}</td><td>${r.name || "&nbsp;"}</td><td>${r.thesis || "&nbsp;"}</td><td class="center">${r.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>Research Projects</h3>
+    <h3>B4(b). Ongoing & Completed Research / Consultancy Internal Projects</h3>
     <table>
-      <tr><th>Title</th><th>Agency</th><th>Amount</th><th>Score</th></tr>
-      ${projects2.map(p => `<tr><td>${p.title || "&nbsp;"}</td><td>${p.agency || "&nbsp;"}</td><td>${p.amount || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
+      <tr><th>Title</th><th>Funding Agency</th><th>Date of Sanction</th><th>Grant Amount</th><th>Role</th><th>Status</th><th>Score</th></tr>
+      ${projects2.map(p => `<tr><td>${p.title || "&nbsp;"}</td><td>${p.agency || "&nbsp;"}</td><td>${p.date || "&nbsp;"}</td><td>${p.amount || "&nbsp;"}</td><td>${p.role || "&nbsp;"}</td><td>${p.status || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>Patents</h3>
+    <h3>B4(c). Ongoing & Completed Research / Consultancy External Projects</h3>
     <table>
-      <tr><th>Title</th><th>Type</th><th>Date</th><th>Score</th></tr>
+      <tr><th>Title</th><th>Funding Agency</th><th>Date of Sanction</th><th>Grant Amount</th><th>Role</th><th>Status</th><th>Score</th></tr>
+      ${externalProjects.map(p => `<tr><td>${p.title || "&nbsp;"}</td><td>${p.agency || "&nbsp;"}</td><td>${p.date || "&nbsp;"}</td><td>${p.amount || "&nbsp;"}</td><td>${p.role || "&nbsp;"}</td><td>${p.status || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
+    </table>
+
+    <h3>B5(a). Patents (IPR)</h3>
+    <table>
+      <tr><th>Title</th><th>National / International</th><th>Date</th><th>Score</th></tr>
       ${patents.map(p => `<tr><td>${p.title || "&nbsp;"}</td><td>${p.type || "&nbsp;"}</td><td>${p.date || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>Awards</h3>
+    <h3>B5(b). Awards</h3>
     <table>
       <tr><th>Title</th><th>Date</th><th>Agency</th><th>Score</th></tr>
       ${awards.map(a => `<tr><td>${a.title || "&nbsp;"}</td><td>${a.date || "&nbsp;"}</td><td>${a.agency || "&nbsp;"}</td><td class="center">${a.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>Conferences</h3>
+    <h3>B6. Invited Lectures / Resource Person / Paper Presentations</h3>
     <table>
       <tr><th>Title</th><th>Type</th><th>Organizer</th><th>Score</th></tr>
       ${confs.map(c => `<tr><td>${c.title || "&nbsp;"}</td><td>${c.type || "&nbsp;"}</td><td>${c.org || "&nbsp;"}</td><td class="center">${c.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>Proposals</h3>
+    <h3>B7(a). Submitted Research Proposals</h3>
     <table>
-      <tr><th>Title</th><th>Duration</th><th>Agency</th><th>Score</th></tr>
-      ${proposals.map(p => `<tr><td>${p.title || "&nbsp;"}</td><td>${p.duration || "&nbsp;"}</td><td>${p.agency || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
+      <tr><th>Title of Proposal</th><th>Duration</th><th>Funding Agency</th><th>Grant Amount Requested</th><th>Score</th></tr>
+      ${proposals.map(p => `<tr><td>${p.title || "&nbsp;"}</td><td>${p.duration || "&nbsp;"}</td><td>${p.agency || "&nbsp;"}</td><td>${p.amount || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
+    </table>
+    <h3>B7(b). Product Developed and Used by Students in Lab / Commercialized</h3>
+    <table>
+      <tr><th>Details of Product</th><th>Used by Students in Lab / Commercialized</th><th>Score</th></tr>
+      ${products.map(p => `<tr><td>${p.details || "&nbsp;"}</td><td>${p.usage || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>FDP / Training</h3>
+
+
+    <h3>B8(a). FDP / Training</h3>
     <table>
       <tr><th>Program</th><th>Duration</th><th>Organization</th><th>Score</th></tr>
       ${fdps.map(f => `<tr><td>${f.program || "&nbsp;"}</td><td>${f.duration || "&nbsp;"}</td><td>${f.org || "&nbsp;"}</td><td class="center">${f.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>Industrial Training</h3>
+    <h3>B8(b). Industrial Training</h3>
     <table>
       <tr><th>Company</th><th>Duration</th><th>Nature</th><th>Score</th></tr>
       ${training.map(t => `<tr><td>${t.company || "&nbsp;"}</td><td>${t.duration || "&nbsp;"}</td><td>${t.nature || "&nbsp;"}</td><td class="center">${t.score || "&nbsp;"}</td></tr>`).join('')}
@@ -2470,6 +2642,51 @@ export default function HODDashboard() {
                 </div>
                 <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>Fill in your teaching and academic activities for the appraisal period. Enter scores for each item.</div>
 
+
+                {/* Faculty Information */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>Faculty Information</div>
+                  <table style={T}>
+                    <tbody>
+                      <tr>
+                        <td style={{ ...TD, width: "30%", background: "#f1f5f9", fontWeight: 700 }}>Name of Faculty</td>
+                        <td style={TD} colSpan={3}><TI val={info.name} onChange={inf("name")} /></td>
+                      </tr>
+                      <tr>
+                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Educational Qualifications</td>
+                        <td style={TD} colSpan={3}><TI val={info.qual} onChange={inf("qual")} /></td>
+                      </tr>
+                      <tr>
+                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Present Designation</td>
+                        <td style={TD} colSpan={3}><TI val={info.desig} onChange={inf("desig")} /></td>
+                      </tr>
+                      <tr>
+                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Name of School / Department</td>
+                        <td style={TD} colSpan={3}><TI val={info.school} onChange={inf("school")} /></td>
+                      </tr>
+                      <tr>
+                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Total Experience (Years)</td>
+                        <td style={TD}>
+                          <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>At DYPIU</div>
+                          <TI val={info.expDyp} onChange={inf("expDyp")} center />
+                        </td>
+                        <td style={TD}>
+                          <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>Previous Exp.</div>
+                          <TI val={info.expPrev} onChange={inf("expPrev")} center />
+                        </td>
+                        <td style={TD}>
+                          <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>Total Exp.</div>
+                          <TI val={info.expTotal} onChange={inf("expTotal")} center />
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Academic Year</td>
+                        <td style={TD} colSpan={3}><TI val={info.ay} onChange={inf("ay")} /></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
                 {/* A1. Teaching Process */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(i) Lectures, Tutorials, Practicals, Projects — Max 50 marks</div>
@@ -2479,8 +2696,8 @@ export default function HODDashboard() {
                         <th style={TH}>SN</th>
                         <th style={TH}>Semester</th>
                         <th style={TH}>Course Code / Name</th>
-                        <th style={TH}>Planned</th>
-                        <th style={TH}>Conducted</th>
+                        <th style={TH}>Classes (as per course structure)</th>
+                        <th style={TH}>Classes Actually Conducted</th>
                         <th style={TH}>Attachment</th>
                         <th style={TH}>View Docs</th>
                         <th style={TH}>Score</th>
@@ -2534,7 +2751,10 @@ export default function HODDashboard() {
                     <td style={TD}><ViewCell id={`courseFile-${i}`} docs={docs} /></td>
                     <td style={TDS}><TI val={r.score} onChange={(v) => setCF(i, "score", v)} center /></td>
                    </tr>
-                 ))}
+                 ))}                      <tr style={{ background: "#eff6ff" }}>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Score (Max 20)</td>
+                        <td style={{ ...TDS, fontWeight: "bold", color: "#1e3a5f" }}>{courseFileScore.toFixed(1)}</td>
+                      </tr>
                   </tbody>
                   </table>
                   <RowBtns onAdd={() =>setCourseFile((p) => [ ...p, { course: "", title: "", details: "", score: "", hod: "", director: "" }])}onDel={() =>setCourseFile((p) => (p.length > 1 ? p.slice(0, -1) : p))}canDel={courseFile.length > 1}/>
@@ -2642,9 +2862,10 @@ export default function HODDashboard() {
                     <thead>
                       <tr>
                         <th style={{ ...TH, width: 30 }}>SN</th>
-                        <th style={TH}>Course Code</th>
-                        <th style={TH}>Feedback 1</th>
-                        <th style={TH}>Feedback 2</th>
+                        <th style={TH}>Course Code / Name</th>
+                        <th style={TH}>First Feedback</th>
+                        <th style={TH}>Second Feedback</th>
+                        <th style={TH}>Average</th>
                         <th style={TH}>Score</th>
                       </tr>
                     </thead>
@@ -2655,11 +2876,12 @@ export default function HODDashboard() {
                           <td style={TD}><TI val={r.code} onChange={(v) => setFb(i, "code", v)} /></td>
                           <td style={TDC}><TI val={r.fb1} onChange={(v) => setFb(i, "fb1", v)} center /></td>
                           <td style={TDC}><TI val={r.fb2} onChange={(v) => setFb(i, "fb2", v)} center /></td>
+                          <td style={{ ...TDC, fontWeight: 700, color: "#0ea5e9" }}>{r.fb1 || r.fb2 ? ((n(r.fb1) + n(r.fb2)) / ((r.fb1 ? 1 : 0) + (r.fb2 ? 1 : 0) || 1)).toFixed(2) : ""}</td>
                           <td style={TDS}><TI val={r.score} onChange={(v) => setFb(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={4}>Total Score (Max 10)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={5}>Total Score (Max 10)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{stuFeedbackScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
@@ -2834,9 +3056,9 @@ export default function HODDashboard() {
 
             {/* Part B Tab */}
             {hodAppraisalTab === "partB" && (
-              <SC title="Part B — Research & Academic Contributions (Max 375)" accent="#7c3aed">
+              <SC title="Part B — Research & Academic Contributions (Max 420)" accent="#7c3aed">
                 <div style={{ marginBottom: 14, padding: "8px 12px", background: "#ede9fe", borderRadius: 6, fontSize: 12, color: "#6d28d9", fontWeight: 600 }}>
-                  📊 Total Part B Score: {partBTotal.toFixed(1)}/375
+                  📊 Total Part B Score: {partBTotal.toFixed(1)}/420
                 </div>
                 <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>Enter your research publications, patents, conferences, and other academic contributions.</div>
 
@@ -2885,11 +3107,11 @@ export default function HODDashboard() {
                     <thead>
                       <tr>
                         <th style={{ ...TH, width: 30 }}>SN</th>
-                        <th style={TH}>Title</th>
-                        <th style={TH}>Book</th>
-                        <th style={TH}>ISBN</th>
-                        <th style={TH}>Publisher</th>
-                        <th style={TH}>Co-authors</th>
+                        <th style={TH}>Title with Page Nos.</th>
+                        <th style={TH}>Book Title, Editor & Publisher</th>
+                        <th style={TH}>ISSN / ISBN No.</th>
+                        <th style={TH}>Type of Publisher</th>
+                        <th style={TH}>Co-authors (from DYPIU)</th>
                         <th style={TH}>First Author</th>
                         <th style={TH}>Attachment</th>
                         <th style={TH}>View Docs</th>
@@ -2902,7 +3124,7 @@ export default function HODDashboard() {
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.title} onChange={(v) => setBook(i, "title", v)} /></td>
                           <td style={TD}><TI val={r.book} onChange={(v) => setBook(i, "book", v)} /></td>
-                          <td style={TD}><TI val={r.isbn} onChange={(v) => setBook(i, "isbn", v)} /></td>
+                          <td style={TD}><TI val={r.issn} onChange={(v) => setBook(i, "issn", v)} /></td>
                           <td style={TD}><TI val={r.pub} onChange={(v) => setBook(i, "pub", v)} /></td>
                           <td style={TD}><TI val={r.coauth} onChange={(v) => setBook(i, "coauth", v)} /></td>
                           <td style={TD}><TI val={r.first} onChange={(v) => setBook(i, "first", v)} /></td>
@@ -2917,7 +3139,7 @@ export default function HODDashboard() {
                       </tr>
                     </tbody>
                   </table>
-                  <RowBtns onAdd={() => setBooks((p) => [...p, { title: "", book: "", isbn: "", pub: "", coauth: "", first: "", score: "" }])} onDel={() => setBooks((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={books.length > 1} />
+                  <RowBtns onAdd={() => setBooks((p) => [...p, { title: "", book: "", issn: "", pub: "", coauth: "", first: "", score: "" }])} onDel={() => setBooks((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={books.length > 1} />
                 </div>
 
                 {/* B3. ICT Pedagogy */}
@@ -2958,9 +3180,9 @@ export default function HODDashboard() {
                   <RowBtns onAdd={() => setIct((p) => [...p, { title: "", desc: "", type: "", quad: "", score: "" }])} onDel={() => setIct((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={ict.length > 1} />
                 </div>
 
-                {/* B4. Research Guidance + Projects */}
+                {/* B4(a). Research Guidance */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4. Research Guidance + Projects — Max 75 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4(a). Research Guidance - Max 30 marks (PhD: 20, PG: 10)</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2986,7 +3208,7 @@ export default function HODDashboard() {
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Score (Max 75)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Score (Max 30)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{researchScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
@@ -2994,15 +3216,99 @@ export default function HODDashboard() {
                   <RowBtns onAdd={() => setResearch((p) => [...p, { degree: "PhD", name: "", thesis: "", score: "" }])} onDel={() => setResearch((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={research.length > 1} />
                 </div>
 
-                {/* B5. Patents & Awards */}
+                {/* B4(b). Research / Consultancy Internal Projects */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5. Patents & Awards — Max 50 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4(b). Ongoing & Completed Research / Consultancy Internal Projects - Max 45 marks (Ongoing: 15, Completed: 30)</div>
                   <table style={T}>
                     <thead>
                       <tr>
                         <th style={{ ...TH, width: 30 }}>SN</th>
                         <th style={TH}>Title</th>
-                        <th style={TH}>Type</th>
+                        <th style={TH}>Funding Agency</th>
+                        <th style={TH}>Date of Sanction</th>
+                        <th style={TH}>Grant Amount</th>
+                        <th style={TH}>Role PI / Co-PI / Consultant</th>
+                        <th style={TH}>Status</th>
+                        <th style={TH}>Attachment</th>
+                        <th style={TH}>View Docs</th>
+                        <th style={TH}>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {projects2.map((r, i) => (
+                        <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
+                          <td style={TDC}>{i + 1}</td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setPrj2(i, "title", v)} /></td>
+                          <td style={TD}><TI val={r.agency} onChange={(v) => setPrj2(i, "agency", v)} /></td>
+                          <td style={TD}><TI val={r.date} onChange={(v) => setPrj2(i, "date", v)} /></td>
+                          <td style={TD}><TI val={r.amount} onChange={(v) => setPrj2(i, "amount", v)} /></td>
+                          <td style={TD}><TI val={r.role} onChange={(v) => setPrj2(i, "role", v)} /></td>
+                          <td style={TD}><TI val={r.status} onChange={(v) => setPrj2(i, "status", v)} /></td>
+                          <td style={TD}><DocCell id={`project2-${i}`} docs={docs} setDocs={setDocs} /></td>
+                          <td style={TD}><ViewCell id={`project2-${i}`} docs={docs} /></td>
+                          <td style={TDS}><TI val={r.score} onChange={(v) => setPrj2(i, "score", v)} center /></td>
+                        </tr>
+                      ))}
+                      <tr style={{ background: "#f3e8ff" }}>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={9}>Total Score (Max 45)</td>
+                        <td style={{ ...TDS, fontWeight: "bold" }}>{projectBScore.toFixed(1)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <RowBtns onAdd={() => setProjects2((p) => [...p, { title: "", agency: "", date: "", amount: "", role: "", status: "", score: "" }])} onDel={() => setProjects2((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={projects2.length > 1} />
+                </div>
+
+                {/* B4(c). Research / Consultancy External Projects */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4(c). Ongoing & Completed Research / Consultancy External Projects - Max 45 marks (Ongoing: 15, Completed: 30)</div>
+                  <table style={T}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...TH, width: 30 }}>SN</th>
+                        <th style={TH}>Title</th>
+                        <th style={TH}>Funding Agency</th>
+                        <th style={TH}>Date of Sanction</th>
+                        <th style={TH}>Grant Amount</th>
+                        <th style={TH}>Role PI / Co-PI / Consultant</th>
+                        <th style={TH}>Status</th>
+                        <th style={TH}>Attachment</th>
+                        <th style={TH}>View Docs</th>
+                        <th style={TH}>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {externalProjects.map((r, i) => (
+                        <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
+                          <td style={TDC}>{i + 1}</td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setExtPrj(i, "title", v)} /></td>
+                          <td style={TD}><TI val={r.agency} onChange={(v) => setExtPrj(i, "agency", v)} /></td>
+                          <td style={TD}><TI val={r.date} onChange={(v) => setExtPrj(i, "date", v)} /></td>
+                          <td style={TD}><TI val={r.amount} onChange={(v) => setExtPrj(i, "amount", v)} /></td>
+                          <td style={TD}><TI val={r.role} onChange={(v) => setExtPrj(i, "role", v)} /></td>
+                          <td style={TD}><TI val={r.status} onChange={(v) => setExtPrj(i, "status", v)} /></td>
+                          <td style={TD}><DocCell id={`externalProject-${i}`} docs={docs} setDocs={setDocs} /></td>
+                          <td style={TD}><ViewCell id={`externalProject-${i}`} docs={docs} /></td>
+                          <td style={TDS}><TI val={r.score} onChange={(v) => setExtPrj(i, "score", v)} center /></td>
+                        </tr>
+                      ))}
+                      <tr style={{ background: "#f3e8ff" }}>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={9}>Total Score (Max 45)</td>
+                        <td style={{ ...TDS, fontWeight: "bold" }}>{externalProjectScore.toFixed(1)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <RowBtns onAdd={() => setExternalProjects((p) => [...p, { title: "", agency: "", date: "", amount: "", role: "", status: "", score: "" }])} onDel={() => setExternalProjects((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={externalProjects.length > 1} />
+                </div>
+
+                {/* B5. Patents (IPR) & Awards */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5. Patents (IPR) & Awards — Max 50 marks</div>
+                  <table style={T}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...TH, width: 30 }}>SN</th>
+                        <th style={TH}>Title</th>
+                        <th style={TH}>National / International</th>
                         <th style={TH}>Date</th>
                         <th style={TH}>Status</th>
                         <th style={TH}>File No.</th>
@@ -3026,7 +3332,7 @@ export default function HODDashboard() {
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={8}>Total Patents Score (Max 30)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={8}>Total Patents Score (Max 40)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{patentScore.toFixed(1)}</td>
                       </tr>
                       {awards.map((r, i) => (
@@ -3043,7 +3349,7 @@ export default function HODDashboard() {
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={8}>Total Awards Score (Max 20)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={8}>Total Awards Score (Max 10)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{awardScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
@@ -3056,9 +3362,9 @@ export default function HODDashboard() {
                   </div>
                 </div>
 
-                {/* B6. Conferences / FDP */}
+                {/* B6. Invited Lectures / Resource Person / Paper Presentations */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B6. Conferences / FDP — Max 30 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B6. Invited Lectures / Resource Person / Paper Presentations — Max 30 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3094,17 +3400,17 @@ export default function HODDashboard() {
                   <RowBtns onAdd={() => setConfs((p) => [...p, { title: "", type: "", org: "", level: "", score: "" }])} onDel={() => setConfs((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={confs.length > 1} />
                 </div>
 
-                {/* B7. Research Proposals */}
+                {/* B7(a). Submitted Research Proposals */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B7. Research Proposals — Max 20 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B7(a). Submitted Research Proposals — Max 10 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
                         <th style={{ ...TH, width: 30 }}>SN</th>
-                        <th style={TH}>Title</th>
+                        <th style={TH}>Title of Proposal</th>
                         <th style={TH}>Duration</th>
-                        <th style={TH}>Agency</th>
-                        <th style={TH}>Amount</th>
+                        <th style={TH}>Funding Agency</th>
+                        <th style={TH}>Grant Amount Requested</th>
                         <th style={TH}>Attachment</th>
                         <th style={TH}>View Docs</th>
                         <th style={TH}>Score</th>
@@ -3124,12 +3430,46 @@ export default function HODDashboard() {
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={7}>Total Score (Max 20)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={7}>Total Score (Max 10)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{proposalScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>
                   <RowBtns onAdd={() => setProposals((p) => [...p, { title: "", duration: "", agency: "", amount: "", score: "" }])} onDel={() => setProposals((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={proposals.length > 1} />
+                </div>
+
+                {/* B7(b). Product Developed */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B7(b). Product Developed and Used by Students in Lab / Commercialized — Max 10 marks</div>
+                  <table style={T}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...TH, width: 30 }}>SN</th>
+                        <th style={TH}>Details of Product</th>
+                        <th style={TH}>Used by Students in Lab / Commercialized</th>
+                        <th style={TH}>Attachment</th>
+                        <th style={TH}>View Docs</th>
+                        <th style={TH}>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map((r, i) => (
+                        <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
+                          <td style={TDC}>{i + 1}</td>
+                          <td style={TD}><TI val={r.details} onChange={(v) => setProd(i, "details", v)} /></td>
+                          <td style={TD}><TI val={r.usage} onChange={(v) => setProd(i, "usage", v)} /></td>
+                          <td style={TD}><DocCell id={`prod-${i}`} docs={docs} setDocs={setDocs} /></td>
+                          <td style={TD}><ViewCell id={`prod-${i}`} docs={docs} /></td>
+                          <td style={TDS}><TI val={r.score} onChange={(v) => setProd(i, "score", v)} center /></td>
+                        </tr>
+                      ))}
+                      <tr style={{ background: "#f3e8ff" }}>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={5}>Total Score (Max 10)</td>
+                        <td style={{ ...TDS, fontWeight: "bold" }}>{productScore.toFixed(1)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <RowBtns onAdd={() => setProducts((p) => [...p, { details: "", usage: "", score: "" }])} onDel={() => setProducts((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={products.length > 1} />
                 </div>
 
                 {/* B8. Self Development */}
@@ -3197,8 +3537,8 @@ export default function HODDashboard() {
                   <tbody>
                     {[
                       ["Part A — Teaching & Activities", partATotal, 200, "#6366f1"],
-                      ["Part B — Research & Contributions", partBTotal, 375, "#7c3aed"],
-                      ["Grand Total", grandTotal, 575, g.color],
+                      ["Part B — Research & Contributions", partBTotal, 420, "#7c3aed"],
+                      ["Grand Total", grandTotal, 620, g.color],
                     ].map(([label, score, max, color]) => (
                       <tr key={label}>
                         <td style={{ padding: "10px", background: "#f8fafc", fontWeight: 600, border: "1px solid #e2e8f0", width: "50%" }}>{label}</td>
@@ -3233,7 +3573,7 @@ export default function HODDashboard() {
                   >
                     Generate Report
                   </button>
-                  <button 
+                  <button
                     onClick={handleSubmitAppraisal}
                     disabled={submitting || appraisalLocked || !accuracyConfirmed}
                     style={{ padding: "10px 28px", background: appraisalLocked || !accuracyConfirmed ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: appraisalLocked || !accuracyConfirmed ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}

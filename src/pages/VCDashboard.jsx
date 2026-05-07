@@ -130,9 +130,9 @@ const TDS_DEAN = { ...TDS, background: "#f0fdf4" };
 const TDS_VC   = { ...TDS, background: "#fdf4ff", minWidth: 70 };
 const TDV = { ...TD, background: "#fafbff", minWidth: 110 };
 
-const VC_REVIEW_ARRAY_KEYS = ["lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs", "society", "industry", "acr", "journals", "books", "ict", "research", "projects2", "patents", "awards", "confs", "proposals", "fdps", "training"];
+const VC_REVIEW_ARRAY_KEYS = ["lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs", "society", "industry", "acr", "journals", "books", "ict", "research", "projects2", "externalProjects", "patents", "awards", "confs", "proposals", "products", "fdps", "training"];
 const VC_REPORT_PART_A_SECTIONS = [
-  { key: "lectures", title: "A(i). Lectures / Tutorials / Practicals", max: 50, doc: "lec", fields: [["sem", "Semester"], ["code", "Course Code / Name"], ["planned", "Planned"], ["conducted", "Conducted"]] },
+  { key: "lectures", title: "A(i). Lectures / Tutorials / Practicals", max: 50, doc: "lec", fields: [["sem", "Semester"], ["code", "Course Code / Name"], ["planned", "Classes (as per course structure)"], ["conducted", "Classes Actually Conducted"]] },
   { key: "courseFile", title: "A(ii). Course File", max: 20, doc: "cf", fields: [["course", "Course / Paper"], ["title", "Title"], ["details", "Details"]] },
   { key: "projects", title: "A(iv). Project Guidance", max: 10, doc: "proj", fields: [["label", "Project Category"]] },
   { key: "quals", title: "A(v). Qualification Enhancement", max: 10, doc: "qual", fields: [["label", "Category"]] },
@@ -145,14 +145,16 @@ const VC_REPORT_PART_A_SECTIONS = [
 ];
 const VC_REPORT_PART_B_SECTIONS = [
   { key: "journals", title: "B1. Research Papers / Journal Publications", max: 120, doc: "jour", fields: [["title", "Title"], ["journal", "Journal"], ["issn", "ISSN"], ["index", "Indexing"]] },
-  { key: "books", title: "B2. Books / Book Chapters", max: 50, doc: "book", fields: [["title", "Title"], ["book", "Book / Publisher"], ["isbn", "ISBN"], ["first", "First Author"]] },
+  { key: "books", title: "B2. Books / Book Chapters", max: 50, doc: "book", fields: [["title", "Title with Page Nos."], ["book", "Book Title, Editor & Publisher"], ["issn", "ISSN / ISBN No."], ["pub", "Type of Publisher"], ["coauth", "Co-authors (from DYPIU)"], ["first", "First Author"]] },
   { key: "ict", title: "B3. ICT / E-Content", max: 20, doc: "ict", fields: [["title", "Title"], ["desc", "Description"], ["type", "Type"], ["quad", "Quadrants"]] },
   { key: "research", title: "B4(a). Research Guidance", max: 30, doc: "res", fields: [["degree", "Degree"], ["name", "Student Name"], ["thesis", "Thesis / Status"]] },
-  { key: "projects2", title: "B4(b). Research Projects", max: 45, doc: "project2", fields: [["title", "Title"], ["agency", "Agency"], ["date", "Date"], ["amount", "Amount"], ["role", "Role"], ["status", "Status"]] },
-  { key: "patents", title: "B5(a). Patents / IPR", max: 40, doc: "pat", fields: [["title", "Title"], ["type", "Type"], ["date", "Date"], ["status", "Status"], ["fileNo", "File No."]] },
-  { key: "awards", title: "B5(b). Awards / Fellowships", max: 10, doc: "awd", fields: [["title", "Title"], ["date", "Date"], ["agency", "Agency"], ["level", "Level"]] },
-  { key: "confs", title: "B6. Conferences / Seminars / Workshops", max: 30, doc: "conf", fields: [["title", "Title"], ["type", "Type"], ["org", "Organization"], ["level", "Level"]] },
-  { key: "proposals", title: "B7. Research Proposals", max: 20, doc: "prop", fields: [["title", "Title"], ["duration", "Duration"], ["agency", "Agency"], ["amount", "Amount"]] },
+  { key: "projects2", title: "B4(b). Research / Consultancy Internal Projects", max: 45, doc: "project2", fields: [["title", "Title"], ["agency", "Funding Agency"], ["date", "Date of Sanction"], ["amount", "Grant Amount"], ["role", "Role PI / Co-PI / Consultant"], ["status", "Status"]] },
+  { key: "externalProjects", title: "B4(c). Research / Consultancy External Projects", max: 45, doc: "externalProject", fields: [["title", "Title"], ["agency", "Funding Agency"], ["date", "Date of Sanction"], ["amount", "Grant Amount"], ["role", "Role PI / Co-PI / Consultant"], ["status", "Status"]] },
+  { key: "patents", title: "B5(a). Patents (IPR)", max: 40, doc: "pat", fields: [["title", "Title"], ["type", "National / International"], ["date", "Date"], ["status", "Status"], ["fileNo", "File No."]] },
+  { key: "awards", title: "B5(b). Awards", max: 10, doc: "awd", fields: [["title", "Title"], ["date", "Date"], ["agency", "Agency"], ["level", "Level"]] },
+  { key: "confs", title: "B6. Invited Lectures / Resource Person / Paper Presentations", max: 30, doc: "conf", fields: [["title", "Title"], ["type", "Type"], ["org", "Organization"], ["level", "Level"]] },
+  { key: "proposals", title: "B7(a). Submitted Research Proposals", max: 10, doc: "prop", fields: [["title", "Title"], ["duration", "Duration"], ["agency", "Funding Agency"], ["amount", "Grant Amount Requested"]] },
+  { key: "products", title: "B7(b). Product Developed and Used by Students in Lab / Commercialized", max: 10, doc: "prod", fields: [["details", "Details of Product"], ["usage", "Used by Students in Lab / Commercialized"]] },
   { key: "fdps", title: "B8(a). FDP / Self Development", max: 10, doc: "fdp", fields: [["program", "Program"], ["duration", "Duration"], ["org", "Organization"]] },
   { key: "training", title: "B8(b). Industrial Training", max: 10, doc: "train", fields: [["company", "Company"], ["duration", "Duration"], ["nature", "Nature"]] },
 ];
@@ -270,7 +272,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
         <div style={{ overflowX: "auto" }}>
           <table style={T}><thead><tr>
             <th style={TH}>SN</th><th style={TH}>Semester</th><th style={TH}>Course</th>
-            <th style={TH}>Planned</th><th style={TH}>Conducted</th><th style={TH}>Docs</th>
+            <th style={TH}>Classes (as per course structure)</th><th style={TH}>Classes Actually Conducted</th><th style={TH}>Docs</th>
             <ScoreHeaders />
           </tr></thead>
           <tbody>{rows(person.lectures).map((r, i) => (
@@ -353,7 +355,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
       {/* B Feedback */}
       <SC title="B. Student Feedback (Max 10)" accent="#7c3aed">
         <table style={T}><thead><tr>
-          <th style={TH}>SN</th><th style={TH}>Course</th><th style={TH}>FB1</th><th style={TH}>FB2</th><th style={TH}>Avg</th>
+          <th style={TH}>SN</th><th style={TH}>Course</th><th style={TH}>First Feedback</th><th style={TH}>Second Feedback</th><th style={TH}>Average</th>
           <ScoreHeaders />
         </tr></thead>
         <tbody>{rows(person.feedback).map((r, i) => (
@@ -438,21 +440,25 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
       {/* B2–B8 */}
       {[
         { title: "B2. Books / Book Chapters (Max 50)", key: "books", docPfx: "book",
-          render: (r) => [r.title, r.book, r.issn, r.first] },
+          render: (r) => [r.title, r.book, r.issn, r.pub, r.coauth, r.first] },
         { title: "B3. ICT / E-Content (Max 20)", key: "ict", docPfx: "ict",
           render: (r) => [r.title, r.type, r.quad] },
-        { title: "B4. Research Guidance (Max 30)", key: "research", docPfx: "res",
+        { title: "B4(a). Research Guidance (Max 30)", key: "research", docPfx: "res",
           render: (r) => [r.degree, r.name, r.thesis] },
-        { title: "B4b. Research Projects (Max 45)", key: "projects2", docPfx: "project2",
+        { title: "B4(b). Research / Consultancy Internal Projects (Max 45)", key: "projects2", docPfx: "project2",
           render: (r) => [r.title, r.agency, r.date, r.amount, r.role, r.status] },
-        { title: "B5a. Patents / IPR (Max 40)", key: "patents", docPfx: "pat",
+        { title: "B4(c). Research / Consultancy External Projects (Max 45)", key: "externalProjects", docPfx: "externalProject",
+          render: (r) => [r.title, r.agency, r.date, r.amount, r.role, r.status] },
+        { title: "B5(a). Patents (IPR) (Max 40)", key: "patents", docPfx: "pat",
           render: (r) => [r.title, r.type, r.date, r.status, r.fileNo] },
-        { title: "B5b. Awards / Fellowships (Max 10)", key: "awards", docPfx: "awd",
+        { title: "B5(b). Awards (Max 10)", key: "awards", docPfx: "awd",
           render: (r) => [r.title, r.date, r.agency, r.level] },
-        { title: "B6. Conferences (Max 30)", key: "confs", docPfx: "conf",
+        { title: "B6. Invited Lectures / Resource Person / Paper Presentations (Max 30)", key: "confs", docPfx: "conf",
           render: (r) => [r.title, r.type, r.org, r.level] },
-        { title: "B7. Research Proposals (Max 20)", key: "proposals", docPfx: "prop",
+        { title: "B7(a). Submitted Research Proposals (Max 10)", key: "proposals", docPfx: "prop",
           render: (r) => [r.title, r.duration, r.agency, r.amount] },
+        { title: "B7(b). Product Developed and Used by Students in Lab / Commercialized (Max 10)", key: "products", docPfx: "prod",
+          render: (r) => [r.details, r.usage] },
         { title: "B8. Self Development — FDP (Max 10)", key: "fdps", docPfx: "fdp",
           render: (r) => [r.program, r.duration, r.org] },
       ].map(({ title, key, docPfx, render }) => (
@@ -507,8 +513,8 @@ function calcVCScore(person, vcData) {
 
   const partB = sum(person.journals, "journals", "vc") + sum(person.books, "books", "vc") +
     sum(person.ict, "ict", "vc") + sum(person.research, "research", "vc") +
-    sum(person.projects2, "projects2", "vc") + sum(person.patents, "patents", "vc") + sum(person.awards, "awards", "vc") +
-    sum(person.confs, "confs", "vc") + sum(person.proposals, "proposals", "vc") +
+    sum(person.projects2, "projects2", "vc") + sum(person.externalProjects, "externalProjects", "vc") + sum(person.patents, "patents", "vc") + sum(person.awards, "awards", "vc") +
+    sum(person.confs, "confs", "vc") + sum(person.proposals, "proposals", "vc") + sum(person.products, "products", "vc") +
     sum(person.fdps, "fdps", "vc") + sum(person.training || [], "training", "vc");
 
   return { partA, partB, total: partA + partB };
@@ -564,7 +570,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
         partB: n(person.vcPartB ?? partB),
         total: n(person.vcTotal ?? total),
       },
-      maxScores: { partA: 200, partB: 375, grand: MAX_SCORES.GRAND_TOTAL },
+      maxScores: { partA: 200, partB: 420, grand: MAX_SCORES.GRAND_TOTAL },
       scoreRoles: ["score", ...previousRoles, "vc"],
       roleLabel: (value) => value === "vc" ? "VC" : value === "director" ? "Director" : value === "hod" ? "HOD" : value === "dean" ? "Dean" : value,
       status: person.status,
