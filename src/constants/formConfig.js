@@ -20,6 +20,28 @@ export const ACR_LABELS = [
   "Obedience"
 ];
 
+export const ACR_DETAIL_POINTS = {
+  "Self-motivation and Proactiveness": [
+    "List the activities or initiatives other than regular load/duties.",
+  ],
+  Punctuality: [
+    "Number of late marks - Office report.",
+    "Punctuality in lecture/practical - To be observed by HOD.",
+    "Timely completion and weekly checking of daily report - To be observed by HOD.",
+    "Number of absentee without intimation and/or load adjustment - To be observed by HOD.",
+  ],
+  "Target based work": [
+    "List the tasks allotted to you.",
+    "Timely completion of allotted work - To be observed by HOD.",
+  ],
+  Effectiveness: [
+    "Work done without errors & least follow-up - To be observed by HOD.",
+  ],
+  Obedience: [
+    "To be observed by HOD and Director.",
+  ],
+};
+
 export const MAX_SCORES = {
   PART_A: 200,
   PART_B: 420,
@@ -96,4 +118,3 @@ export const SCHOOL_CONFIG = Object.fromEntries(
     { hasHod: school.value === SOEMR_SCHOOL.label },
   ])
 );
-

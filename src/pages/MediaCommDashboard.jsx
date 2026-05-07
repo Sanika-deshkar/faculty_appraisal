@@ -1,13 +1,29 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { APP_INFO } from "../constants/formConfig";
+import { ACR_DETAIL_POINTS, APP_INFO } from "../constants/formConfig";
 import { FORM_SCHOOL_CODES, FORM_TYPES } from "../constants/formRouting";
 import { getSchoolKey } from "../constants/universityHierarchy";
-import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal } from "../services/appraisalPersistence";
+import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal, saveAppraisalDraftSection } from "../services/appraisalPersistence";
 import { uploadToCloudinary } from "../services/cloudinary";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { supabase } from "../services/supabase";
 import { openFullFormReport } from "../utils/fullFormReport";
+import {
+  clearDraft,
+  clampScore,
+  draftKeyFor,
+  effectiveMaxScore,
+  feedbackAverage,
+  feedbackRowScore,
+  feedbackSectionScore,
+  isValidDDMMYYYY,
+  loadDraft,
+  maskDateDDMMYYYY,
+  saveDraft,
+  scoreRemaining,
+  sumSectionScore,
+  validateCompleteRows,
+} from "../utils/appraisalFormUtils";
 import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel } from "../utils/hierarchy";
 
 const ACCENT = "#b45309";
@@ -91,6 +107,7 @@ const emptyMediaForm = () => ({
   products: [{ details: "", used: "", score: "" }],
   fdps: [{ program: "", duration: "", org: "", score: "" }],
   training: [{ company: "", duration: "", nature: "", score: "" }],
+  sectionApplicability: { projects: "applicable", research: "applicable" },
 });
 
 const cloneRows = (rows) => JSON.parse(JSON.stringify(rows || []));
@@ -133,21 +150,77 @@ const scoreKeyForInnov = (role) => ({
 }[role] || "innovScore");
 
 const calculateMediaTotals = (form, scoreKey = "score") => {
-  const rowSum = (key) => (form[key] || []).reduce((total, row) => total + n(row?.[scoreKey]), 0);
-  const partA = Math.min(PART_A_MAX,
-    rowSum("lectures") + rowSum("courseFile") + n(scoreKey === "score" ? form.innovScore : form[scoreKeyForInnov(scoreKey)]) +
-    rowSum("projects") + rowSum("quals") + rowSum("feedback") + rowSum("deptActs") + rowSum("uniActs") +
-    rowSum("society") + rowSum("acr")
+  const applicability = form.sectionApplicability || {};
+  const maxScores = getMediaEffectiveMaxScores(form);
+  const rowSum = (key, max) => applicability[key] === "notApplicable" ? 0 : sumSectionScore(form[key] || [], max, scoreKey);
+  const partA = clampScore(
+    rowSum("lectures", 50) + rowSum("courseFile", 20) + clampScore(scoreKey === "score" ? form.innovScore : form[scoreKeyForInnov(scoreKey)], 10) +
+    rowSum("projects", 10) + rowSum("quals", 10) + (scoreKey === "score" ? feedbackSectionScore(form.feedback, 10) : rowSum("feedback", 10)) +
+    rowSum("deptActs", 20) + rowSum("uniActs", 30) + rowSum("society", 10) + rowSum("acr", 25),
+    maxScores.partA,
   );
-  const partB = PART_B_SECTIONS.reduce((total, section) => total + rowSum(section.key), 0);
-  return { partA, partB, total: partA + partB };
+  const partB = clampScore(
+    PART_B_SECTIONS.reduce((total, section) => total + rowSum(section.key, section.max), 0),
+    maxScores.partB,
+  );
+  return { partA, partB, total: clampScore(partA + partB, maxScores.grand), maxScores };
+};
+
+const getMediaEffectiveMaxScores = (form = {}) => {
+  const applicability = form.sectionApplicability || {};
+  const partA = effectiveMaxScore(PART_A_MAX, applicability, [
+    PART_A_SECTIONS.find((section) => section.key === "projects"),
+  ].filter(Boolean));
+  const partB = effectiveMaxScore(PART_B_MAX, applicability, [
+    PART_B_SECTIONS.find((section) => section.key === "research"),
+  ].filter(Boolean));
+  return { partA, partB, grand: partA + partB };
 };
 
 const mergeForm = (base, incoming = {}) => ({
   ...base,
   ...incoming,
   info: { ...base.info, ...(incoming.info || {}) },
+  sectionApplicability: { ...base.sectionApplicability, ...(incoming.sectionApplicability || {}) },
 });
+
+const normalizeScoresForSubmit = (form) => ({
+  ...form,
+  feedback: (form.feedback || []).map((row) => ({
+    ...row,
+    score: feedbackRowScore(row, 10).toFixed(1),
+  })),
+});
+
+const validateMediaBeforeSubmit = (form, sectionView = "all") => {
+  const applicability = form.sectionApplicability || {};
+  const sectionsToValidate = sectionView === "partA" ? PART_A_SECTIONS : sectionView === "partB" ? PART_B_SECTIONS : [...PART_A_SECTIONS, ...PART_B_SECTIONS];
+  const rowSections = sectionsToValidate.map((section) => ({
+    label: section.title,
+    rows: form[section.key] || [],
+    fields: [
+      ...section.fields.filter(([, , readOnly]) => !readOnly).map(([key]) => key),
+      ...(section.selfReadOnlyScore || section.key === "feedback" ? [] : ["score"]),
+    ],
+    skip: applicability[section.key] === "notApplicable",
+  }));
+  const errors = validateCompleteRows(rowSections);
+
+  if (sectionView !== "partA") ["internalProjects", "externalProjects"].forEach((key) => {
+    (form[key] || []).forEach((row, index) => {
+      if (row.date && !isValidDDMMYYYY(row.date)) {
+        errors.push(`${key === "internalProjects" ? "B4(b)" : "B4(c)"}, row ${index + 1}: date must be DD/MM/YYYY.`);
+      }
+    });
+  });
+
+  if (sectionView !== "partB") {
+    if (form.innovDetails && !form.innovScore) errors.push("A(iii). Innovative Teaching Methods: score is required.");
+    if (form.innovScore && !form.innovDetails) errors.push("A(iii). Innovative Teaching Methods: details are required.");
+  }
+
+  return errors;
+};
 
 function ScoreBar({ score, max, color }) {
   return <div style={{ height: 5, borderRadius: 6, background: "#e2e8f0", overflow: "hidden" }}><div style={{ width: `${pct(score, max)}%`, height: "100%", background: color }} /></div>;
@@ -194,11 +267,8 @@ function DocCell({ id, docs, setDocs, readOnly }) {
     if (!selected.length) return;
     setUploading(true);
     try {
-      const uploaded = [];
-      for (const file of selected) {
-        uploaded.push(await uploadToCloudinary(file, { folder: `faculty-appraisal/${id}` }));
-      }
-      setDocs((prev) => ({ ...prev, [id]: [...(prev[id] || []), ...uploaded] }));
+      const uploaded = await uploadToCloudinary(selected[0], { folder: `faculty-appraisal/${id}` });
+      setDocs((prev) => ({ ...prev, [id]: [uploaded] }));
     } catch (err) {
       alert(`Upload failed.\n\n${err.message}`);
     } finally {
@@ -226,7 +296,7 @@ function DocCell({ id, docs, setDocs, readOnly }) {
       {!readOnly && (
         <button type="button" onClick={() => ref.current?.click()} disabled={uploading} style={{ border: "1px dashed #cbd5e1", background: "#f8fafc", color: "#475569", borderRadius: 4, padding: "5px", cursor: "pointer", fontSize: 10 }}>
           {uploading ? "Uploading..." : "Attach"}
-          <input ref={ref} type="file" multiple style={{ display: "none" }} onChange={(event) => handleFiles(event.target.files)} />
+          <input ref={ref} type="file" style={{ display: "none" }} onChange={(event) => handleFiles(event.target.files)} />
         </button>
       )}
       {readOnly && !files.length && <span style={{ color: "#94a3b8", fontSize: 10 }}>No docs</span>}
@@ -234,12 +304,15 @@ function DocCell({ id, docs, setDocs, readOnly }) {
   );
 }
 
-function SectionShell({ title, max, children, accent = ACCENT }) {
+function SectionShell({ title, max, earned = 0, children, accent = ACCENT }) {
   return (
     <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${accent}`, borderRadius: 8, overflow: "hidden", marginBottom: 14 }}>
       <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div style={{ fontWeight: 800, color: accent, fontSize: 13 }}>{title}</div>
-        <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>Max {max}</div>
+        <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textAlign: "right" }}>
+          <div>Earned Score: {clampScore(earned, max).toFixed(1)} / {max}</div>
+          <div>Remaining Credits: {scoreRemaining(earned, max).toFixed(1)}</div>
+        </div>
       </div>
       <div style={{ padding: 12 }}>{children}</div>
     </section>
@@ -252,12 +325,34 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
   const editableSelf = mode === "self" && !locked;
   const reviewLocked = mode === "review" && locked;
   const currentRole = reviewerRole;
+  const applicability = form.sectionApplicability || {};
+  const notApplicable = applicability[section.key] === "notApplicable";
+  const canToggleApplicability = editableSelf && ["projects", "research"].includes(section.key);
+  const earned = section.key === "feedback"
+    ? feedbackSectionScore(rows, section.max)
+    : notApplicable ? 0 : sumSectionScore(rows, section.max);
 
   const updateRow = (index, key, value) => {
+    const nextValue = key === "date" ? maskDateDDMMYYYY(value) : key === "score" ? clampScore(value, section.max) : value;
     setForm((prev) => ({
       ...prev,
-      [section.key]: (prev[section.key] || []).map((row, rowIndex) => rowIndex === index ? { ...row, [key]: value } : row),
+      [section.key]: (prev[section.key] || []).map((row, rowIndex) => rowIndex === index ? { ...row, [key]: nextValue } : row),
     }));
+  };
+
+  const setApplicability = (value) => {
+    setForm((prev) => {
+      const blankRows = (prev[section.key] || []).map((row) => ({
+        ...row,
+        ...Object.fromEntries(section.fields.filter(([, , readOnly]) => !readOnly).map(([key]) => [key, ""])),
+        score: "",
+      }));
+      return {
+        ...prev,
+        sectionApplicability: { ...(prev.sectionApplicability || {}), [section.key]: value },
+        [section.key]: value === "notApplicable" ? blankRows : prev[section.key],
+      };
+    });
   };
 
   const updateReview = (index, value) => {
@@ -278,13 +373,24 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
   };
 
   return (
-    <SectionShell title={section.title} max={section.max} accent={section.key === "acr" ? "#ef4444" : section.key === "society" ? "#10b981" : section.doc?.startsWith("j") || section.doc?.startsWith("p") || section.doc?.startsWith("b") || section.doc?.startsWith("i") || section.doc?.startsWith("e") ? ACCENT2 : ACCENT}>
+    <SectionShell title={section.title} max={notApplicable ? 0 : section.max} earned={earned} accent={section.key === "acr" ? "#ef4444" : section.key === "society" ? "#10b981" : section.doc?.startsWith("j") || section.doc?.startsWith("p") || section.doc?.startsWith("b") || section.doc?.startsWith("i") || section.doc?.startsWith("e") ? ACCENT2 : ACCENT}>
+      {canToggleApplicability && (
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10, fontSize: 12, fontWeight: 800, color: "#334155" }}>
+          {["applicable", "notApplicable"].map((value) => (
+            <label key={value} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <input type="checkbox" checked={(applicability[section.key] || "applicable") === value} onChange={() => setApplicability(value)} />
+              {value === "applicable" ? "Applicable" : "Not Applicable"}
+            </label>
+          ))}
+        </div>
+      )}
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
           <thead>
             <tr>
               <th style={thStyle}>SN</th>
               {section.fields.map(([, label]) => <th key={label} style={thStyle}>{label}</th>)}
+              {section.key === "feedback" && <th style={thStyle}>Average</th>}
               <th style={thStyle}>Documents</th>
               <th style={thStyle}>Faculty Score</th>
               {mode === "review" && previousRoles.map((role) => <th key={role} style={thStyle}>{roleLabel(role)} Score</th>)}
@@ -297,15 +403,39 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
                 <td style={tdCenter}>{index + 1}</td>
                 {section.fields.map(([key, , readOnlyField]) => (
                   <td key={key} style={tdStyle}>
-                    {mode === "self"
-                      ? <TI value={row[key]} readOnly={!editableSelf || readOnlyField} onChange={(value) => updateRow(index, key, value)} />
-                      : <RO value={row[key]} />}
+                    {mode !== "self" ? <RO value={row[key]} /> : key === "first" ? (
+                      <select
+                        value={row[key] || ""}
+                        disabled={!editableSelf || readOnlyField || notApplicable}
+                        onChange={(event) => updateRow(index, key, event.target.value)}
+                        style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "Georgia, serif", fontSize: 11 }}
+                      >
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    ) : (
+                      <>
+                        <TI value={row[key]} readOnly={!editableSelf || readOnlyField || notApplicable} onChange={(value) => updateRow(index, key, value)} />
+                        {section.key === "acr" && key === "label" && ACR_DETAIL_POINTS[row[key]] && (
+                          <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>
+                            {ACR_DETAIL_POINTS[row[key]].map((point) => <li key={point}>{point}</li>)}
+                          </ul>
+                        )}
+                        {key === "date" && row[key] && !isValidDDMMYYYY(row[key]) && (
+                          <div style={{ color: "#dc2626", fontSize: 10, marginTop: 3 }}>Use DD/MM/YYYY</div>
+                        )}
+                      </>
+                    )}
                   </td>
                 ))}
-                <td style={tdStyle}><DocCell id={`${section.doc}-${index}`} docs={docs} setDocs={setDocs} readOnly={!editableSelf} /></td>
+                {section.key === "feedback" && <td style={tdCenter}>{feedbackAverage(row).toFixed(2)}</td>}
+                <td style={tdStyle}><DocCell id={`${section.doc}-${index}`} docs={docs} setDocs={setDocs} readOnly={!editableSelf || notApplicable} /></td>
                 <td style={tdCenter}>
                   {mode === "self"
-                    ? <TI value={row.score} type="number" center readOnly={!editableSelf || section.selfReadOnlyScore} onChange={(value) => updateRow(index, "score", value)} />
+                    ? section.key === "feedback"
+                      ? <RO value={feedbackRowScore(row, section.max).toFixed(1)} center />
+                      : <TI value={row.score} type="number" center readOnly={!editableSelf || section.selfReadOnlyScore || notApplicable} onChange={(value) => updateRow(index, "score", value)} />
                     : <RO value={row.score} center />}
                 </td>
                 {mode === "review" && previousRoles.map((role) => <td key={role} style={tdCenter}><RO value={row[role]} center /></td>)}
@@ -319,7 +449,7 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
           </tbody>
         </table>
       </div>
-      {editableSelf && !section.selfReadOnlyScore && (
+      {editableSelf && !section.selfReadOnlyScore && !notApplicable && (
         <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <button type="button" onClick={addRow} style={smallButton("#10b981")}>+ Add Row</button>
           <button type="button" onClick={deleteRow} style={smallButton("#ef4444")}>Delete Last</button>
@@ -391,13 +521,13 @@ function AccuracyCheckbox({ checked, onChange, disabled = false }) {
   );
 }
 
-function SummaryBox({ totals, roleScoreLabel = "Score" }) {
+function SummaryBox({ totals, roleScoreLabel = "Score", maxScores = { partA: PART_A_MAX, partB: PART_B_MAX, grand: GRAND_MAX } }) {
   return (
     <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 16, display: "grid", gap: 12 }}>
       {[
-        ["Part A", totals.partA, PART_A_MAX, ACCENT],
-        ["Part B", totals.partB, PART_B_MAX, ACCENT2],
-        ["Grand Total", totals.total, GRAND_MAX, "#059669"],
+        ["Part A", totals.partA, maxScores.partA, ACCENT],
+        ["Part B", totals.partB, maxScores.partB, ACCENT2],
+        ["Grand Total", totals.total, maxScores.grand, "#059669"],
       ].map(([label, value, max, color]) => (
         <div key={label}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
@@ -411,7 +541,7 @@ function SummaryBox({ totals, roleScoreLabel = "Score" }) {
   );
 }
 
-function SectionSelector({ value, onChange, label = "Appraisal Section" }) {
+function SectionSelector({ value, onChange, label = "Appraisal Section", isOptionDisabled = () => false }) {
   return (
     <label style={{ display: "inline-grid", gap: 6, fontSize: 11, color: "#475569", fontWeight: 800, minWidth: 230 }}>
       {label}
@@ -420,9 +550,22 @@ function SectionSelector({ value, onChange, label = "Appraisal Section" }) {
         onChange={(event) => onChange(event.target.value)}
         style={{ height: 36, border: "1px solid #cbd5e1", borderRadius: 7, background: "#fff", color: "#0f172a", padding: "0 10px", fontFamily: "Georgia, serif", fontSize: 12, fontWeight: 700 }}
       >
-        {SECTION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        {SECTION_OPTIONS.map((option) => <option key={option.value} value={option.value} disabled={isOptionDisabled(option.value)}>{option.label}</option>)}
       </select>
     </label>
+  );
+}
+
+function SectionSaveFooter({ label, saved, saving, locked, onSave }) {
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <span style={{ color: saved ? "#047857" : "#64748b", fontSize: 12, fontWeight: 800 }}>
+        {locked ? "Submitted and locked" : saved ? `${label} saved. Next section unlocked.` : `Save ${label} to unlock the next section.`}
+      </span>
+      <button type="button" onClick={onSave} disabled={locked || saving} style={smallButton(locked ? "#94a3b8" : "#2563eb")}>
+        {saving ? "Saving..." : `Save ${label}`}
+      </button>
+    </div>
   );
 }
 
@@ -513,7 +656,7 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
         partB: n(person?.[`${reviewerRole}PartB`] ?? totals.partB),
         total: n(person?.[`${reviewerRole}Total`] ?? totals.total),
       },
-      maxScores: { partA: PART_A_MAX, partB: PART_B_MAX, grand: GRAND_MAX },
+      maxScores: getMediaEffectiveMaxScores(reviewerForm),
       scoreRoles: ["score", ...visiblePreviousRoles, reviewerRole],
       roleLabel,
       status: person?.status,
@@ -553,7 +696,7 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
       )}
       {sectionView === "summary" && (
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 18, display: "grid", gap: 14 }}>
-          <SummaryBox totals={totals} roleScoreLabel={`${roleLabel(reviewerRole)} score for the SoMCS media appraisal form.`} />
+          <SummaryBox totals={totals} maxScores={totals.maxScores} roleScoreLabel={`${roleLabel(reviewerRole)} score for the SoMCS media appraisal form.`} />
           <label style={{ display: "grid", gap: 6, fontWeight: 800, color: "#134e4a", fontSize: 13 }}>
             {roleLabel(reviewerRole)} Remarks
             <textarea value={remarks} readOnly={readOnly} onChange={(event) => setRemarks(event.target.value)} rows={5} style={{ border: "1px solid #99f6e4", borderRadius: 7, padding: 10, fontFamily: "Georgia, serif", resize: "vertical" }} />
@@ -595,6 +738,8 @@ export default function MediaCommDashboard({ fixedRole }) {
   const [loadingQueue, setLoadingQueue] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: false, partB: false });
+  const [savingSection, setSavingSection] = useState("");
   const [declaration, setDeclaration] = useState(null);
   const [reviews, setReviews] = useState([]);
   const userEmail = sessionStorage.getItem("username") || "";
@@ -602,6 +747,7 @@ export default function MediaCommDashboard({ fixedRole }) {
   const locked = Boolean(declaration);
   const totals = calculateMediaTotals(form, "score");
   const canSelfSubmit = role !== "vc";
+  const draftKey = draftKeyFor({ family: "media-comm", email: userEmail, academicYear });
 
   const setters = useMemo(() => Object.fromEntries([
     ["setInfo", (value) => setForm((prev) => ({ ...prev, info: { ...prev.info, ...value } }))],
@@ -612,15 +758,33 @@ export default function MediaCommDashboard({ fixedRole }) {
     ["setInnovDirector", (value) => setForm((prev) => ({ ...prev, innovDirector: value }))],
     ["setInnovDean", (value) => setForm((prev) => ({ ...prev, innovDean: value }))],
     ["setInnovVc", (value) => setForm((prev) => ({ ...prev, innovVc: value }))],
+    ["setSectionSaveStatus", (value) => setSectionSaveStatus((prev) => ({ ...prev, ...(value || {}) }))],
   ]), []);
 
   useEffect(() => {
     if (!userEmail || !academicYear || !canSelfSubmit) return;
-    Promise.all([
-      loadSavedAppraisal({ facultyEmail: userEmail, academicYear, setters }),
-      loadAppraisalDocuments({ facultyEmail: userEmail, academicYear, setDocs }),
-    ]).catch((err) => console.error("Could not load SoMCS appraisal:", err));
-  }, [userEmail, academicYear, setters, canSelfSubmit]);
+    const loadAll = async () => {
+      await Promise.all([
+        loadSavedAppraisal({ facultyEmail: userEmail, academicYear, setters }),
+        loadAppraisalDocuments({ facultyEmail: userEmail, academicYear, setDocs }),
+      ]);
+      const draft = loadDraft(draftKey);
+      if (draft?.form) {
+        setForm((current) => mergeForm(current, draft.form));
+        if (draft.form.sectionSaveStatus) setSectionSaveStatus((current) => ({ ...current, ...draft.form.sectionSaveStatus }));
+      }
+      if (draft?.docs) setDocs(draft.docs);
+    };
+    loadAll().catch((err) => console.error("Could not load SoMCS appraisal:", err));
+  }, [userEmail, academicYear, setters, canSelfSubmit, draftKey]);
+
+  useEffect(() => {
+    if (!userEmail || !academicYear || !canSelfSubmit || locked) return undefined;
+    const timer = window.setTimeout(() => {
+      saveDraft(draftKey, { form: { ...form, sectionSaveStatus }, docs });
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [userEmail, academicYear, canSelfSubmit, locked, draftKey, form, sectionSaveStatus, docs]);
 
   useEffect(() => {
     if (!userEmail || !academicYear || !canSelfSubmit) return;
@@ -655,7 +819,88 @@ export default function MediaCommDashboard({ fixedRole }) {
     loadQueue();
   }, [role, profile.school, profile.department]);
 
+  const isSelfSectionOpen = (section) =>
+    locked || section === "partA" || (section === "partB" && sectionSaveStatus.partA) || (section === "summary" && sectionSaveStatus.partB);
+
+  const handleSelfSectionChange = (section) => {
+    if (!isSelfSectionOpen(section)) {
+      alert(section === "partB" ? "Please save Part A before opening Part B." : "Please save Part B before opening Summary.");
+      return;
+    }
+    if (selfSectionView === "partA" && section !== "partA") {
+      const validationErrors = validateMediaBeforeSubmit(form, "partA");
+      if (validationErrors.length) {
+        alert(validationErrors.join("\n"));
+        return;
+      }
+    }
+    if (selfSectionView === "partB" && section === "summary") {
+      const validationErrors = validateMediaBeforeSubmit(form, "partB");
+      if (validationErrors.length) {
+        alert(validationErrors.join("\n"));
+        return;
+      }
+    }
+    setSelfSectionView(section);
+  };
+
+  const handleSaveSelfSection = async (section) => {
+    if (locked) {
+      alert("This appraisal has already been submitted and locked.");
+      return;
+    }
+    if (section === "partB" && !sectionSaveStatus.partA) {
+      alert("Please save Part A before saving Part B.");
+      setSelfSectionView("partA");
+      return;
+    }
+    const validationErrors = validateMediaBeforeSubmit(form, section);
+    if (validationErrors.length) {
+      alert(validationErrors.join("\n"));
+      return;
+    }
+    if (!userEmail) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    const nextStatus = { ...sectionSaveStatus, [section]: true };
+    const draftForm = { ...form, sectionSaveStatus: nextStatus };
+    const label = section === "partA" ? "Part A" : "Part B";
+
+    setSavingSection(section);
+    try {
+      await saveAppraisalDraftSection({
+        facultyEmail: userEmail,
+        academicYear,
+        totals: { partATotal: totals.partA, partBTotal: totals.partB, grandTotal: totals.total, maxScores: totals.maxScores },
+        form: draftForm,
+        docs,
+        submitterProfile: { ...profile, appraisal_role: role },
+        sectionSaveStatus: nextStatus,
+      });
+      setSectionSaveStatus(nextStatus);
+      saveDraft(draftKey, { form: draftForm, docs });
+      setSelfSectionView(section === "partA" ? "partB" : "summary");
+      alert(`${label} saved successfully.`);
+    } catch (err) {
+      alert(`Unable to save ${label}.\n\n${err.message}`);
+    } finally {
+      setSavingSection("");
+    }
+  };
+
   const handleSubmitAppraisal = async () => {
+    if (!sectionSaveStatus.partA) {
+      alert("Please save Part A before submitting the appraisal.");
+      setSelfSectionView("partA");
+      return;
+    }
+    if (!sectionSaveStatus.partB) {
+      alert("Please save Part B before submitting the appraisal.");
+      setSelfSectionView("partB");
+      return;
+    }
     if (!confirmed) {
       alert("Please verify and confirm the accuracy declaration before submitting.");
       return;
@@ -664,16 +909,23 @@ export default function MediaCommDashboard({ fixedRole }) {
       navigate("/login", { replace: true });
       return;
     }
+    const normalizedForm = normalizeScoresForSubmit(form);
+    const validationErrors = validateMediaBeforeSubmit(normalizedForm);
+    if (validationErrors.length) {
+      alert(validationErrors.join("\n"));
+      return;
+    }
     setSubmitting(true);
     try {
       await saveAppraisal({
         facultyEmail: userEmail,
         academicYear,
         totals: { partATotal: totals.partA, partBTotal: totals.partB, grandTotal: totals.total },
-        form,
+        form: normalizedForm,
         docs,
         submitterProfile: { ...profile, appraisal_role: role },
       });
+      clearDraft(draftKey);
       setDeclaration({ status: pendingStatusFor(getReviewChain({ ...profile, appraisal_role: role })[0]), submitted_at: new Date().toISOString() });
       alert("SoMCS appraisal submitted successfully.");
     } catch (err) {
@@ -718,7 +970,7 @@ export default function MediaCommDashboard({ fixedRole }) {
       partASections: PART_A_SECTIONS,
       partBSections: PART_B_SECTIONS,
       totals,
-      maxScores: { partA: PART_A_MAX, partB: PART_B_MAX, grand: GRAND_MAX },
+      maxScores: totals.maxScores,
       scoreRoles: ["score"],
       roleLabel,
       status: declaration?.status || "Draft / Pre-submit Review",
@@ -743,10 +995,10 @@ export default function MediaCommDashboard({ fixedRole }) {
                 Appraisal Section
                 <select
                   value={selfSectionView}
-                  onChange={(event) => setSelfSectionView(event.target.value)}
+                  onChange={(event) => handleSelfSectionChange(event.target.value)}
                   style={{ height: 34, border: "1px solid #334155", borderRadius: 7, background: "#1e293b", color: "#f8fafc", padding: "0 9px", fontFamily: "Georgia, serif", fontSize: 11, fontWeight: 700 }}
                 >
-                  {SECTION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  {SECTION_OPTIONS.map((option) => <option key={option.value} value={option.value} disabled={!isSelfSectionOpen(option.value)}>{option.label}</option>)}
                 </select>
               </label>
             )}
@@ -790,19 +1042,28 @@ export default function MediaCommDashboard({ fixedRole }) {
           <div style={{ display: "grid", gap: 16 }}>
             <WorkflowTracker declaration={declaration} reviews={reviews} profile={{ ...profile, appraisal_role: role }} />
             {(selfSectionView === "partA" || selfSectionView === "partB") && (
-              <MediaForm
-                form={form}
-                setForm={setForm}
-                docs={docs}
-                setDocs={setDocs}
-                mode="self"
-                locked={locked}
-                sectionView={selfSectionView}
-              />
+              <>
+                <MediaForm
+                  form={form}
+                  setForm={setForm}
+                  docs={docs}
+                  setDocs={setDocs}
+                  mode="self"
+                  locked={locked}
+                  sectionView={selfSectionView}
+                />
+                <SectionSaveFooter
+                  label={selfSectionView === "partA" ? "Part A" : "Part B"}
+                  saved={Boolean(sectionSaveStatus[selfSectionView])}
+                  saving={savingSection === selfSectionView}
+                  locked={locked}
+                  onSave={() => handleSaveSelfSection(selfSectionView)}
+                />
+              </>
             )}
             {selfSectionView === "summary" && (
               <div style={{ display: "grid", gap: 16 }}>
-                <SummaryBox totals={totals} roleScoreLabel="Faculty/self appraisal score from the Media & Communication form." />
+                <SummaryBox totals={totals} maxScores={totals.maxScores} roleScoreLabel="Faculty/self appraisal score from the Media & Communication form." />
                 <div style={{ display: "grid", gap: 12, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 16 }}>
                   {locked ? <StatusBadge status={declaration?.status || "Submitted"} /> : <AccuracyCheckbox checked={confirmed} onChange={setConfirmed} />}
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
@@ -832,7 +1093,10 @@ export default function MediaCommDashboard({ fixedRole }) {
                   </div>
                   <StatusBadge status={item.status} />
                 </div>
-                <SummaryBox totals={calculateMediaTotals(mergeForm(emptyMediaForm(), item), "score")} roleScoreLabel={`Submitted on ${item.submittedOn || "record"}`} />
+                {(() => {
+                  const itemTotals = calculateMediaTotals(mergeForm(emptyMediaForm(), item), "score");
+                  return <SummaryBox totals={itemTotals} maxScores={itemTotals.maxScores} roleScoreLabel={`Submitted on ${item.submittedOn || "record"}`} />;
+                })()}
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <button onClick={() => setReviewing(item)} style={smallButton(item.status === "Reviewed" ? "#1e293b" : ACCENT2)}>
                     {item.status === "Reviewed" ? "View Review" : "Review Form"}

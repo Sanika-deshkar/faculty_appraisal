@@ -21,6 +21,7 @@ import {
   submitNonTeachingSelfAppraisal,
   validateNonTeachingForm,
 } from "../services/nonTeachingWorkflow";
+import { clampScore, clearDraft, draftKeyFor, loadDraft, saveDraft, scoreRemaining } from "../utils/appraisalFormUtils";
 import { profileFromsessionStorage } from "../utils/hierarchy";
 
 const ACCENT = "#1d4ed8";
@@ -131,7 +132,7 @@ function MarksInput({ value, onChange, max, readOnly = false, accent = ACCENT })
         max={max}
         step="0.5"
         value={value ?? ""}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(clampScore(event.target.value, max))}
         readOnly={readOnly}
         style={{ width: 62, textAlign: "center", border: `1.5px solid ${accent}`, borderRadius: 6, padding: "5px 6px", fontSize: 12, fontFamily: "Georgia, serif", outline: "none", background: readOnly ? "#f8fafc" : "#eff6ff" }}
       />
@@ -168,16 +169,13 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
   const files = docs?.[id] || [];
 
   const handleFiles = async (selectedFiles) => {
-    const fileList = Array.from(selectedFiles || []);
+    const fileList = Array.from(selectedFiles || []).slice(0, 1);
     if (!fileList.length) return;
 
     setUploading(true);
     try {
-      const uploaded = [];
-      for (const file of fileList) {
-        uploaded.push(await uploadToCloudinary(file, { folder: `non-teaching-appraisal/${id}` }));
-      }
-      setDocs((current) => ({ ...current, [id]: [...(current[id] || []), ...uploaded] }));
+      const uploaded = await uploadToCloudinary(fileList[0], { folder: `non-teaching-appraisal/${id}` });
+      setDocs((current) => ({ ...current, [id]: [uploaded] }));
     } catch (err) {
       console.error("Cloudinary upload error:", err);
       alert(`Unable to upload file.\n\n${err.message}`);
@@ -211,7 +209,7 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
       {!readOnly && (
         <button type="button" onClick={() => ref.current?.click()} disabled={uploading} style={{ border: "1px dashed #cbd5e1", background: "#f8fafc", borderRadius: 5, padding: "5px 8px", color: "#64748b", cursor: uploading ? "wait" : "pointer", fontSize: 10, fontFamily: "Georgia, serif" }}>
           {uploading ? "Uploading..." : "Attach supporting document"}
-          <input ref={ref} type="file" multiple onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
+          <input ref={ref} type="file" onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
         </button>
       )}
     </div>
@@ -341,6 +339,7 @@ function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitt
           <div key={label} style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", background: "#f8fafc" }}>
             <div style={{ color: "#64748b", fontSize: 10, fontWeight: 800, textTransform: "uppercase" }}>{label}</div>
             <div style={{ color, fontSize: 18, fontWeight: 900, margin: "4px 0" }}>{n(value).toFixed(1)} / {selfMax}</div>
+            <div style={{ color: "#64748b", fontSize: 11, fontWeight: 700, marginBottom: 5 }}>Remaining Credits: {scoreRemaining(value, selfMax).toFixed(1)}</div>
             <ScoreBar score={value} max={selfMax} color={color} />
           </div>
         ))}
@@ -391,6 +390,11 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const accent = roleAccent(normalizedRole);
   const locked = form.status !== NON_TEACHING_STATUS.DRAFT;
+  const draftKey = draftKeyFor({
+    family: "non-teaching",
+    email: form.info?.email || sessionStorage.getItem("username") || "",
+    academicYear: form.info?.ay || APP_INFO.DEFAULT_AY,
+  });
 
   useEffect(() => {
     let active = true;
@@ -404,7 +408,8 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
           role: normalizedRole,
         });
         if (!active) return;
-        setForm(saved?.form || emptyNonTeachingForm(profile, normalizedRole));
+        const draft = loadDraft(draftKey);
+        setForm(draft?.form || saved?.form || emptyNonTeachingForm(profile, normalizedRole));
       } catch (err) {
         console.error("Could not load non-teaching appraisal:", err);
       } finally {
@@ -413,7 +418,15 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
     };
     loadForm();
     return () => { active = false; };
-  }, [normalizedRole]);
+  }, [normalizedRole, draftKey]);
+
+  useEffect(() => {
+    if (locked) return undefined;
+    const timer = window.setTimeout(() => {
+      saveDraft(draftKey, { form });
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [draftKey, form, locked]);
 
   const updateInfo = (field, value) => {
     setForm((current) => ({ ...current, info: { ...(current.info || {}), [field]: value } }));
@@ -445,6 +458,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
       });
       setForm(saved.form);
       setConfirmed(false);
+      clearDraft(draftKey);
       alert("Non-teaching appraisal submitted successfully.");
     } catch (err) {
       console.error("Could not submit non-teaching appraisal:", err);

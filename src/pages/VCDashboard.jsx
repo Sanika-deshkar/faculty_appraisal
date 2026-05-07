@@ -6,7 +6,7 @@ import { SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/f
 import { VC_USER } from "../data/mockData";
 import { DEAN_TRACKS, UNIVERSITY_SCHOOLS } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
-import { getSchoolKey, reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
+import { getReviewChain, getSchoolKey, reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
 import { openFullFormReport } from "../utils/fullFormReport";
 import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
@@ -130,6 +130,95 @@ const TDS_DEAN = { ...TDS, background: "#f0fdf4" };
 const TDS_VC   = { ...TDS, background: "#fdf4ff", minWidth: 70 };
 const TDV = { ...TD, background: "#fafbff", minWidth: 110 };
 
+const VC_CHAIN_ROLE_META = {
+  hod: {
+    label: "HOD Score",
+    shortLabel: "HOD",
+    field: "hod",
+    headerStyle: TH_HOD,
+    cellStyle: TDS_HOD,
+    color: "#818cf8",
+    remarksKey: "hodRemarks",
+    remarksTitle: "HOD Remarks",
+    remarksBg: "#f0f4ff",
+    remarksBorder: "#c7d2fe",
+    remarksColor: "#4338ca",
+  },
+  center_head: {
+    label: "Center Head Score",
+    shortLabel: "Center Head",
+    field: "hod",
+    headerStyle: TH_HOD,
+    cellStyle: TDS_HOD,
+    color: "#0f766e",
+    remarksKey: "hodRemarks",
+    remarksTitle: "Center Head Remarks",
+    remarksBg: "#ecfdf5",
+    remarksBorder: "#99f6e4",
+    remarksColor: "#0f766e",
+  },
+  director: {
+    label: "Director Score",
+    shortLabel: "Director",
+    field: "director",
+    headerStyle: TH_DIR,
+    cellStyle: TDS_DIR,
+    color: "#38bdf8",
+    remarksKey: "directorRemarks",
+    remarksTitle: "Director Remarks",
+    remarksBg: "#f0f9ff",
+    remarksBorder: "#bae6fd",
+    remarksColor: "#0369a1",
+  },
+  dean: {
+    label: "Dean Score",
+    shortLabel: "Dean",
+    field: "dean",
+    headerStyle: TH_DEAN,
+    cellStyle: TDS_DEAN,
+    color: "#34d399",
+    remarksKey: "deanRemarks",
+    remarksTitle: "Dean Remarks",
+    remarksBg: "#f0fdf4",
+    remarksBorder: "#bbf7d0",
+    remarksColor: "#065f46",
+  },
+};
+
+const vcChainProfileFor = (person = {}, personMode = "faculty") => ({
+  school: person.school || person.info?.school || "",
+  department: person.department || "",
+  appraisal_role: person.appraisalRole || personMode,
+});
+
+const vcPreviousRolesFor = (person = {}, personMode = "faculty") =>
+  getReviewChain(vcChainProfileFor(person, personMode)).filter((role) => role !== "vc");
+
+const vcRoleMeta = (role) => VC_CHAIN_ROLE_META[role] || {
+  label: `${role} Score`,
+  shortLabel: role,
+  field: role,
+  headerStyle: TH,
+  cellStyle: TDS,
+  color: "#64748b",
+};
+
+const vcScoreForRole = (row = {}, role) => row?.[vcRoleMeta(role).field];
+const vcInnovScoreForRole = (person = {}, role) => {
+  if (role === "hod" || role === "center_head") return person.innovHod;
+  if (role === "director") return person.innovDirector ?? person.innovDir;
+  if (role === "dean") return person.innovDean;
+  return "";
+};
+const vcTotalForRole = (person = {}, role) => {
+  if (role === "hod" || role === "center_head") return n(person.hodTotal ?? person.hodScore);
+  if (role === "director") return n(person.directorTotal ?? person.directorScore);
+  if (role === "dean") return n(person.deanTotal ?? person.deanSelfScore);
+  return 0;
+};
+const vcSelfTotalForPerson = (person = {}) =>
+  n(person.declaration?.grand_total ?? person.grandTotal ?? person.totalScore ?? person.total ?? person.selfTotal);
+
 const VC_REVIEW_ARRAY_KEYS = ["lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs", "society", "industry", "acr", "journals", "books", "ict", "research", "projects2", "externalProjects", "patents", "awards", "confs", "proposals", "products", "fdps", "training"];
 const VC_REPORT_PART_A_SECTIONS = [
   { key: "lectures", title: "A(i). Lectures / Tutorials / Practicals", max: 50, doc: "lec", fields: [["sem", "Semester"], ["code", "Course Code / Name"], ["planned", "Classes (as per course structure)"], ["conducted", "Classes Actually Conducted"]] },
@@ -178,11 +267,8 @@ const buildVcSectionScores = (person, vcData) => {
 // ─── VC Review Form ───────────────────────────────────────────────────────────
 // personMode: "dean" | "director" | "hod" | "faculty"
 function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
-  const isDir = personMode === "director" || personMode === "dean";
-  const isHod = personMode === "hod";
-  const isFac = personMode === "faculty";
-  const showHodCol = isFac && (n(person.hodTotal) > 0 || n(person.hodScore) > 0);
-  const showDirCol = personMode !== "dean";
+  const reviewRoles = vcPreviousRolesFor(person, personMode);
+  const selfScoreLabel = personMode === "faculty" ? "Faculty Score" : "Self Score";
 
   const set = (section, idx, field, val) => {
     setVcData(prev => {
@@ -217,25 +303,22 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
 
   const ScoreHeaders = () => (
     <>
-      {isFac  && <th style={TH}>Faculty Score</th>}
-      {isHod  && <th style={TH}>Self Score</th>}
-      {isDir  && <th style={TH}>Self Score</th>}
-      {showHodCol && <th style={TH_HOD}>HOD Score</th>}
-      {(isHod || isFac) && showDirCol && <th style={TH_DIR}>Dir Score</th>}
-      {isDir && showDirCol && false}
-      <th style={TH_DEAN}>Dean Score</th>
+      <th style={TH}>{selfScoreLabel}</th>
+      {reviewRoles.map((role) => {
+        const meta = vcRoleMeta(role);
+        return <th key={role} style={meta.headerStyle}>{meta.label}</th>;
+      })}
       <th style={TH_VC}>VC Score</th>
     </>
   );
 
   const ScoreCells = ({ r, section, i }) => (
     <>
-      {isFac  && <td style={TDS}><RO val={r?.score} center /></td>}
-      {isHod  && <td style={TDS}><RO val={r?.hod ?? r?.score} center /></td>}
-      {isDir  && <td style={TDS}><RO val={r?.score} center /></td>}
-      {showHodCol && <td style={TDS_HOD}><RO val={r?.hod} center /></td>}
-      {(isHod || isFac) && showDirCol && <td style={TDS_DIR}><RO val={r?.director} center /></td>}
-      <td style={TDS_DEAN}><RO val={r?.dean} center /></td>
+      <td style={TDS}><RO val={r?.score} center /></td>
+      {reviewRoles.map((role) => {
+        const meta = vcRoleMeta(role);
+        return <td key={role} style={meta.cellStyle}><RO val={vcScoreForRole(r, role)} center /></td>;
+      })}
       <td style={TDS_VC}><VCInput val={get(section, i, "vc")} onChange={v => set(section, i, "vc", v)} /></td>
     </>
   );
@@ -297,13 +380,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
           <td style={TD}><RO val={courseFileRow.title} /></td>
           <td style={TDC}><RO val={courseFileRow.details} center /></td>
           <td style={TDV}><ViewDocsCell docKey="cf-0" docs={docs} /></td>
-          {isFac  && <td style={TDS}><RO val={courseFileRow.score} center /></td>}
-          {isHod  && <td style={TDS}><RO val={courseFileRow.hod ?? courseFileRow.score} center /></td>}
-          {isDir  && <td style={TDS}><RO val={courseFileRow.score} center /></td>}
-          {showHodCol && <td style={TDS_HOD}><RO val={courseFileRow.hod} center /></td>}
-          {(isHod || isFac) && showDirCol && <td style={TDS_DIR}><RO val={courseFileRow.director} center /></td>}
-          <td style={TDS_DEAN}><RO val={courseFileRow.dean} center /></td>
-          <td style={TDS_VC}><VCInput val={get("courseFile", null, "vc")} onChange={v => set("courseFile", null, "vc", v)} /></td>
+          <ScoreCells r={courseFileRow} section="courseFile" i={null} />
         </tr></tbody></table>
       </SC>
 
@@ -311,22 +388,15 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
       <SC title="A3. Innovative Teaching-Learning (Max 10)" accent="#7c3aed">
         <table style={T}><thead><tr>
           <th style={TH}>Method</th>
-          {isFac  && <th style={TH}>Faculty Score</th>}
-          {isHod  && <th style={TH}>Self Score</th>}
-          {isDir  && <th style={TH}>Self Score</th>}
-          {showHodCol && <th style={TH_HOD}>HOD Score</th>}
-          {(isHod || isFac) && showDirCol && <th style={TH_DIR}>Dir Score</th>}
-          <th style={TH_DEAN}>Dean Score</th>
-          <th style={TH_VC}>VC Score</th>
+          <ScoreHeaders />
         </tr></thead>
         <tbody><tr>
           <td style={TD}>Innovative / participatory teaching methods used</td>
-          {isFac  && <td style={TDS}><RO val={person.innovScore} center /></td>}
-          {isHod  && <td style={TDS}><RO val={person.innovHod ?? person.innovScore} center /></td>}
-          {isDir  && <td style={TDS}><RO val={person.innovScore} center /></td>}
-          {showHodCol && <td style={TDS_HOD}><RO val={person.innovHod} center /></td>}
-          {(isHod || isFac) && showDirCol && <td style={TDS_DIR}><RO val={person.innovDirector ?? person.innovDir} center /></td>}
-          <td style={TDS_DEAN}><RO val={person.innovDean} center /></td>
+          <td style={TDS}><RO val={person.innovScore} center /></td>
+          {reviewRoles.map((role) => {
+            const meta = vcRoleMeta(role);
+            return <td key={role} style={meta.cellStyle}><RO val={vcInnovScoreForRole(person, role)} center /></td>;
+          })}
           <td style={TDS_VC}><VCInput val={getS("innovVc") || getS("innovVC")} onChange={v => setScalar("innovVc", v)} /></td>
         </tr></tbody></table>
       </SC>
@@ -397,23 +467,13 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
       <SC title="G. Annual Confidential Report (Max 25)" accent="#ef4444">
         <table style={T}><thead><tr>
           <th style={TH}>SN</th><th style={TH}>Parameter</th>
-          {isHod  && <th style={TH}>Self Score</th>}
-          {showHodCol && <th style={TH_HOD}>HOD Score</th>}
-          {(isHod || isFac) && showDirCol && <th style={TH_DIR}>Dir Score</th>}
-          {isDir  && <th style={TH_DIR}>Self Score</th>}
-          <th style={TH_DEAN}>Dean Score</th>
-          <th style={TH_VC}>VC Score</th>
+          <ScoreHeaders />
         </tr></thead>
         <tbody>{rows(person.acr).map((r, i) => (
           <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
             <td style={TDC}>{i + 1}</td>
             <td style={TD}><RO val={r.label} /></td>
-            {isHod  && <td style={TDS}><RO val={r.hod ?? r.director} center /></td>}
-            {showHodCol && <td style={TDS_HOD}><RO val={r.hod} center /></td>}
-            {(isHod || isFac) && showDirCol && <td style={TDS_DIR}><RO val={r.director} center /></td>}
-            {isDir  && <td style={TDS_DIR}><RO val={r.director} center /></td>}
-            <td style={TDS_DEAN}><RO val={r.dean} center /></td>
-            <td style={TDS_VC}><VCInput val={get("acr", i, "vc")} onChange={v => set("acr", i, "vc", v)} /></td>
+            <ScoreCells r={r} section="acr" i={i} />
           </tr>
         ))}</tbody></table>
       </SC>
@@ -530,9 +590,10 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
 
   const { partA, partB, total } = calcVCScore(person, vcData);
   const g = grade(total, MAX_SCORES.GRAND_TOTAL);
-  const deanTotal = person.deanTotal || person.deanSelfScore || 0;
-  const dirTotal  = person.directorTotal || person.directorScore || 0;
-  const hodTotal  = person.hodTotal || person.hodScore || 0;
+  const previousRoles = vcPreviousRolesFor(person, personMode);
+  const selfPartA = n(person.declaration?.part_a_total ?? person.selfPartA ?? person.partATotal);
+  const selfPartB = n(person.declaration?.part_b_total ?? person.selfPartB ?? person.partBTotal);
+  const selfTotal = vcSelfTotalForPerson(person);
   const vcReviewCompleted = person.status === "Reviewed" || person.status === "VC Reviewed" || n(person.vcTotal) > 0;
 
   const generateVcReport = () => {
@@ -556,8 +617,6 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
       }));
     });
     reportForm.innovVc = vcData.innovVc ?? vcData.innovVC ?? person.innovVc ?? "";
-    const chain = getReviewChain({ school: person.school, department: person.department, appraisal_role: person.appraisalRole || personMode });
-    const previousRoles = chain.filter((role) => role !== "vc");
     openFullFormReport({
       title: "VC Appraisal Report",
       subtitle: `${APP_INFO.UNIVERSITY_NAME} | Academic Year ${person.academicYear || person.info?.ay || VC_USER.ay || ""}`,
@@ -572,7 +631,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
       },
       maxScores: { partA: 200, partB: 420, grand: MAX_SCORES.GRAND_TOTAL },
       scoreRoles: ["score", ...previousRoles, "vc"],
-      roleLabel: (value) => value === "vc" ? "VC" : value === "director" ? "Director" : value === "hod" ? "HOD" : value === "dean" ? "Dean" : value,
+      roleLabel: (value) => value === "vc" ? "VC" : vcRoleMeta(value).shortLabel || value,
       status: person.status,
       remarksLabel: "VC Remarks",
       remarks: person.vcRemarks || remarks,
@@ -580,12 +639,15 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
     });
   };
 
-  const scoreCards = [];
-  if (personMode === "faculty" && hodTotal > 0) scoreCards.push({ label: "HOD Score", val: hodTotal, color: "#818cf8" });
-  if (personMode === "hod") scoreCards.push({ label: "HOD Self", val: hodTotal, color: "#818cf8" });
-  if (personMode === "director") scoreCards.push({ label: "Self Score", val: dirTotal, color: "#38bdf8" });
-  else scoreCards.push({ label: "Dir Score", val: dirTotal, color: "#38bdf8" });
-  if (deanTotal > 0) scoreCards.push({ label: "Dean Score", val: deanTotal, color: "#34d399" });
+  const scoreCards = [
+    { label: personMode === "faculty" ? "Faculty Score" : "Self Score", val: selfTotal, color: "#e2e8f0" },
+    ...previousRoles
+      .map((role) => {
+        const meta = vcRoleMeta(role);
+        return { label: meta.label, val: vcTotalForRole(person, role), color: meta.color };
+      })
+      .filter(({ val }) => val > 0),
+  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -639,58 +701,55 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
         <div style={{ background: "#fff", borderRadius: 10, padding: "22px 24px", boxShadow: "0 1px 6px rgba(0,0,0,.06)" }}>
           <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>{reviewLocked ? "VC Submitted Review" : "VC Remarks &amp; Final Submission"}</h3>
 
-          {person.hodRemarks && (
-            <div style={{ background: "#f0f4ff", border: "1px solid #c7d2fe", borderRadius: 8, padding: "12px 14px", marginBottom: 10 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#4338ca", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>HOD Remarks</div>
-              <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.6 }}>{person.hodRemarks}</div>
-            </div>
-          )}
-          {person.directorRemarks && (
-            <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: "12px 14px", marginBottom: 10 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#0369a1", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>Director Remarks</div>
-              <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.6 }}>{person.directorRemarks}</div>
-            </div>
-          )}
-          {person.deanRemarks && (
-            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "12px 14px", marginBottom: 16 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#065f46", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>Dean Remarks</div>
-              <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.6 }}>{person.deanRemarks}</div>
-            </div>
-          )}
+          {previousRoles.map((role) => {
+            const meta = vcRoleMeta(role);
+            const remark = person[meta.remarksKey];
+            if (!remark) return null;
+            return (
+              <div key={role} style={{ background: meta.remarksBg, border: `1px solid ${meta.remarksBorder}`, borderRadius: 8, padding: "12px 14px", marginBottom: role === previousRoles[previousRoles.length - 1] ? 16 : 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: meta.remarksColor, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>{meta.remarksTitle}</div>
+                <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.6 }}>{remark}</div>
+              </div>
+            );
+          })}
 
           <SC title="Score Reconciliation" accent="#7c3aed">
             <table style={{ ...T, fontSize: 12 }}>
               <thead><tr>
                 <th style={TH}>Section</th>
-                {personMode === "hod" && <th style={TH}>HOD Self</th>}
-                {personMode === "faculty" && hodTotal > 0 && <th style={TH_HOD}>HOD Score</th>}
-                {personMode === "director" ? <th style={TH_DIR}>Self Score</th> : <th style={TH_DIR}>Dir Score</th>}
-                <th style={TH_DEAN}>Dean Score</th>
+                <th style={TH}>{personMode === "faculty" ? "Faculty Score" : "Self Score"}</th>
+                {previousRoles.map((role) => {
+                  const meta = vcRoleMeta(role);
+                  return <th key={role} style={meta.headerStyle}>{meta.label}</th>;
+                })}
                 <th style={TH_VC}>VC Final</th>
               </tr></thead>
               <tbody>
                 <tr>
                   <td style={TD}>Part A — Teaching</td>
-                  {personMode === "hod" && <td style={TDS}>—</td>}
-                  {personMode === "faculty" && hodTotal > 0 && <td style={TDS_HOD}>—</td>}
-                  <td style={TDS_DIR}>—</td>
-                  <td style={TDS_DEAN}>—</td>
+                  <td style={TDS}>{selfPartA || "-"}</td>
+                  {previousRoles.map((role) => {
+                    const meta = vcRoleMeta(role);
+                    return <td key={role} style={meta.cellStyle}>-</td>;
+                  })}
                   <td style={{ ...TDS_VC, fontWeight: 700 }}>{partA.toFixed(1)}</td>
                 </tr>
                 <tr>
                   <td style={TD}>Part B — Research</td>
-                  {personMode === "hod" && <td style={TDS}>—</td>}
-                  {personMode === "faculty" && hodTotal > 0 && <td style={TDS_HOD}>—</td>}
-                  <td style={TDS_DIR}>—</td>
-                  <td style={TDS_DEAN}>—</td>
+                  <td style={TDS}>{selfPartB || "-"}</td>
+                  {previousRoles.map((role) => {
+                    const meta = vcRoleMeta(role);
+                    return <td key={role} style={meta.cellStyle}>-</td>;
+                  })}
                   <td style={{ ...TDS_VC, fontWeight: 700 }}>{partB.toFixed(1)}</td>
                 </tr>
                 <tr style={{ background: "#ede9fe", fontWeight: 800 }}>
                   <td style={TD}>GRAND TOTAL</td>
-                  {personMode === "hod" && <td style={TDS}>{hodTotal}</td>}
-                  {personMode === "faculty" && hodTotal > 0 && <td style={TDS_HOD}>{hodTotal}</td>}
-                  <td style={TDS_DIR}>{dirTotal}</td>
-                  <td style={TDS_DEAN}>{deanTotal}</td>
+                  <td style={TDS}>{selfTotal || "-"}</td>
+                  {previousRoles.map((role) => {
+                    const meta = vcRoleMeta(role);
+                    return <td key={role} style={meta.cellStyle}>{vcTotalForRole(person, role) || "-"}</td>;
+                  })}
                   <td style={{ ...TDS_VC, fontSize: 15, color: "#4c1d95" }}>{total.toFixed(1)}</td>
                 </tr>
               </tbody>
@@ -737,11 +796,26 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
 
 // ─── Person Card ──────────────────────────────────────────────────────────────
 function PersonCard({ person, role, onReview, schoolColor }) {
-  const personMode = role === "Director" ? "director" : role === "HOD" ? "hod" : role === "Dean" ? "dean" : "faculty";
-  const dirTotal  = person.directorTotal || person.directorScore || 0;
-  const hodTotal  = person.hodTotal || person.hodScore || 0;
+  const personMode = role === "Director" ? "director" : role === "HOD" ? "hod" : role === "Dean" ? "dean" : role === "Center Head" ? "center_head" : "faculty";
+  const previousRoles = vcPreviousRolesFor(person, personMode);
+  const vcTotal = n(person.vcTotal);
+  const dirTotal = person.directorTotal || person.directorScore || 0;
+  const hodTotal = person.hodTotal || person.hodScore || 0;
   const deanTotal = person.deanTotal || 0;
-  const vcTotal   = person.vcTotal || 0;
+  const scoreTiles = [
+    {
+      label: personMode === "faculty" ? "Faculty Score" : "Self Score",
+      value: vcSelfTotalForPerson(person),
+      color: "#0ea5e9",
+    },
+    ...previousRoles
+      .map((reviewRole) => {
+        const meta = vcRoleMeta(reviewRole);
+        return { label: meta.shortLabel, value: vcTotalForRole(person, reviewRole), color: meta.color };
+      })
+      .filter((tile) => tile.value > 0),
+    { label: "VC Score", value: vcTotal, color: "#7c3aed", isVc: true },
+  ];
 
   return (
     <div style={{ background: "#fff", borderRadius: 10, padding: "15px 16px", boxShadow: "0 1px 5px rgba(0,0,0,.06)", display: "flex", flexDirection: "column", gap: 11, borderLeft: `3px solid ${schoolColor || "#7c3aed"}` }}>
@@ -824,16 +898,18 @@ function PersonCard({ person, role, onReview, schoolColor }) {
 }
 
 // ─── School Panel ─────────────────────────────────────────────────────────────
-function SchoolPanel({ school, deanList, dirList, hodList, facList, onReview }) {
+function SchoolPanel({ school, deanList, dirList, hodList, centerHeadList = [], facList, onReview }) {
   const schoolDeans    = deanList.filter(d => d.schoolId === school.id);
   const schoolDirs     = dirList.filter(d => d.schoolId === school.id);
   const schoolHods     = hodList.filter(h => h.schoolId === school.id);
+  const schoolCenterHeads = centerHeadList.filter(c => c.schoolId === school.id);
   const schoolFaculty  = facList.filter(f => f.schoolId === school.id);
 
   const allPeople = [
     ...schoolDeans.map(p => ({ person: p, role: "Dean" })),
     ...schoolDirs.map(p => ({ person: p, role: "Director" })),
     ...schoolHods.map(p => ({ person: p, role: "HOD" })),
+    ...schoolCenterHeads.map(p => ({ person: p, role: "Center Head" })),
     ...schoolFaculty.map(p => ({ person: p, role: "Faculty" })),
   ];
 
@@ -1021,6 +1097,7 @@ export default function VCDashboard() {
   const [deanList, setDeanList] = useState([]);
   const [dirList, setDirList] = useState([]);
   const [hodList, setHodList] = useState([]);
+  const [centerHeadList, setCenterHeadList] = useState([]);
   const [facList, setFacList] = useState([]);
   const [nonTeachingList, setNonTeachingList] = useState([]);
 
@@ -1042,13 +1119,14 @@ export default function VCDashboard() {
         const routedItems = items.map(withVcSchoolId);
         setFacList(routedItems.filter(item => item.appraisalRole === "faculty"));
         setHodList(routedItems.filter(item => item.appraisalRole === "hod"));
+        setCenterHeadList(routedItems.filter(item => item.appraisalRole === "center_head"));
         setDirList(routedItems.filter(item => item.appraisalRole === "director"));
         setDeanList(routedItems.filter(item => item.appraisalRole === "dean"));
         setNonTeachingList(nonTeachingItems);
       } catch (err) {
         console.error("Could not load VC review queue:", err);
         if (!active) return;
-        setFacList([]); setHodList([]); setDirList([]); setDeanList([]);
+        setFacList([]); setHodList([]); setCenterHeadList([]); setDirList([]); setDeanList([]);
         setNonTeachingList([]);
       }
     };
@@ -1061,7 +1139,7 @@ export default function VCDashboard() {
       alert("Please verify and confirm the accuracy declaration before submitting the review.");
       return;
     }
-    const sourceList = personMode === "dean" ? deanList : personMode === "director" ? dirList : personMode === "hod" ? hodList : facList;
+    const sourceList = personMode === "dean" ? deanList : personMode === "director" ? dirList : personMode === "hod" ? hodList : personMode === "center_head" ? centerHeadList : facList;
     const item = sourceList.find(entry => entry.id === id);
     if (!item) return;
     try {
@@ -1081,6 +1159,7 @@ export default function VCDashboard() {
       if (personMode === "dean") setDeanList(upd);
       else if (personMode === "director") setDirList(upd);
       else if (personMode === "hod") setHodList(upd);
+      else if (personMode === "center_head") setCenterHeadList(upd);
       else if (personMode === "faculty") setFacList(upd);
       setReviewing(null);
       alert("VC final approval submitted.");
@@ -1105,12 +1184,13 @@ export default function VCDashboard() {
       ...deanList.filter(p => p.schoolId === school.id),
       ...dirList.filter(p => p.schoolId === school.id),
       ...hodList.filter(p => p.schoolId === school.id),
+      ...centerHeadList.filter(p => p.schoolId === school.id),
       ...facList.filter(p => p.schoolId === school.id),
     ];
     return all.filter(p => !isVcReviewed(p)).length;
   };
 
-  const teachingItems = [...deanList, ...dirList, ...hodList, ...facList];
+  const teachingItems = [...deanList, ...dirList, ...hodList, ...centerHeadList, ...facList];
   const totalPending = teachingItems.filter(p => !isVcReviewed(p)).length +
     nonTeachingList.filter(item => !isNonTeachingReviewComplete(item)).length;
   const totalReviewed = teachingItems.filter(isVcReviewed).length +
@@ -1218,7 +1298,7 @@ export default function VCDashboard() {
                 <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 11 }}>{APP_INFO.SHORT_NAME} · AY {VC_USER.ay}</p>
               </div>
               <div style={{ fontSize: 11, color: "#64748b", background: "#fff", padding: "8px 14px", borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,.06)" }}>
-                {deanList.length + dirList.length + hodList.length + facList.length + nonTeachingList.length} total submissions
+                {deanList.length + dirList.length + hodList.length + centerHeadList.length + facList.length + nonTeachingList.length} total submissions
               </div>
             </div>
 
@@ -1278,6 +1358,7 @@ export default function VCDashboard() {
                 deanList={deanList}
                 dirList={dirList}
                 hodList={hodList}
+                centerHeadList={centerHeadList}
                 facList={facList}
                 onReview={(person, personMode) => setReviewing({ person, personMode })}
               />
@@ -1356,5 +1437,3 @@ export default function VCDashboard() {
     </div>
   );
 }
-
-

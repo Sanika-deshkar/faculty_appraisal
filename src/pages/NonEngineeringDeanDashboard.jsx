@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/formConfig";
+import { ACR_DETAIL_POINTS, SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/formConfig";
 import { HodInput } from "../components/Inputs";
-import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal } from "../services/appraisalPersistence";
+import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal, saveAppraisalDraftSection } from "../services/appraisalPersistence";
 import { uploadToCloudinary } from "../services/cloudinary";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { supabase } from "../services/supabase";
+import { clampScore, effectiveMaxScore, clearDraft, draftKeyFor, feedbackAverage, feedbackRowScore, feedbackSectionScore, isValidDDMMYYYY, loadDraft, maskDateDDMMYYYY, saveDraft, scoreRemaining, sumSectionScore, validateCompleteRows } from "../utils/appraisalFormUtils";
 import { DEAN_TRACKS, getSchoolKey, getSchoolsByDeanTrack } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
 import { reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
@@ -92,10 +93,10 @@ function SelfInput({ val, onChange }) {
   );
 }
 // ─── Input & Table Controls (Self-Appraisal Mode) ──────────────────────────────
-function TI({ val, onChange, center, placeholder }) {
+function TI({ val, onChange, center, placeholder, readOnly = false }) {
   return (
     <input
-      value={val ?? ""} onChange={(e) => onChange(e.target.value)}
+      value={val ?? ""} disabled={readOnly} onChange={(e) => !readOnly && onChange?.(e.target.value)}
       placeholder={placeholder || ""}
       style={center
         ? { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none", textAlign: "center" }
@@ -104,11 +105,12 @@ function TI({ val, onChange, center, placeholder }) {
   );
 }
 
-function DocCell({ id, docs, setDocs }) {
+function DocCell({ id, docs, setDocs, readOnly = false }) {
   const ref = useRef();
   const [uploading, setUploading] = useState(false);
   const handleFiles = async (files) => {
-    const selectedFiles = Array.from(files || []);
+    if (readOnly) return;
+    const selectedFiles = Array.from(files || []).slice(0, 1);
     if (!selectedFiles.length) return;
 
     setUploading(true);
@@ -117,7 +119,7 @@ function DocCell({ id, docs, setDocs }) {
       for (const file of selectedFiles) {
         uploadedFiles.push(await uploadToCloudinary(file, { folder: `faculty-appraisal/${id}` }));
       }
-      setDocs((p) => ({ ...p, [id]: [...(p[id] || []), ...uploadedFiles] }));
+      setDocs((p) => ({ ...p, [id]: uploadedFiles.slice(0, 1) }));
     } catch (err) {
       console.error("Cloudinary upload error:", err);
       alert(`Unable to upload file.\n\n${err.message}`);
@@ -139,12 +141,12 @@ function DocCell({ id, docs, setDocs }) {
       {files.map((f, idx) => (
         <div key={idx} style={{ display: "flex", alignItems: "center", gap: 4, background: "#f0f9ff", border: "1px solid #0ea5e9", borderRadius: 4, padding: "2px 6px" }}>
           <span style={{ fontSize: 10, color: "#1e293b", flex: 1, overflow: "hidden", textOverflow: "ellipsis" }} title={f.name}>{f.name}</span>
-          <button onClick={() => removeFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 10, cursor: "pointer" }}>✕</button>
+          {!readOnly && <button onClick={() => removeFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 10, cursor: "pointer" }}>✕</button>}
         </div>
       ))}
-      <div style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 6px", border: "1px dashed #cbd5e1", borderRadius: 4, background: "#f8fafc" }} onClick={() => ref.current.click()}>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 6px", border: "1px dashed #cbd5e1", borderRadius: 4, background: "#f8fafc" }} onClick={() => !readOnly && ref.current.click()}>
         <span style={{ fontSize: 10, color: "#64748b" }}>📎 Attach</span>
-        <input ref={ref} type="file" multiple style={{ display: "none" }} onChange={(e) => handleFiles(e.target.files)} />
+        <input ref={ref} type="file" style={{ display: "none" }} disabled={readOnly} onChange={(e) => handleFiles(e.target.files)} />
       </div>
     </div>
   );
@@ -171,6 +173,24 @@ function RowBtns({ onAdd, onDel, canDel = true }) {
     </div>
   );
 }
+function SectionSaveFooter({ label, saved, saving, locked, onSave }) {
+  return (
+    <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <span style={{ color: saved ? "#047857" : "#64748b", fontSize: 12, fontWeight: 700 }}>
+        {locked ? "Submitted and locked" : saved ? `${label} saved. Next section unlocked.` : `Save ${label} to unlock the next section.`}
+      </span>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={locked || saving}
+        style={{ padding: "9px 22px", background: locked ? "#94a3b8" : "#2563eb", color: "#fff", border: "none", borderRadius: 7, cursor: locked || saving ? "not-allowed" : "pointer", fontWeight: 800, fontSize: 12, fontFamily: "Georgia, serif", opacity: saving ? 0.75 : 1 }}
+      >
+        {saving ? "Saving..." : `Save ${label}`}
+      </button>
+    </div>
+  );
+}
+
 function ViewDocsCell({ docKey, docs }) {
   const files = docs?.[docKey] || [];
   if (!files.length) return <span style={{ color: "#cbd5e1", fontSize: 10 }}>No docs</span>;
@@ -1714,7 +1734,10 @@ export default function NonEngineeringDeanDashboard() {
   const setTrain = (i, k, v) => setTraining((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
 
   const [docs, setDocs] = useState({});
+  const [sectionApplicability, setSectionApplicability] = useState({ projects: "applicable", research: "applicable" });
   const [appraisalLocked, setAppraisalLocked] = useState(false);
+  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: false, partB: false });
+  const [savingSection, setSavingSection] = useState("");
 
   useEffect(() => {
     const userEmail = sessionStorage.getItem("username");
@@ -1768,6 +1791,7 @@ export default function NonEngineeringDeanDashboard() {
               setProducts,
               setFdps,
               setTraining,
+              setSectionSaveStatus,
             },
           }),
           loadAppraisalDocuments({
@@ -1787,38 +1811,41 @@ export default function NonEngineeringDeanDashboard() {
   }, [info.ay]);
 
   // ── Computed scores for HOD appraisal ──
-  const totalLecScore = lectures.reduce((a, r) => a + n(r.score), 0);
-  const courseFileScore = courseFile.reduce((a, r) => a + n(r.score), 0);
-  const innovTotal = n(innovScore);
-  const projectTotal = projects.reduce((a, r) => a + n(r.score), 0);
-  const qualTotal = quals.reduce((a, r) => a + n(r.score), 0);
+  const totalLecScore = sumSectionScore(lectures, 50);
+  const courseFileScore = sumSectionScore(courseFile, 20);
+  const innovTotal = clampScore(innovScore, 10);
+  const projectTotal = sectionApplicability.projects === "notApplicable" ? 0 : sumSectionScore(projects, 10);
+  const qualTotal = sumSectionScore(quals, 10);
   const teachingRaw = totalLecScore + courseFileScore + innovTotal + projectTotal + qualTotal;
-  const stuFeedbackScore = feedback.reduce((a, r) => a + n(r.score), 0);
-  const deptScore = deptActs.reduce((a, r) => a + n(r.score), 0);
-  const uniScore = uniActs.reduce((a, r) => a + n(r.score), 0);
-  const societyScore = society.reduce((a, r) => a + n(r.score), 0);
-  const industryScore = industry.reduce((a, r) => a + n(r.score), 0);
-  const acrScore = acr.reduce((a, r) => a + n(r.score), 0);
-  const partATotal = Math.min(200, teachingRaw + stuFeedbackScore + deptScore + uniScore + societyScore + industryScore + acrScore);
+  const stuFeedbackScore = feedbackSectionScore(feedback, 10);
+  const deptScore = sumSectionScore(deptActs, 20);
+  const uniScore = sumSectionScore(uniActs, 30);
+  const societyScore = sumSectionScore(society, 10);
+  const industryScore = sumSectionScore(industry, 5);
+  const acrScore = sumSectionScore(acr, 25);
+  const effectivePartAMax = effectiveMaxScore(200, sectionApplicability, [{ key: "projects", max: 10 }]);
+  const partATotal = clampScore(teachingRaw + stuFeedbackScore + deptScore + uniScore + societyScore + industryScore + acrScore, effectivePartAMax);
 
-  const journalScore = journals.reduce((a, r) => a + n(r.score), 0);
-  const bookScore = books.reduce((a, r) => a + n(r.score), 0);
-  const ictScore = ict.reduce((a, r) => a + n(r.score), 0);
-  const researchScore = research.reduce((a, r) => a + n(r.score), 0);
-  const projectBScore = projects2.reduce((a, r) => a + n(r.score), 0);
-  const externalProjectScore = externalProjects.reduce((a, r) => a + n(r.score), 0);
-  const patentScore = patents.reduce((a, r) => a + n(r.score), 0);
-  const awardScore = awards.reduce((a, r) => a + n(r.score), 0);
-  const confScore = confs.reduce((a, r) => a + n(r.score), 0);
-  const proposalScore = proposals.reduce((a, r) => a + n(r.score), 0);
-  const productScore = products.reduce((a, r) => a + n(r.score), 0);
-  const fdpScore = fdps.reduce((a, r) => a + n(r.score), 0);
-  const trainScore = training.reduce((a, r) => a + n(r.score), 0);
-  const partBTotal = journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + fdpScore + trainScore;
-  const grandTotal = partATotal + partBTotal;
+  const journalScore = sumSectionScore(journals, 120);
+  const bookScore = sumSectionScore(books, 50);
+  const ictScore = sumSectionScore(ict, 20);
+  const researchScore = sectionApplicability.research === "notApplicable" ? 0 : sumSectionScore(research, 30);
+  const projectBScore = sumSectionScore(projects2, 45);
+  const externalProjectScore = sumSectionScore(externalProjects, 45);
+  const patentScore = sumSectionScore(patents, 40);
+  const awardScore = sumSectionScore(awards, 10);
+  const confScore = sumSectionScore(confs, 30);
+  const proposalScore = sumSectionScore(proposals, 10);
+  const productScore = sumSectionScore(products, 10);
+  const fdpScore = sumSectionScore(fdps, 10);
+  const trainScore = sumSectionScore(training, 10);
+  const effectivePartBMax = effectiveMaxScore(420, sectionApplicability, [{ key: "research", max: 30 }]);
+  const effectiveGrandMax = effectivePartAMax + effectivePartBMax;
+  const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + fdpScore + trainScore, effectivePartBMax);
+  const grandTotal = clampScore(partATotal + partBTotal, effectiveGrandMax);
 
   const gradeFunc = () => {
-    const p = pct(grandTotal, 620);
+    const p = pct(grandTotal, effectiveGrandMax);
     if (p >= 85) return { label: "Outstanding", color: "#10b981" };
     if (p >= 70) return { label: "Very Good", color: "#3b82f6" };
     if (p >= 55) return { label: "Good", color: "#f59e0b" };
@@ -2039,7 +2066,7 @@ export default function NonEngineeringDeanDashboard() {
       ${acr.map(a => `<tr><td>${a.label}</td><td class="center">${a.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <p class="total">Part A Total: ${partATotal}</p>
+    <p class="total">Part A Total: ${partATotal} / ${effectivePartAMax}</p>
 
     <div class="page-break"></div>
 
@@ -2125,8 +2152,8 @@ export default function NonEngineeringDeanDashboard() {
       ${training.map(t => `<tr><td>${t.company || "&nbsp;"}</td><td>${t.duration || "&nbsp;"}</td><td>${t.nature || "&nbsp;"}</td><td class="center">${t.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <p class="total">Part B Total: ${partBTotal}</p>
-    <p class="total">Grand Total: ${grandTotal}</p>
+    <p class="total">Part B Total: ${partBTotal} / ${effectivePartBMax}</p>
+    <p class="total">Grand Total: ${grandTotal} / ${effectiveGrandMax}</p>
     <p class="total">Grade: ${g.label}</p>
 
   </body>
@@ -2141,15 +2168,218 @@ export default function NonEngineeringDeanDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
 
+  const validateSelfAppraisalRows = () => {
+    const sections = [
+      { label: "A(i). Lectures", rows: lectures, fields: ["sem", "code", "planned", "conducted", "score"] },
+      { label: "A(ii). Course File", rows: courseFile, fields: ["course", "title", "details", "score"] },
+      { label: "A(iv). Projects", rows: projects, fields: ["label", "score"], skip: sectionApplicability.projects === "notApplicable" },
+      { label: "A(v). Qualifications", rows: quals, fields: ["label", "score"] },
+      { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
+      { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
+      { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
+      { label: "A(ix). Contribution to Society", rows: society, fields: ["label", "details", "score"] },
+      { label: "A(x). Industry Connect", rows: industry, fields: ["name", "details", "score"] },
+      { label: "B1. Journals", rows: journals, fields: ["title", "journal", "issn", "index", "score"] },
+      { label: "B2. Books / Chapters", rows: books, fields: ["title", "book", "issn", "pub", "coauth", "first", "score"] },
+      { label: "B3. ICT Pedagogy", rows: ict, fields: ["title", "desc", "type", "quad", "score"] },
+      { label: "B4(a). Research Guidance", rows: research, fields: ["degree", "name", "thesis", "score"], skip: sectionApplicability.research === "notApplicable" },
+      { label: "B4(b). Internal Projects", rows: projects2, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
+      { label: "B4(c). External Projects", rows: externalProjects, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
+      { label: "B5. Patents", rows: patents, fields: ["title", "type", "date", "status", "fileNo", "score"] },
+      { label: "B5. Awards", rows: awards, fields: ["title", "date", "agency", "level", "score"] },
+      { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
+      { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
+      { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
+      { label: "B8. FDP", rows: fdps, fields: ["program", "duration", "org", "score"] },
+      { label: "B8. Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"] },
+    ];
+    const errors = validateCompleteRows(sections);
+    [...projects2, ...externalProjects].forEach((row, index) => {
+      if (row.date && !isValidDDMMYYYY(row.date)) {
+        errors.push(`B4 project row ${index + 1}: date must be DD/MM/YYYY.`);
+      }
+    });
+    if (innovDetails && !innovScore) errors.push("A(iii). Innovative Teaching Methods: score is required.");
+    if (innovScore && !innovDetails) errors.push("A(iii). Innovative Teaching Methods: details are required.");
+    if (errors.length) {
+      alert(errors.join("\n"));
+      return false;
+    }
+    return true;
+  };
+  const validateSelfAppraisalSectionRows = (section) => {
+    const partASections = [
+      { label: "A(i). Lectures", rows: lectures, fields: ["sem", "code", "planned", "conducted", "score"] },
+      { label: "A(ii). Course File", rows: courseFile, fields: ["course", "title", "details", "score"] },
+      { label: "A(iv). Projects", rows: projects, fields: ["label", "score"], skip: sectionApplicability.projects === "notApplicable" },
+      { label: "A(v). Qualifications", rows: quals, fields: ["label", "score"] },
+      { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
+      { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
+      { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
+      { label: "A(ix). Contribution to Society", rows: society, fields: ["label", "details", "score"] },
+      { label: "A(x). Industry Connect", rows: industry, fields: ["name", "details", "score"] },
+    ];
+    const partBSections = [
+      { label: "B1. Journals", rows: journals, fields: ["title", "journal", "issn", "index", "score"] },
+      { label: "B2. Books / Chapters", rows: books, fields: ["title", "book", "issn", "pub", "coauth", "first", "score"] },
+      { label: "B3. ICT Pedagogy", rows: ict, fields: ["title", "desc", "type", "quad", "score"] },
+      { label: "B4(a). Research Guidance", rows: research, fields: ["degree", "name", "thesis", "score"], skip: sectionApplicability.research === "notApplicable" },
+      { label: "B4(b). Internal Projects", rows: projects2, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
+      { label: "B4(c). External Projects", rows: externalProjects, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
+      { label: "B5. Patents", rows: patents, fields: ["title", "type", "date", "status", "fileNo", "score"] },
+      { label: "B5. Awards", rows: awards, fields: ["title", "date", "agency", "level", "score"] },
+      { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
+      { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
+      { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
+      { label: "B8. FDP", rows: fdps, fields: ["program", "duration", "org", "score"] },
+      { label: "B8. Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"] },
+    ];
+    const errors = validateCompleteRows(section === "partA" ? partASections : partBSections);
+    if (section === "partA") {
+      if (innovDetails && !innovScore) errors.push("A(iii). Innovative Teaching Methods: score is required.");
+      if (innovScore && !innovDetails) errors.push("A(iii). Innovative Teaching Methods: details are required.");
+    } else {
+      [...projects2, ...externalProjects].forEach((row, index) => {
+        if (row.date && !isValidDDMMYYYY(row.date)) errors.push(`B4 project row ${index + 1}: date must be DD/MM/YYYY.`);
+      });
+    }
+    if (errors.length) {
+      alert(errors.join("\n"));
+      return false;
+    }
+    return true;
+  };
+
+  const isMyAppraisalSectionOpen = (section) =>
+    appraisalLocked || section === "partA" || (section === "partB" && sectionSaveStatus.partA) || (section === "summary" && sectionSaveStatus.partB);
+
+  const handleMyAppraisalSectionChange = (section) => {
+    if (!isMyAppraisalSectionOpen(section)) {
+      alert(section === "partB" ? "Please save Part A before opening Part B." : "Please save Part B before opening Summary.");
+      return;
+    }
+    if (hodAppraisalTab === "partA" && section !== "partA" && !validateSelfAppraisalSectionRows("partA")) return;
+    if (hodAppraisalTab === "partB" && section === "summary" && !validateSelfAppraisalSectionRows("partB")) return;
+    setHodAppraisalTab(section);
+  };
+
+  const handleSaveSelfSection = async (section) => {
+    if (appraisalLocked) {
+      alert("This appraisal has already been submitted and locked.");
+      return;
+    }
+    if (section === "partB" && !sectionSaveStatus.partA) {
+      alert("Please save Part A before saving Part B.");
+      setHodAppraisalTab("partA");
+      return;
+    }
+    if (!validateSelfAppraisalSectionRows(section)) return;
+
+    const userEmail = sessionStorage.getItem("username");
+    if (!userEmail) {
+      alert("Please login again before saving. Your email was not found in this session.");
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    const nextStatus = { ...sectionSaveStatus, [section]: true };
+    const nextForm = { ...buildSelfDraftForm(), sectionSaveStatus: nextStatus };
+    const label = section === "partA" ? "Part A" : "Part B";
+
+    setSavingSection(section);
+    try {
+      await saveAppraisalDraftSection({
+        facultyEmail: userEmail,
+        academicYear: info.ay,
+        totals: { partATotal, partBTotal, grandTotal, effectivePartAMax, effectivePartBMax, effectiveGrandMax },
+        form: nextForm,
+        docs,
+        submitterProfile: profileFromsessionStorage(),
+        sectionSaveStatus: nextStatus,
+      });
+      setSectionSaveStatus(nextStatus);
+      saveDraft(selfDraftKey, { form: nextForm, docs });
+      setHodAppraisalTab(section === "partA" ? "partB" : "summary");
+      alert(`${label} saved successfully.`);
+    } catch (err) {
+      console.error("Section save error:", err);
+      alert(`Unable to save ${label}.\n\n${err.message}`);
+    } finally {
+      setSavingSection("");
+    }
+  };
+
+  const selfDraftKey = draftKeyFor({ family: "standard-teaching", email: sessionStorage.getItem("username") || "", academicYear: info.ay });
+  const buildSelfDraftForm = () => ({
+    info, lectures, courseFile, innovDetails, innovScore, projects, quals, feedback,
+    deptActs, uniActs, society, industry, acr, journals, books, ict, research,
+    projects2, externalProjects, patents, awards, confs, proposals, products, fdps,
+    training, sectionApplicability, sectionSaveStatus,
+  });
+
+  useEffect(() => {
+    if (appraisalLocked) return;
+    const draft = loadDraft(selfDraftKey);
+    if (!draft?.form) return;
+    const form = draft.form;
+    if (form.info) setInfo((current) => ({ ...current, ...form.info }));
+    if (Array.isArray(form.lectures)) setLectures(form.lectures);
+    if (Array.isArray(form.courseFile)) setCourseFile(form.courseFile);
+    if (typeof form.innovDetails === "string") setInnovDetails(form.innovDetails);
+    if (form.innovScore !== undefined) setInnovScore(form.innovScore);
+    if (Array.isArray(form.projects)) setProjects(form.projects);
+    if (Array.isArray(form.quals)) setQuals(form.quals);
+    if (Array.isArray(form.feedback)) setFeedback(form.feedback);
+    if (Array.isArray(form.deptActs)) setDeptActs(form.deptActs);
+    if (Array.isArray(form.uniActs)) setUniActs(form.uniActs);
+    if (Array.isArray(form.society)) setSociety(form.society);
+    if (Array.isArray(form.industry)) setIndustry(form.industry);
+    if (Array.isArray(form.acr)) setAcr(form.acr);
+    if (Array.isArray(form.journals)) setJournals(form.journals);
+    if (Array.isArray(form.books)) setBooks(form.books);
+    if (Array.isArray(form.ict)) setIct(form.ict);
+    if (Array.isArray(form.research)) setResearch(form.research);
+    if (Array.isArray(form.projects2)) setProjects2(form.projects2);
+    if (Array.isArray(form.externalProjects)) setExternalProjects(form.externalProjects);
+    if (Array.isArray(form.patents)) setPatents(form.patents);
+    if (Array.isArray(form.awards)) setAwards(form.awards);
+    if (Array.isArray(form.confs)) setConfs(form.confs);
+    if (Array.isArray(form.proposals)) setProposals(form.proposals);
+    if (Array.isArray(form.products)) setProducts(form.products);
+    if (Array.isArray(form.fdps)) setFdps(form.fdps);
+    if (Array.isArray(form.training)) setTraining(form.training);
+    if (form.sectionApplicability) setSectionApplicability((current) => ({ ...current, ...form.sectionApplicability }));
+    if (form.sectionSaveStatus) setSectionSaveStatus((current) => ({ ...current, ...form.sectionSaveStatus }));
+    if (draft.docs) setDocs(draft.docs);
+  }, [selfDraftKey, appraisalLocked]);
+
+  useEffect(() => {
+    if (appraisalLocked) return undefined;
+    const timer = window.setTimeout(() => {
+      saveDraft(selfDraftKey, { form: buildSelfDraftForm(), docs });
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [selfDraftKey, appraisalLocked, info, lectures, courseFile, innovDetails, innovScore, projects, quals, feedback, deptActs, uniActs, society, industry, acr, journals, books, ict, research, projects2, externalProjects, patents, awards, confs, proposals, products, fdps, training, sectionApplicability, sectionSaveStatus, docs]);
   const handleSubmitAppraisal = async () => {
     if (appraisalLocked) {
       alert("This appraisal has already been submitted and is locked for review.");
+      return;
+    }
+    if (!sectionSaveStatus.partA) {
+      alert("Please save Part A before submitting the appraisal.");
+      setHodAppraisalTab("partA");
+      return;
+    }
+    if (!sectionSaveStatus.partB) {
+      alert("Please save Part B before submitting the appraisal.");
+      setHodAppraisalTab("partB");
       return;
     }
     if (!accuracyConfirmed) {
       alert("Please verify and confirm the accuracy declaration before submitting.");
       return;
     }
+    if (!validateSelfAppraisalRows()) return;
 
     if (!info.name || !info.ay) {
       alert("Please fill in basic faculty information (Name, Academic Year).");
@@ -2204,6 +2434,7 @@ export default function NonEngineeringDeanDashboard() {
       });
 
       setAppraisalLocked(true);
+      clearDraft(selfDraftKey);
       alert("Appraisal submitted successfully!");
     } catch (err) {
       console.error("Submission error:", err);
@@ -2306,12 +2537,12 @@ export default function NonEngineeringDeanDashboard() {
             </div>
             <select
               value={hodAppraisalTab}
-              onChange={(e) => setHodAppraisalTab(e.target.value)}
+              onChange={(e) => handleMyAppraisalSectionChange(e.target.value)}
               style={{ width: "100%", border: "1px solid #334155", borderRadius: 7, padding: "7px 8px", fontSize: 12, fontFamily: "Georgia, serif", color: "#e2e8f0", background: "#0f172a", outline: "none" }}
             >
               <option value="partA">Part A</option>
-              <option value="partB">Part B</option>
-              <option value="summary">Summary</option>
+              <option value="partB" disabled={!isMyAppraisalSectionOpen("partB")}>Part B</option>
+              <option value="summary" disabled={!isMyAppraisalSectionOpen("summary")}>Summary</option>
             </select>
           </div>
         )}
@@ -2365,56 +2596,10 @@ export default function NonEngineeringDeanDashboard() {
             {hodAppraisalTab === "partA" && (
               <SC title="Part A — Teaching & Academic Activities (Max 200)" accent="#6366f1">
                 <div style={{ marginBottom: 14, padding: "8px 12px", background: "#f0f4ff", borderRadius: 6, fontSize: 12, color: "#312e81", fontWeight: 600 }}>
-                  📊 Total Part A Score: {partATotal.toFixed(1)}/200
+                  📊 Total Part A Score: {partATotal.toFixed(1)}/{effectivePartAMax}
                 </div>
                 <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>Fill in your teaching and academic activities for the appraisal period. Enter scores for each item.</div>
-
-
-                {/* Faculty Information */}
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>Faculty Information</div>
-                  <table style={T}>
-                    <tbody>
-                      <tr>
-                        <td style={{ ...TD, width: "30%", background: "#f1f5f9", fontWeight: 700 }}>Name of Faculty</td>
-                        <td style={TD} colSpan={3}><TI val={info.name} onChange={inf("name")} /></td>
-                      </tr>
-                      <tr>
-                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Educational Qualifications</td>
-                        <td style={TD} colSpan={3}><TI val={info.qual} onChange={inf("qual")} /></td>
-                      </tr>
-                      <tr>
-                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Present Designation</td>
-                        <td style={TD} colSpan={3}><TI val={info.desig} onChange={inf("desig")} /></td>
-                      </tr>
-                      <tr>
-                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Name of School / Department</td>
-                        <td style={TD} colSpan={3}><TI val={info.school} onChange={inf("school")} /></td>
-                      </tr>
-                      <tr>
-                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Total Experience (Years)</td>
-                        <td style={TD}>
-                          <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>At DYPIU</div>
-                          <TI val={info.expDyp} onChange={inf("expDyp")} center />
-                        </td>
-                        <td style={TD}>
-                          <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>Previous Exp.</div>
-                          <TI val={info.expPrev} onChange={inf("expPrev")} center />
-                        </td>
-                        <td style={TD}>
-                          <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>Total Exp.</div>
-                          <TI val={info.expTotal} onChange={inf("expTotal")} center />
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style={{ ...TD, background: "#f1f5f9", fontWeight: 700 }}>Academic Year</td>
-                        <td style={TD} colSpan={3}><TI val={info.ay} onChange={inf("ay")} /></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* A1. Teaching Process */}
+{/* A1. Teaching Process */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(i) Lectures, Tutorials, Practicals, Projects — Max 50 marks</div>
                   <table style={T}>
@@ -2478,7 +2663,8 @@ export default function NonEngineeringDeanDashboard() {
                     <td style={TD}><ViewCell id={`courseFile-${i}`} docs={docs} /></td>
                     <td style={TDS}><TI val={r.score} onChange={(v) => setCF(i, "score", v)} center /></td>
                    </tr>
-                 ))}                      <tr style={{ background: "#eff6ff" }}>
+                 ))}
+                      <tr style={{ background: "#eff6ff" }}>
                         <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Score (Max 20)</td>
                         <td style={{ ...TDS, fontWeight: "bold", color: "#1e3a5f" }}>{courseFileScore.toFixed(1)}</td>
                       </tr>
@@ -2520,7 +2706,14 @@ export default function NonEngineeringDeanDashboard() {
 
                 {/* A4. Projects */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(iv) Projects — Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(iv) Projects — Max 10 marks</div>                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10, fontSize: 12, fontWeight: 700, color: "#334155" }}>
+                    {["applicable", "notApplicable"].map((value) => (
+                      <label key={value} style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                        <input type="checkbox" checked={sectionApplicability.projects === value} onChange={() => { setSectionApplicability((current) => ({ ...current, projects: value })); if (value === "notApplicable") setProjects((rows) => rows.map((row) => ({ ...row, label: "", score: "" }))); }} />
+                        {value === "applicable" ? "Applicable" : "Not Applicable"}
+                      </label>
+                    ))}
+                  </div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2535,19 +2728,19 @@ export default function NonEngineeringDeanDashboard() {
                       {projects.map((r, i) => (
                         <tr key={i}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.label} onChange={(v) => setProj(i, "label", v)} /></td>
-                          <td style={TD}><DocCell id={`proj-${i}`} docs={docs} setDocs={setDocs} /></td>
+                          <td style={TD}><TI val={r.label} readOnly={sectionApplicability.projects === "notApplicable"} onChange={(v) => setProj(i, "label", v)} /></td>
+                          <td style={TD}><DocCell id={`proj-${i}`} docs={docs} setDocs={setDocs} readOnly={sectionApplicability.projects === "notApplicable"} /></td>
                           <td style={TD}><ViewCell id={`proj-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setProj(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} readOnly={sectionApplicability.projects === "notApplicable"} onChange={(v) => setProj(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={4}>Total Score (Max 10)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={4}>Total Score (Max {sectionApplicability.projects === "notApplicable" ? 0 : 10})</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{projectTotal.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>
-                  <RowBtns onAdd={() => setProjects((p) => [...p, { label: "", score: "" }])} onDel={() => setProjects((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={projects.length > 1} />
+                  {sectionApplicability.projects !== "notApplicable" && <RowBtns onAdd={() => setProjects((p) => [...p, { label: "", score: "" }])} onDel={() => setProjects((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={projects.length > 1} />}
                 </div>
 
                 {/* A5. Qualifications */}
@@ -2604,7 +2797,7 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TDC}><TI val={r.fb1} onChange={(v) => setFb(i, "fb1", v)} center /></td>
                           <td style={TDC}><TI val={r.fb2} onChange={(v) => setFb(i, "fb2", v)} center /></td>
                           <td style={{ ...TDC, fontWeight: 700, color: "#0ea5e9" }}>{r.fb1 || r.fb2 ? ((n(r.fb1) + n(r.fb2)) / ((r.fb1 ? 1 : 0) + (r.fb2 ? 1 : 0) || 1)).toFixed(2) : ""}</td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setFb(i, "score", v)} center /></td>
+                          <td style={TDS}>{feedbackRowScore(r, 10).toFixed(1)}</td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2767,7 +2960,7 @@ export default function NonEngineeringDeanDashboard() {
                       {acr.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}>{r.label}</td>
+                          <td style={TD}><div style={{ fontWeight: 700 }}>{r.label}</div>{ACR_DETAIL_POINTS[r.label] && <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>{ACR_DETAIL_POINTS[r.label].map((point) => <li key={point}>{point}</li>)}</ul>}</td>
                           <td style={TDS}><TI val={r.score} onChange={(v) => setAcrRow(i, "score", v)} center /></td>
 
                         </tr>
@@ -2779,6 +2972,7 @@ export default function NonEngineeringDeanDashboard() {
                     </tbody>
                   </table>
                 </div>
+                <SectionSaveFooter label="Part A" saved={sectionSaveStatus.partA} saving={savingSection === "partA"} locked={appraisalLocked} onSave={() => handleSaveSelfSection("partA")} />
               </SC>
             )}
 
@@ -2786,7 +2980,7 @@ export default function NonEngineeringDeanDashboard() {
             {hodAppraisalTab === "partB" && (
               <SC title="Part B — Research & Academic Contributions (Max 420)" accent="#7c3aed">
                 <div style={{ marginBottom: 14, padding: "8px 12px", background: "#ede9fe", borderRadius: 6, fontSize: 12, color: "#6d28d9", fontWeight: 600 }}>
-                  📊 Total Part B Score: {partBTotal.toFixed(1)}/420
+                  📊 Total Part B Score: {partBTotal.toFixed(1)}/{effectivePartBMax}
                 </div>
                 <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>Enter your research publications, patents, conferences, and other academic contributions.</div>
 
@@ -2855,7 +3049,7 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TD}><TI val={r.issn} onChange={(v) => setBook(i, "issn", v)} /></td>
                           <td style={TD}><TI val={r.pub} onChange={(v) => setBook(i, "pub", v)} /></td>
                           <td style={TD}><TI val={r.coauth} onChange={(v) => setBook(i, "coauth", v)} /></td>
-                          <td style={TD}><TI val={r.first} onChange={(v) => setBook(i, "first", v)} /></td>
+                          <td style={TD}><select value={r.first || ""} onChange={(e) => setBook(i, "first", e.target.value)} style={{ width: "100%", height: 30, border: "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, fontFamily: "Georgia, serif" }}><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option></select></td>
                           <td style={TD}><DocCell id={`book-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`book-${i}`} docs={docs} /></td>
                           <td style={TDS}><TI val={r.score} onChange={(v) => setBook(i, "score", v)} center /></td>
@@ -2910,7 +3104,14 @@ export default function NonEngineeringDeanDashboard() {
 
                 {/* B4(a). Research Guidance */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4(a). Research Guidance - Max 30 marks (PhD: 20, PG: 10)</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4(a). Research Guidance - Max 30 marks (PhD: 20, PG: 10)</div>                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10, fontSize: 12, fontWeight: 700, color: "#334155" }}>
+                    {["applicable", "notApplicable"].map((value) => (
+                      <label key={value} style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                        <input type="checkbox" checked={sectionApplicability.research === value} onChange={() => { setSectionApplicability((current) => ({ ...current, research: value })); if (value === "notApplicable") setResearch((rows) => rows.map((row) => ({ ...row, degree: "", name: "", thesis: "", score: "" }))); }} />
+                        {value === "applicable" ? "Applicable" : "Not Applicable"}
+                      </label>
+                    ))}
+                  </div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2927,21 +3128,21 @@ export default function NonEngineeringDeanDashboard() {
                       {research.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.degree} onChange={(v) => setRes(i, "degree", v)} /></td>
-                          <td style={TD}><TI val={r.name} onChange={(v) => setRes(i, "name", v)} /></td>
-                          <td style={TD}><TI val={r.thesis} onChange={(v) => setRes(i, "thesis", v)} /></td>
-                          <td style={TD}><DocCell id={`res-${i}`} docs={docs} setDocs={setDocs} /></td>
+                          <td style={TD}><TI val={r.degree} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "degree", v)} /></td>
+                          <td style={TD}><TI val={r.name} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "name", v)} /></td>
+                          <td style={TD}><TI val={r.thesis} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "thesis", v)} /></td>
+                          <td style={TD}><DocCell id={`res-${i}`} docs={docs} setDocs={setDocs} readOnly={sectionApplicability.research === "notApplicable"} /></td>
                           <td style={TD}><ViewCell id={`res-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setRes(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Score (Max 30)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Score (Max {sectionApplicability.research === "notApplicable" ? 0 : 30})</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{researchScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>
-                  <RowBtns onAdd={() => setResearch((p) => [...p, { degree: "PhD", name: "", thesis: "", score: "" }])} onDel={() => setResearch((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={research.length > 1} />
+                  {sectionApplicability.research !== "notApplicable" && <RowBtns onAdd={() => setResearch((p) => [...p, { degree: "PhD", name: "", thesis: "", score: "" }])} onDel={() => setResearch((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={research.length > 1} />}
                 </div>
 
                 {/* B4(b). Research / Consultancy Internal Projects */}
@@ -2968,7 +3169,7 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.title} onChange={(v) => setPrj2(i, "title", v)} /></td>
                           <td style={TD}><TI val={r.agency} onChange={(v) => setPrj2(i, "agency", v)} /></td>
-                          <td style={TD}><TI val={r.date} onChange={(v) => setPrj2(i, "date", v)} /></td>
+                          <td style={TD}><TI val={r.date} onChange={(v) => setPrj2(i, "date", maskDateDDMMYYYY(v))} /></td>
                           <td style={TD}><TI val={r.amount} onChange={(v) => setPrj2(i, "amount", v)} /></td>
                           <td style={TD}><TI val={r.role} onChange={(v) => setPrj2(i, "role", v)} /></td>
                           <td style={TD}><TI val={r.status} onChange={(v) => setPrj2(i, "status", v)} /></td>
@@ -3010,7 +3211,7 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.title} onChange={(v) => setExtPrj(i, "title", v)} /></td>
                           <td style={TD}><TI val={r.agency} onChange={(v) => setExtPrj(i, "agency", v)} /></td>
-                          <td style={TD}><TI val={r.date} onChange={(v) => setExtPrj(i, "date", v)} /></td>
+                          <td style={TD}><TI val={r.date} onChange={(v) => setExtPrj(i, "date", maskDateDDMMYYYY(v))} /></td>
                           <td style={TD}><TI val={r.amount} onChange={(v) => setExtPrj(i, "amount", v)} /></td>
                           <td style={TD}><TI val={r.role} onChange={(v) => setExtPrj(i, "role", v)} /></td>
                           <td style={TD}><TI val={r.status} onChange={(v) => setExtPrj(i, "status", v)} /></td>
@@ -3255,6 +3456,7 @@ export default function NonEngineeringDeanDashboard() {
                     <button style={{ padding: "6px 12px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={() => setTraining((p) => p.length > 1 ? p.slice(0, -1) : p)} disabled={training.length <= 1}>− Delete Training</button>
                   </div>
                 </div>
+                <SectionSaveFooter label="Part B" saved={sectionSaveStatus.partB} saving={savingSection === "partB"} locked={appraisalLocked} onSave={() => handleSaveSelfSection("partB")} />
               </SC>
             )}
 
@@ -3264,9 +3466,9 @@ export default function NonEngineeringDeanDashboard() {
                 <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
                   <tbody>
                     {[
-                      ["Part A — Teaching & Activities", partATotal, 200, "#6366f1"],
-                      ["Part B — Research & Contributions", partBTotal, 420, "#7c3aed"],
-                      ["Grand Total", grandTotal, 620, g.color],
+                      ["Part A — Teaching & Activities", partATotal, effectivePartAMax, "#6366f1"],
+                      ["Part B — Research & Contributions", partBTotal, effectivePartBMax, "#7c3aed"],
+                      ["Grand Total", grandTotal, effectiveGrandMax, g.color],
                     ].map(([label, score, max, color]) => (
                       <tr key={label}>
                         <td style={{ padding: "10px", background: "#f8fafc", fontWeight: 600, border: "1px solid #e2e8f0", width: "50%" }}>{label}</td>

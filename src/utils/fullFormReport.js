@@ -56,6 +56,13 @@ const renderSection = ({ section, rows = [], docs = {}, scoreRoles = ["score"], 
     </tbody>
   </table>`;
 
+const isSectionReportable = (form, section) => {
+  const applicability = form?.sectionApplicability || {};
+  if (applicability[section.key] === "notApplicable") return false;
+  if (section.applicabilityKey && applicability[section.applicabilityKey] === "notApplicable") return false;
+  return true;
+};
+
 const renderInnovativeSection = ({ form, docs, scoreRoles, roleLabel }) => `
   <h3>A(iii). Innovative Teaching Methods <span>(Max 10)</span></h3>
   <table>
@@ -135,13 +142,13 @@ export const openFullFormReport = ({
   </table>
 
   <h2>Part A - Teaching Process & Academic Activities</h2>
-  ${partASections.slice(0, 2).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel })).join("")}
+  ${partASections.slice(0, 2).filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel })).join("")}
   ${renderInnovativeSection({ form, docs, scoreRoles, roleLabel })}
-  ${partASections.slice(2).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel })).join("")}
+  ${partASections.slice(2).filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel })).join("")}
 
   <div class="page-break"></div>
   <h2>Part B - Research and Academic Contributions</h2>
-  ${partBSections.map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel })).join("")}
+  ${partBSections.filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel })).join("")}
 
   <div class="page-break"></div>
   <h2>Summary</h2>

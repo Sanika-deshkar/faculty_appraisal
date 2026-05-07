@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { feedbackRowScore } from "../utils/appraisalFormUtils";
 import { getReviewChain, pendingStatusFor, profileFromsessionStorage, workflowValidationError } from "../utils/hierarchy";
 
 const n = (value) => parseFloat(value) || 0;
@@ -73,6 +74,7 @@ const SNAPSHOT_SETTERS = {
   products: "setProducts",
   fdps: "setFdps",
   training: "setTraining",
+  sectionSaveStatus: "setSectionSaveStatus",
 };
 
 const snapshotFormFromPayload = (payload) => {
@@ -105,6 +107,10 @@ const applySnapshotToSetters = (snapshotPayload, setters) => {
       setters[setterKey]?.(snapshotForm[formKey]);
     }
   });
+
+  if (snapshotPayload?.docs) {
+    setters.setDocs?.(snapshotPayload.docs);
+  }
 };
 
 const saveAppraisalSnapshot = async ({
@@ -112,6 +118,7 @@ const saveAppraisalSnapshot = async ({
   academicYear,
   form,
   totals,
+  docs,
   submitterProfile,
 }) => {
   const { error } = await supabase
@@ -122,6 +129,7 @@ const saveAppraisalSnapshot = async ({
       payload: {
         form,
         totals,
+        docs,
         submitterProfile,
         savedAt: new Date().toISOString(),
       },
@@ -130,9 +138,48 @@ const saveAppraisalSnapshot = async ({
   requireSupabase(error, "Could not save appraisal snapshot");
 };
 
+export const saveAppraisalDraftSection = async ({
+  facultyEmail,
+  academicYear,
+  form,
+  docs = {},
+  totals = {},
+  submitterProfile,
+  sectionSaveStatus = {},
+}) => {
+  if (!facultyEmail) throw new Error("Please login again before saving. Your email was not found in this session.");
+  if (!academicYear) throw new Error("Academic year is required before saving.");
+
+  await saveAppraisalSnapshot({
+    facultyEmail,
+    academicYear,
+    form: {
+      ...form,
+      sectionSaveStatus,
+    },
+    totals,
+    docs,
+    submitterProfile,
+  });
+
+  const documentRows = docsToRows(docs, facultyEmail, academicYear);
+  const { error: documentDeleteError } = await supabase
+    .from("appraisal_documents")
+    .delete()
+    .match({ faculty_email: facultyEmail, academic_year: academicYear });
+  requireSupabase(documentDeleteError, "Could not clear old draft document rows");
+
+  if (documentRows.length > 0) {
+    const { error: documentInsertError } = await supabase
+      .from("appraisal_documents")
+      .insert(documentRows);
+    requireSupabase(documentInsertError, "Could not save draft document rows");
+  }
+};
+
 export const docsToRows = (docs, facultyEmail, academicYear) =>
   Object.entries(docs || {}).flatMap(([docKey, files]) =>
-    (files || [])
+    (files || []).slice(0, 1)
       .filter((file) => file?.url && !String(file.url).startsWith("blob:"))
       .map((file) => ({
         faculty_email: facultyEmail,
@@ -162,13 +209,13 @@ export const loadAppraisalDocuments = async ({ facultyEmail, academicYear, setDo
   const groupedDocs = {};
   (data || []).forEach((row) => {
     const key = row.doc_key || `${row.section}-${Math.max((row.row_no || 1) - 1, 0)}`;
-    if (!groupedDocs[key]) groupedDocs[key] = [];
-    groupedDocs[key].push({
+    if (groupedDocs[key]?.length) return;
+    groupedDocs[key] = [{
       name: row.file_name,
       type: row.file_type,
       url: row.file_url,
       publicId: row.storage_path,
-    });
+    }];
   });
 
   setDocs(groupedDocs);
@@ -752,7 +799,7 @@ export const saveAppraisal = async ({
       course_code: dbText(row.code),
       feedback_1: n(row.fb1),
       feedback_2: n(row.fb2),
-      score: n(row.score),
+      score: feedbackRowScore(row, 10),
       hod_score: dbNumber(row.hod),
       director_score: dbNumber(row.director),
       dean_score: dbNumber(row.dean),
@@ -998,6 +1045,7 @@ export const saveAppraisal = async ({
       products,
     },
     totals,
+    docs,
     submitterProfile: activeProfile,
   });
 };

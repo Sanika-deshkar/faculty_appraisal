@@ -5,6 +5,7 @@ import {
   normalizeNonTeachingRole,
 } from "../constants/nonTeachingHierarchy";
 import { profileFromsessionStorage } from "../utils/hierarchy";
+import { clampScore } from "../utils/appraisalFormUtils";
 import { supabase } from "./supabase";
 
 export const NON_TEACHING_STATUS = {
@@ -233,15 +234,15 @@ const ratingForAuthority = (section = {}, index, authority) => {
 
 export const calculateNonTeachingTotals = (form = {}, authority = "self") => {
   const normalized = normalizeNonTeachingForm(form);
-  const partA = SELF_ITEMS.reduce(
+  const partA = clampScore(SELF_ITEMS.reduce(
     (total, item) =>
       total + n(valueForAuthority(normalized[item.key], authority)),
     0,
-  );
+  ), NON_TEACHING_MAX.partA);
   const partB =
     authority === "self"
       ? 0
-      : RATING_SECTIONS.reduce((sectionTotal, section) => {
+      : clampScore(RATING_SECTIONS.reduce((sectionTotal, section) => {
           const rows = normalized.partB?.[section.key] || {};
           return (
             sectionTotal +
@@ -251,12 +252,12 @@ export const calculateNonTeachingTotals = (form = {}, authority = "self") => {
               0,
             )
           );
-        }, 0);
+        }, 0), NON_TEACHING_MAX.partB);
 
   return {
     partA,
     partB,
-    total: partA + partB,
+    total: clampScore(partA + partB, NON_TEACHING_MAX.grand),
   };
 };
 

@@ -58,6 +58,7 @@ assert.deepEqual(
   ["vc"],
   "CISR Center Head self-appraisal must route directly to VC"
 );
+assert.equal(canAuthorityReviewProfile(roles.vc, roles.cisrCenterHead), true, "VC must review CISR Center Head");
 assert.equal(canAuthorityReviewProfile(roles.cisrCenterHead, cisrFaculty), true, "CISR Center Head must review CISR faculty");
 assert.equal(canAuthorityReviewProfile(roles.engineeringDean, cisrFaculty), false, "Engineering dean must not review CISR faculty");
 assert.equal(canAuthorityReviewProfile(roles.nonEngineeringDean, cisrFaculty), false, "Non-engineering dean must not review CISR faculty");
