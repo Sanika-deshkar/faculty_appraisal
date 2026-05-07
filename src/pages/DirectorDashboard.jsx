@@ -4,9 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { ACR_DETAIL_POINTS, SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/formConfig";
 import { DIRECTOR_USER, HOD_LIST, FACULTY_LIST, DIRECTOR_SELF_DATA } from "../data/mockData";
 import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal, saveAppraisalDraftSection } from "../services/appraisalPersistence";
-import { uploadToCloudinary } from "../services/cloudinary";
+import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
-import { supabase } from "../services/supabase";
 import { clampScore, effectiveMaxScore, clearDraft, draftKeyFor, feedbackAverage, feedbackRowScore, feedbackSectionScore, isValidDDMMYYYY, loadDraft, maskDateDDMMYYYY, saveDraft, scoreRemaining, sumSectionScore, validateCompleteRows } from "../utils/appraisalFormUtils";
 import { reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
 
@@ -94,7 +93,10 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
     try {
       const uploadedFiles = [];
       for (const file of selectedFiles) {
-        uploadedFiles.push(await uploadToCloudinary(file, { folder: `faculty-appraisal/${id}` }));
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder", `faculty-appraisal/${id}`);
+        uploadedFiles.push(await api.post("/upload", formData, { headers: { "Content-Type": "multipart/form-data" } }));
       }
       setDocs((p) => ({ ...p, [id]: uploadedFiles.slice(0, 1) }));
     } catch (err) {
@@ -1300,23 +1302,10 @@ export default function DirectorDashboard() {
 
     const loadOwnAppraisal = async () => {
       try {
-        const fetchDeclaration = async () => {
-          const { data, error } = await supabase
-            .from("declarations")
-            .select("status")
-            .eq("faculty_email", userEmail)
-            .eq("academic_year", info.ay)
-            .maybeSingle();
+        const statusData = await api.get("/appraisal/status", { params: { academic_year: info.ay } }).catch(() => null);
+        const declarationRow = statusData?.declaration || null;
 
-          if (error) {
-            throw new Error(`declarations: ${error.message}`);
-          }
-
-          return data;
-        };
-
-        const [declarationRow] = await Promise.all([
-          fetchDeclaration(),
+        await Promise.all([
           loadSavedAppraisal({
             facultyEmail: userEmail,
             academicYear: info.ay,

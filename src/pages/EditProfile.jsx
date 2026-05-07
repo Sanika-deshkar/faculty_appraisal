@@ -13,7 +13,7 @@ import {
 } from "../constants/universityHierarchy";
 import { isNonTeachingRole } from "../constants/nonTeachingHierarchy";
 import { buildProfilePayload, normalizeRole, storeUserSession } from "../auth/session";
-import { supabase } from "../services/supabase";
+import { updateProfile } from "../services/authService";
 
 const ROLE_LABEL = {
   faculty: "Faculty",
@@ -184,49 +184,17 @@ export default function EditProfile() {
         department,
       };
       const profilePayload = buildProfilePayload(cleanFormData, APP_INFO.DEFAULT_AY);
-      const finalPayload = profilePayload;
-
-      let savedProfile = finalPayload;
-      const { data, error: profileError } = await supabase
-        .from("faculty_profiles")
-        .upsert(finalPayload, { onConflict: "email" })
-        .select()
-        .single();
-
-      if (profileError) {
-        console.warn("Could not update faculty profile in Supabase:", profileError.message);
-      } else if (data) {
-        savedProfile = data;
-      }
-
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: {
-          name: cleanFormData.name.trim(),
-          employeeId: cleanFormData.employeeId.trim(),
-          designation: cleanFormData.designation.trim(),
-          qualification: cleanFormData.qualification.trim(),
-          experience: cleanFormData.experience.trim(),
-          phone: cleanFormData.phone.trim(),
-          school: cleanFormData.school,
-          department: cleanFormData.department,
-          role: cleanFormData.role,
-        },
-      });
-
-      if (metadataError) {
-        console.warn("Could not update auth metadata:", metadataError.message);
-      }
+      const savedProfile = await updateProfile(profilePayload);
 
       storeUserSession({
-        profile: savedProfile,
+        profile: savedProfile || profilePayload,
         fallbackEmail: email,
       });
 
       setMessage("Profile updated successfully.");
       setTimeout(() => navigate("/dashboard", { replace: true }), 450);
     } catch (err) {
-      console.error("Profile update error:", err);
-      setError(err.message || "Unable to update profile. Please try again.");
+      setError(err?.message || "Unable to update profile. Please try again.");
     } finally {
       setSaving(false);
     }

@@ -12,7 +12,7 @@ import {
   isValidSoemrDepartment,
 } from "../constants/universityHierarchy";
 import { isNonTeachingRole } from "../constants/nonTeachingHierarchy";
-import { supabase } from "../services/supabase";
+import { register } from "../services/authService";
 import { buildProfilePayload, normalizeRole } from "../auth/session";
 
 const BASE_ROLE_OPTIONS = [
@@ -190,48 +190,17 @@ export default function Signup() {
             : "",
       };
 
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: cleanFormData.email.trim(),
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/login`,
-          data: {
-            name: cleanFormData.name,
-            role: cleanFormData.role,
-            employeeId: cleanFormData.employeeId,
-            designation: cleanFormData.designation,
-            department: cleanFormData.department,
-            school: cleanFormData.school,
-            qualification: cleanFormData.qualification,
-            experience: cleanFormData.experience,
-            phone: cleanFormData.phone,
-          }
-        }
-      });
-
-      if (authError) throw authError;
-
       const profilePayload = buildProfilePayload(cleanFormData, APP_INFO.DEFAULT_AY);
-      const { error: profileError } = await supabase
-        .from("faculty_profiles")
-        .upsert(profilePayload, { onConflict: "email" });
-
-      if (profileError) throw profileError;
-
-      if (data?.session) {
-        await supabase.auth.signOut();
-      }
+      await register(profilePayload, formData.password);
 
       navigate("/login", {
         replace: true,
         state: {
-          message: "Account created. Please confirm your email, then log in.",
+          message: "Account created. You can now log in.",
         },
       });
-
     } catch (err) {
-      console.error("Signup error:", err);
-      setError(err.message || "An unexpected error occurred. Please try again.");
+      setError(err?.message || "An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }

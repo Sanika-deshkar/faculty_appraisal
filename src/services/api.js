@@ -15,7 +15,6 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use((config) => {
   const token =
-    sessionStorage.getItem("supabaseToken") ||
     sessionStorage.getItem("accessToken") ||
     sessionStorage.getItem("token");
 

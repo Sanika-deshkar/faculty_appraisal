@@ -6,7 +6,7 @@ import {
 } from "../constants/nonTeachingHierarchy";
 import { profileFromsessionStorage } from "../utils/hierarchy";
 import { clampScore } from "../utils/appraisalFormUtils";
-import { supabase } from "./supabase";
+import { api } from "./api";
 
 export const NON_TEACHING_STATUS = {
   DRAFT: "Draft",
@@ -97,12 +97,6 @@ const clean = (value) => String(value ?? "").trim();
 const emailKey = (value) => clean(value).toLowerCase();
 const academicYear = (value) =>
   clean(value) || APP_INFO.DEFAULT_AY || "2025-2026";
-const nowIso = () => new Date().toISOString();
-
-const requireSupabase = (error, action) => {
-  if (error) throw new Error(`${action}: ${error.message}`);
-};
-
 const initialsFor = (name = "", fallback = "U") =>
   clean(name || fallback)
     .split(/\s+/)
@@ -353,43 +347,25 @@ const stripSelfPartBRatings = (form) => {
 
 export const loadNonTeachingAppraisal = async ({
   email = sessionStorage.getItem("username"),
-  academicYear = APP_INFO.DEFAULT_AY,
+  academicYear: ay = APP_INFO.DEFAULT_AY,
   profile = profileFromsessionStorage(),
   role = sessionStorage.getItem("role"),
 } = {}) => {
   const staffEmail = emailKey(email);
   if (!staffEmail) return null;
 
-  const { data, error } = await supabase
-    .from("non_teaching_appraisals")
-    .select("*")
-    .eq("staff_email", staffEmail)
-    .eq("academic_year", academicYear)
-    .maybeSingle();
-
-  requireSupabase(error, "Could not load non-teaching appraisal");
-
-  if (!data) return null;
-
-  return {
-    ...data,
-    form: normalizeNonTeachingForm(data.payload, profile, role),
-  };
-};
-
-const rowPayloadForForm = ({ form, status }) => {
-  const normalizedForm = normalizeNonTeachingForm({ ...form, status });
-  return {
-    payload: normalizedForm,
-    status,
-    self_total: calculateNonTeachingTotals(normalizedForm, "self").total,
-    ro_total: calculateNonTeachingTotals(normalizedForm, "reporting_officer")
-      .total,
-    registrar_total: calculateNonTeachingTotals(normalizedForm, "registrar")
-      .total,
-    vc_total: calculateNonTeachingTotals(normalizedForm, "vc").total,
-    updated_at: nowIso(),
-  };
+  try {
+    const data = await api.get("/non-teaching/appraisal", {
+      params: { academic_year: ay },
+    });
+    if (!data) return null;
+    return {
+      ...data,
+      form: normalizeNonTeachingForm(data.payload, profile, role),
+    };
+  } catch {
+    return null;
+  }
 };
 
 export const submitNonTeachingSelfAppraisal = async ({
@@ -413,78 +389,18 @@ export const submitNonTeachingSelfAppraisal = async ({
     finalForm.info.email || profile.email || sessionStorage.getItem("username"),
   );
   const ay = academicYear(finalForm.info.ay);
-  const rowPayload = rowPayloadForForm({ form: finalForm, status });
 
-  const { data, error } = await supabase
-    .from("non_teaching_appraisals")
-    .upsert(
-      {
-        staff_email: staffEmail,
-        academic_year: ay,
-        ...rowPayload,
-        submitted_at: nowIso(),
-        ro_reviewed_at:
-          status === NON_TEACHING_STATUS.RO_REVIEWED ? nowIso() : null,
-        registrar_reviewed_at:
-          status === NON_TEACHING_STATUS.REGISTRAR_REVIEWED ? nowIso() : null,
-        vc_reviewed_at:
-          status === NON_TEACHING_STATUS.VC_APPROVED ? nowIso() : null,
-      },
-      { onConflict: "staff_email,academic_year" },
-    )
-    .select()
-    .single();
-
-  requireSupabase(error, "Could not submit non-teaching appraisal");
+  const data = await api.put("/non-teaching/appraisal", {
+    staff_email: staffEmail,
+    academic_year: ay,
+    payload: finalForm,
+    status,
+  });
 
   return {
     ...data,
-    form: normalizeNonTeachingForm(data.payload, profile, normalizedRole),
+    form: normalizeNonTeachingForm(data?.payload, profile, normalizedRole),
   };
-};
-
-const profileMapForEmails = async (emails) => {
-  const uniqueEmails = [
-    ...new Set((emails || []).map(emailKey).filter(Boolean)),
-  ];
-  if (!uniqueEmails.length) return new Map();
-
-  const { data, error } = await supabase
-    .from("faculty_profiles")
-    .select("*")
-    .in("email", uniqueEmails);
-
-  requireSupabase(error, "Could not load non-teaching profiles");
-
-  return new Map(
-    (data || []).map((profile) => [emailKey(profile.email), profile]),
-  );
-};
-
-const allowedStatusesForReviewer = (reviewerRole) => {
-  const role = normalizeNonTeachingRole(reviewerRole, reviewerRole);
-  if (role === "reporting_officer") {
-    return [
-      NON_TEACHING_STATUS.SUBMITTED,
-      NON_TEACHING_STATUS.RO_REVIEWED,
-      NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
-      NON_TEACHING_STATUS.VC_APPROVED,
-    ];
-  }
-  if (role === "registrar") {
-    return [
-      NON_TEACHING_STATUS.RO_REVIEWED,
-      NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
-      NON_TEACHING_STATUS.VC_APPROVED,
-    ];
-  }
-  if (role === "vc") {
-    return [
-      NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
-      NON_TEACHING_STATUS.VC_APPROVED,
-    ];
-  }
-  return [];
 };
 
 export const decorateNonTeachingRow = (row, profile = {}) => {
@@ -538,34 +454,29 @@ export const decorateNonTeachingRow = (row, profile = {}) => {
 
 export const fetchNonTeachingQueueForRole = async ({
   reviewerRole,
-  academicYear,
+  academicYear: ay,
 } = {}) => {
   const role = normalizeNonTeachingRole(reviewerRole, reviewerRole);
-  const statuses = allowedStatusesForReviewer(role);
-  if (!statuses.length) return [];
+  if (!role || role === "non_teaching_staff") return [];
 
-  let query = supabase
-    .from("non_teaching_appraisals")
-    .select("*")
-    .in("status", statuses)
-    .order("updated_at", { ascending: false });
+  try {
+    const params = {};
+    if (ay) params.academic_year = ay;
 
-  if (academicYear) {
-    query = query.eq("academic_year", academicYear);
+    const items = await api.get("/non-teaching/subordinates", { params });
+    return (items || []).map((item) => ({
+      ...item,
+      avatar: initialsFor(item.name || item.staff_email, item.staff_email),
+      avatarColor:
+        item.appraisalRole === "registrar"
+          ? "#7c3aed"
+          : item.appraisalRole === "reporting_officer"
+            ? "#0891b2"
+            : "#1d4ed8",
+    }));
+  } catch (err) {
+    throw new Error(err?.message || "Could not load non-teaching review queue.");
   }
-
-  const { data, error } = await query;
-  requireSupabase(error, "Could not load non-teaching review queue");
-
-  const profiles = await profileMapForEmails(
-    (data || []).map((row) => row.staff_email),
-  );
-
-  return (data || [])
-    .map((row) =>
-      decorateNonTeachingRow(row, profiles.get(emailKey(row.staff_email))),
-    )
-    .filter((item) => canReviewNonTeachingItem(item, role));
 };
 
 export const primeFormForReviewer = (form = {}, reviewerRole) => {
@@ -638,28 +549,18 @@ export const submitNonTeachingReview = async ({
 
   const staffEmail = emailKey(item?.email || finalForm.info.email);
   const ay = academicYear(item?.academicYear || finalForm.info.ay);
-  const rowPayload = rowPayloadForForm({ form: finalForm, status });
-  const timestampColumn =
-    role === "reporting_officer"
-      ? "ro_reviewed_at"
-      : role === "registrar"
-        ? "registrar_reviewed_at"
-        : "vc_reviewed_at";
 
-  const { data, error } = await supabase
-    .from("non_teaching_appraisals")
-    .update({
-      ...rowPayload,
+  const data = await api.put(
+    `/non-teaching/review/${encodeURIComponent(staffEmail)}`,
+    {
+      academic_year: ay,
+      payload: finalForm,
       status,
-      [timestampColumn]: nowIso(),
-    })
-    .match({ staff_email: staffEmail, academic_year: ay })
-    .select()
-    .single();
+      remarks,
+    },
+  );
 
-  requireSupabase(error, "Could not submit non-teaching review");
-
-  return decorateNonTeachingRow(data, {
+  return decorateNonTeachingRow(data || {}, {
     email: staffEmail,
     full_name: item?.name || finalForm.info.name,
     employee_id: item?.employeeId,

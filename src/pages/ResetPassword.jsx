@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { APP_INFO } from "../constants/formConfig";
-import { supabase } from "../services/supabase";
+import { resetPassword } from "../services/authService";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -11,41 +11,17 @@ export default function ResetPassword() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [token, setToken] = useState("");
 
   useEffect(() => {
-    const ensureRecoverySession = async () => {
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get("code");
-
-      if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError) {
-          setError(exchangeError.message);
-          setReady(false);
-          return;
-        }
-      }
-
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        setReady(true);
-        return;
-      }
-
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get("token");
+    if (t) {
+      setToken(t);
+      setReady(true);
+    } else {
       setError("This reset link is invalid or expired. Please request a new one.");
-      setReady(false);
-    };
-
-    ensureRecoverySession();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" && session) {
-        setReady(true);
-        setError("");
-      }
-    });
-
-    return () => listener.subscription.unsubscribe();
+    }
   }, []);
 
   const handleUpdatePassword = async (e) => {
@@ -67,20 +43,16 @@ export default function ResetPassword() {
     setError("");
     setMessage("");
 
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-
-    if (updateError) {
-      setError(updateError.message);
+    try {
+      await resetPassword(token, password);
+      sessionStorage.clear();
+      setMessage("Password updated successfully. Redirecting to login...");
+      setTimeout(() => navigate("/login", { replace: true }), 1200);
+    } catch (err) {
+      setError(err?.message || "Failed to reset password. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    await supabase.auth.signOut();
-    sessionStorage.clear();
-    sessionStorage.clear();
-    setMessage("Password updated successfully. Redirecting to login...");
-
-    setTimeout(() => navigate("/login", { replace: true }), 1200);
   };
 
   return (

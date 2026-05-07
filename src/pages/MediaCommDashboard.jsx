@@ -4,9 +4,8 @@ import { ACR_DETAIL_POINTS, APP_INFO } from "../constants/formConfig";
 import { FORM_SCHOOL_CODES, FORM_TYPES } from "../constants/formRouting";
 import { getSchoolKey } from "../constants/universityHierarchy";
 import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal, saveAppraisalDraftSection } from "../services/appraisalPersistence";
-import { uploadToCloudinary } from "../services/cloudinary";
+import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
-import { supabase } from "../services/supabase";
 import { openFullFormReport } from "../utils/fullFormReport";
 import {
   clearDraft,
@@ -267,7 +266,10 @@ function DocCell({ id, docs, setDocs, readOnly }) {
     if (!selected.length) return;
     setUploading(true);
     try {
-      const uploaded = await uploadToCloudinary(selected[0], { folder: `faculty-appraisal/${id}` });
+      const fd = new FormData();
+      fd.append("file", selected[0]);
+      fd.append("folder", `faculty-appraisal/${id}`);
+      const uploaded = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setDocs((prev) => ({ ...prev, [id]: [uploaded] }));
     } catch (err) {
       alert(`Upload failed.\n\n${err.message}`);
@@ -789,14 +791,9 @@ export default function MediaCommDashboard({ fixedRole }) {
   useEffect(() => {
     if (!userEmail || !academicYear || !canSelfSubmit) return;
     const loadStatus = async () => {
-      const [{ data: declarationRow, error: declarationError }, { data: reviewRows, error: reviewError }] = await Promise.all([
-        supabase.from("declarations").select("*").eq("faculty_email", userEmail).eq("academic_year", academicYear).maybeSingle(),
-        supabase.from("appraisal_reviews").select("*").eq("faculty_email", userEmail).eq("academic_year", academicYear).order("reviewed_at", { ascending: true }),
-      ]);
-      if (declarationError) throw declarationError;
-      if (reviewError) throw reviewError;
-      setDeclaration(declarationRow || null);
-      setReviews(reviewRows || []);
+      const data = await api.get("/appraisal/status", { params: { academic_year: academicYear } });
+      setDeclaration(data?.declaration || null);
+      setReviews(data?.reviews || []);
     };
     loadStatus().catch((err) => console.error("Could not load workflow status:", err));
   }, [userEmail, academicYear, canSelfSubmit]);

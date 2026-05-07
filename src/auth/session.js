@@ -79,23 +79,22 @@ export const buildProfilePayload = (formData, academicYear = "2025-2026") => {
   };
 };
 
-export const storeUserSession = ({ session, user, profile = {}, fallbackEmail = "" }) => {
+export const storeUserSession = ({ token, profile = {}, fallbackEmail = "" }) => {
   const safeProfile = profile || {};
-  const metadata = user?.user_metadata || {};
-  const email = firstValue(safeProfile.email, user?.email, fallbackEmail).toLowerCase();
-  const name = firstValue(safeProfile.full_name, metadata.name, metadata.full_name, email);
-  const role = normalizeRole(firstValue(safeProfile.appraisal_role, metadata.role));
+  const email = firstValue(safeProfile.email, fallbackEmail).toLowerCase();
+  const name = firstValue(safeProfile.full_name, email);
+  const role = normalizeRole(firstValue(safeProfile.appraisal_role, safeProfile.role));
   const nonTeachingRole = isNonTeachingRole(role);
-  const school = nonTeachingRole ? "" : canonicalSchoolValue(firstValue(safeProfile.school, metadata.school));
+  const school = nonTeachingRole ? "" : canonicalSchoolValue(firstValue(safeProfile.school));
   const department = nonTeachingRole
-    ? firstValue(safeProfile.department, metadata.department)
+    ? firstValue(safeProfile.department)
     : isSoemrSchool(school)
-      ? canonicalDepartmentValue(firstValue(safeProfile.department, metadata.department))
-      : firstValue(safeProfile.department, metadata.department);
+      ? canonicalDepartmentValue(firstValue(safeProfile.department))
+      : firstValue(safeProfile.department);
   const normalizedDepartment = nonTeachingRole || !isCisrSchool(school) ? department : "";
 
-  if (session?.access_token) {
-    sessionStorage.setItem("supabaseToken", session.access_token);
+  if (token) {
+    sessionStorage.setItem("accessToken", token);
   }
 
   sessionStorage.setItem("role", role);
@@ -103,11 +102,11 @@ export const storeUserSession = ({ session, user, profile = {}, fallbackEmail = 
   sessionStorage.setItem("name", name);
   sessionStorage.setItem("department", normalizedDepartment);
   sessionStorage.setItem("school", school);
-  sessionStorage.setItem("employeeId", firstValue(safeProfile.employee_id, metadata.employeeId, metadata.employee_id));
-  sessionStorage.setItem("designation", firstValue(safeProfile.designation, metadata.designation));
-  sessionStorage.setItem("qualification", firstValue(safeProfile.qualification, metadata.qualification));
-  sessionStorage.setItem("experience", firstValue(safeProfile.teaching_experience, metadata.experience, metadata.teaching_experience));
-  sessionStorage.setItem("phone", firstValue(safeProfile.phone, metadata.phone));
+  sessionStorage.setItem("employeeId", firstValue(safeProfile.employee_id));
+  sessionStorage.setItem("designation", firstValue(safeProfile.designation));
+  sessionStorage.setItem("qualification", firstValue(safeProfile.qualification));
+  sessionStorage.setItem("experience", firstValue(safeProfile.teaching_experience));
+  sessionStorage.setItem("phone", firstValue(safeProfile.phone));
 
   const hasHod = departmentHasHod(school, normalizedDepartment);
   sessionStorage.setItem("hasHod", hasHod ? "true" : "false");

@@ -1,10 +1,9 @@
-import { useEffect, useState, useRef } from "react";
+﻿import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ACR_DETAIL_POINTS, APP_INFO } from "../constants/formConfig";
-import { supabase } from "../services/supabase";
-import { saveAppraisalDraftSection } from "../services/appraisalPersistence";
+import { saveAppraisalDraftSection, submitAppraisal, loadSavedAppraisal, loadAppraisalDocuments } from "../services/appraisalPersistence";
+import { api } from "../services/api";
 import { clampScore, effectiveMaxScore, clearDraft, draftKeyFor, feedbackAverage, feedbackRowScore, feedbackSectionScore, isValidDDMMYYYY, loadDraft, maskDateDDMMYYYY, saveDraft, scoreRemaining, sumSectionScore, validateCompleteRows } from "../utils/appraisalFormUtils";
-import { uploadToCloudinary } from "../services/cloudinary";
 import {
   getReviewChain,
   isRejectedStatus,
@@ -17,11 +16,6 @@ import {
 // --- Helpers ------------------------------------------------------------------
 const n = (v) => parseFloat(v) || 0;
 const hasAnyValue = (row, keys) => keys.some((key) => String(row[key] ?? "").trim() !== "");
-const requireSupabase = (error, action) => {
-  if (error) {
-    throw new Error(`${action}: ${error.message}`);
-  }
-};
 const docSectionFromKey = (docKey) => docKey.replace(/-\d+$/, "").replace(/\d+$/, "");
 const docRowFromKey = (docKey) => {
   const match = docKey.match(/(\d+)$/);
@@ -229,8 +223,11 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
       const uploadedFiles = [];
 
       for (const file of selectedFiles) {
-        const uploaded = await uploadToCloudinary(file, {
-          folder: `faculty-appraisal/${id}`,
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder", `faculty-appraisal/${id}`);
+        const uploaded = await api.post("/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
         uploadedFiles.push(uploaded);
       }
@@ -1309,25 +1306,10 @@ export default function HODDashboard() {
 
     const loadWorkflowStatus = async () => {
       try {
-        const [{ data: declaration, error: declarationError }, { data: reviews, error: reviewsError }] = await Promise.all([
-          supabase
-            .from("declarations")
-            .select("status,submitted_at,updated_at")
-            .eq("faculty_email", userEmail)
-            .eq("academic_year", info.ay)
-            .maybeSingle(),
-          supabase
-            .from("appraisal_reviews")
-            .select("reviewer_role,status,remarks,reviewed_at")
-            .eq("faculty_email", userEmail)
-            .eq("academic_year", info.ay)
-            .order("reviewed_at", { ascending: true }),
-        ]);
-
-        requireSupabase(declarationError, "Could not load workflow status");
-        requireSupabase(reviewsError, "Could not load review history");
-        setWorkflowDeclaration(declaration || null);
-        setWorkflowReviews(reviews || []);
+        const data = await api.get("/appraisal/status", { params: { academic_year: info.ay } });
+        const declaration = data?.declaration || null;
+        setWorkflowDeclaration(declaration);
+        setWorkflowReviews(data?.reviews || []);
         setAppraisalLocked(Boolean(declaration));
       } catch (err) {
         console.error("Could not load workflow status:", err);
@@ -1335,411 +1317,30 @@ export default function HODDashboard() {
     };
 
     loadWorkflowStatus();
-
-    const channel = supabase
-      .channel(`workflow-status-${userEmail}-${info.ay}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "declarations", filter: `faculty_email=eq.${userEmail}` }, loadWorkflowStatus)
-      .on("postgres_changes", { event: "*", schema: "public", table: "appraisal_reviews", filter: `faculty_email=eq.${userEmail}` }, loadWorkflowStatus)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [info.ay]);
 
   useEffect(() => {
-    const loadDocuments = async () => {
-      const userEmail = sessionStorage.getItem("username");
-      if (!userEmail || !info.ay) return;
-
-      const { data, error } = await supabase
-        .from("appraisal_documents")
-        .select("*")
-        .eq("faculty_email", userEmail)
-        .eq("academic_year", info.ay)
-        .order("uploaded_at", { ascending: true });
-
-      if (error) {
-        console.error("Could not load Cloudinary documents:", error.message);
-        return;
-      }
-
-      const groupedDocs = (data || []).reduce((acc, row) => {
-        const key = row.doc_key || row.section;
-        if (!key) return acc;
-
-        acc[key] = [
-          ...(acc[key] || []),
-          {
-            name: row.file_name,
-            type: row.file_type,
-            url: row.file_url,
-            publicId: row.storage_path,
-          },
-        ];
-
-        return acc;
-      }, {});
-
-      setDocs(groupedDocs);
-    };
-
-    loadDocuments();
+    const userEmail = sessionStorage.getItem("username");
+    if (!userEmail || !info.ay) return;
+    loadAppraisalDocuments({ facultyEmail: userEmail, academicYear: info.ay, setDocs });
   }, [info.ay]);
 
   useEffect(() => {
-    const loadExistingAppraisal = async () => {
-      const userEmail = sessionStorage.getItem("username");
-      if (!userEmail || !info.ay) return;
+    const userEmail = sessionStorage.getItem("username");
+    if (!userEmail || !info.ay) return;
 
-      const fetchRows = async (table, shouldOrder = true) => {
-        let query = supabase
-          .from(table)
-          .select("*")
-          .eq("faculty_email", userEmail)
-          .eq("academic_year", info.ay);
-
-        if (shouldOrder) {
-          query = query.order("row_no", { ascending: true });
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-          throw new Error(`${table}: ${error.message}`);
-        }
-
-        return data || [];
-      };
-
-      const fetchDeclaration = async () => {
-        const { data, error } = await supabase
-          .from("declarations")
-          .select("status")
-          .eq("faculty_email", userEmail)
-          .eq("academic_year", info.ay)
-          .maybeSingle();
-
-        if (error) {
-          throw new Error(`declarations: ${error.message}`);
-        }
-
-        return data;
-      };
-
-      try {
-        const [
-          declarationRow,
-          teachingRows,
-          courseRows,
-          innovativeRows,
-          projectRows,
-          qualificationRows,
-          feedbackRows,
-          departmentRows,
-          universityRows,
-          societyRows,
-          industryRows,
-          acrRows,
-          journalRows,
-          bookRows,
-          ictRows,
-          researchRows,
-          researchProjectRows,
-          patentRows,
-          awardRows,
-          conferenceRows,
-          proposalRows,
-          selfDevelopmentRows,
-          trainingRows,
-        ] = await Promise.all([
-          fetchDeclaration(),
-          fetchRows("teaching_process"),
-          fetchRows("course_files"),
-          fetchRows("innovative_teaching", false),
-          fetchRows("projects_guided"),
-          fetchRows("qualification_enhancement"),
-          fetchRows("student_feedback"),
-          fetchRows("department_activities"),
-          fetchRows("university_activities"),
-          fetchRows("social_contributions"),
-          fetchRows("industry_connect"),
-          fetchRows("acr_scores"),
-          fetchRows("journal_publications"),
-          fetchRows("book_publications"),
-          fetchRows("ict_pedagogy"),
-          fetchRows("research_guidance"),
-          fetchRows("research_projects"),
-          fetchRows("patents"),
-          fetchRows("awards"),
-          fetchRows("conferences"),
-          fetchRows("research_proposals"),
-          fetchRows("self_development"),
-          fetchRows("industrial_training"),
-        ]);
-
-        setAppraisalLocked(Boolean(declarationRow));
-
-        if (teachingRows.length) {
-          setLectures(teachingRows.map((row) => ({
-            sem: inputValue(row.semester),
-            code: inputValue(row.course_code),
-            planned: inputValue(row.planned_classes),
-            conducted: inputValue(row.conducted_classes),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (courseRows.length) {
-          setCourseFile(courseRows.map((row) => ({
-            course: inputValue(row.course),
-            title: inputValue(row.title),
-            details: inputValue(row.details),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (innovativeRows.length) {
-          setInnovDetails(inputValue(innovativeRows[0].details));
-          setInnovScore(inputValue(innovativeRows[0].score));
-        }
-
-        if (projectRows.length) {
-          setProjects(projectRows.map((row) => ({
-            label: inputValue(row.label),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (qualificationRows.length) {
-          setQuals(qualificationRows.map((row) => ({
-            label: inputValue(row.label),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (feedbackRows.length) {
-          setFeedback(feedbackRows.map((row) => ({
-            code: inputValue(row.course_code),
-            fb1: inputValue(row.feedback_1),
-            fb2: inputValue(row.feedback_2),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (departmentRows.length) {
-          setDeptActs(departmentRows.map((row) => ({
-            activity: inputValue(row.activity),
-            nature: inputValue(row.nature),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (universityRows.length) {
-          setUniActs(universityRows.map((row) => ({
-            activity: inputValue(row.activity),
-            nature: inputValue(row.nature),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (societyRows.length) {
-          setSociety(societyRows.map((row) => ({
-            label: inputValue(row.label),
-            details: inputValue(row.details),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (industryRows.length) {
-          setIndustry(industryRows.map((row) => ({
-            name: inputValue(row.name),
-            details: inputValue(row.details),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (acrRows.length) {
-          setAcr(acrRows.map((row) => ({
-            label: inputValue(row.label),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (journalRows.length) {
-          setJournals(journalRows.map((row) => ({
-            title: inputValue(row.title),
-            journal: inputValue(row.journal),
-            issn: inputValue(row.issn),
-            index: inputValue(row.indexing),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (bookRows.length) {
-          setBooks(bookRows.map((row) => ({
-            title: inputValue(row.title),
-            book: inputValue(row.book),
-            issn: inputValue(row.issn),
-            pub: inputValue(row.publisher),
-            coauth: inputValue(row.coauthor),
-            first: inputValue(row.first_author),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (ictRows.length) {
-          setIct(ictRows.map((row) => ({
-            title: inputValue(row.title),
-            desc: inputValue(row.description),
-            type: inputValue(row.type),
-            quad: inputValue(row.quadrant),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (researchRows.length) {
-          setResearch(researchRows.map((row) => ({
-            degree: inputValue(row.degree),
-            name: inputValue(row.student_name),
-            thesis: inputValue(row.thesis),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (researchProjectRows.length) {
-          setProjects2(researchProjectRows.map((row) => ({
-            title: inputValue(row.title),
-            agency: inputValue(row.agency),
-            date: inputValue(row.sanction_date),
-            amount: inputValue(row.amount),
-            role: inputValue(row.role),
-            status: inputValue(row.project_status),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-          })));
-        }
-
-        if (patentRows.length) {
-          setPatents(patentRows.map((row) => ({
-            title: inputValue(row.title),
-            type: inputValue(row.type),
-            date: inputValue(row.patent_date),
-            status: inputValue(row.patent_status),
-            fileNo: inputValue(row.file_no),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (awardRows.length) {
-          setAwards(awardRows.map((row) => ({
-            title: inputValue(row.title),
-            date: inputValue(row.award_date),
-            agency: inputValue(row.agency),
-            level: inputValue(row.level),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (conferenceRows.length) {
-          setConfs(conferenceRows.map((row) => ({
-            title: inputValue(row.title),
-            type: inputValue(row.type),
-            org: inputValue(row.organization),
-            level: inputValue(row.level),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (proposalRows.length) {
-          setProposals(proposalRows.map((row) => ({
-            title: inputValue(row.title),
-            duration: inputValue(row.duration),
-            agency: inputValue(row.agency),
-            amount: inputValue(row.amount),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (selfDevelopmentRows.length) {
-          setFdps(selfDevelopmentRows.map((row) => ({
-            program: inputValue(row.program),
-            duration: inputValue(row.duration),
-            org: inputValue(row.organization),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        if (trainingRows.length) {
-          setTraining(trainingRows.map((row) => ({
-            company: inputValue(row.company),
-            duration: inputValue(row.duration),
-            nature: inputValue(row.nature),
-            score: inputValue(row.score),
-            hod: inputValue(row.hod_score),
-            director: inputValue(row.director_score),
-          })));
-        }
-
-        const { data: snapshotRow, error: snapshotError } = await supabase
-          .from("appraisal_snapshots")
-          .select("payload")
-          .eq("faculty_email", userEmail)
-          .eq("academic_year", info.ay)
-          .maybeSingle();
-        requireSupabase(snapshotError, "Could not load appraisal snapshot");
-
-        const snapshotForm = snapshotRow?.payload?.form || snapshotRow?.payload?.data;
-        if (snapshotForm && typeof snapshotForm === "object") {
-          if (snapshotForm.info) setInfo((current) => ({ ...current, ...snapshotForm.info }));
-          if (Array.isArray(snapshotForm.products)) setProducts(snapshotForm.products);
-          if (Array.isArray(snapshotForm.externalProjects)) setExternalProjects(snapshotForm.externalProjects);
-          if (snapshotForm.sectionSaveStatus) setSectionSaveStatus((current) => ({ ...current, ...snapshotForm.sectionSaveStatus }));
-        }
-      } catch (err) {
-        console.error("Could not load saved appraisal:", err);
-      }
-    };
-
-    loadExistingAppraisal();
+    loadSavedAppraisal({
+      facultyEmail: userEmail,
+      academicYear: info.ay,
+      setters: {
+        setInfo, setLectures, setCourseFile, setInnovDetails, setInnovScore,
+        setProjects, setQuals, setFeedback, setDeptActs, setUniActs,
+        setSociety, setIndustry, setAcr, setJournals, setBooks, setIct,
+        setResearch, setProjects2, setExternalProjects, setPatents, setAwards,
+        setConfs, setProposals, setProducts, setFdps, setTraining, setDocs,
+        setSectionSaveStatus,
+      },
+    }).catch((err) => console.error("Could not load saved appraisal:", err));
   }, [info.ay]);
 
   // -- Computed scores for HOD appraisal --
@@ -2020,461 +1621,34 @@ export default function HODDashboard() {
       const nextReviewer = reviewChain[0];
       const workflowStatus = nextReviewer ? pendingStatusFor(nextReviewer) : "Submitted";
 
-      // 2. Prepare payload for declaration/main submission
-      const declarationData = {
-        faculty_email: userEmail,
-        academic_year: info.ay,
-        part_a_total: partATotal,
-        part_b_total: partBTotal,
-        grand_total: grandTotal,
-        status: workflowStatus,
-        submitted_at: new Date().toISOString()
-      };
+      // 2. Submit all form data via API
+      const submitterProfile = profileFromsessionStorage();
 
-      // Save Declaration
-      const { error: declError } = await supabase
-        .from('declarations')
-        .upsert(declarationData, { onConflict: 'faculty_email,academic_year' });
-      requireSupabase(declError, "Could not save declaration");
-
-      const baseRow = (index) => ({
-        faculty_email: userEmail,
-        academic_year: info.ay,
-        row_no: index + 1,
+      const submittedAt = new Date().toISOString();
+      await submitAppraisal({
+        facultyEmail: userEmail,
+        academicYear: info.ay,
+        form: {
+          info, lectures, courseFile, innovDetails, innovScore,
+          projects, quals, feedback, deptActs, uniActs, society, industry, acr,
+          journals, books, ict, research, projects2, externalProjects,
+          patents, awards, confs, proposals, products, fdps, training,
+        },
+        totals: { partATotal, partBTotal, grandTotal },
+        docs,
+        submitterProfile,
+        activeProfile: submitterProfile,
       });
 
-      const replaceRows = async (table, rows, label) => {
-        const { error: deleteError } = await supabase
-          .from(table)
-          .delete()
-          .match({ faculty_email: userEmail, academic_year: info.ay });
-        requireSupabase(deleteError, `Could not clear old ${label} rows`);
 
-        if (rows.length > 0) {
-          const { error: insertError } = await supabase.from(table).insert(rows);
-          requireSupabase(insertError, `Could not save ${label} rows`);
-        }
-      };
-
-      await replaceRows(
-        'teaching_process',
-        lectures
-          .filter((row) => hasAnyValue(row, ["sem", "code", "planned", "conducted", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            semester: dbText(row.sem),
-            course_code: dbText(row.code),
-            planned_classes: n(row.planned),
-            conducted_classes: n(row.conducted),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'teaching process'
-      );
-
-      await replaceRows(
-        'course_files',
-        courseFile
-          .filter((row) => hasAnyValue(row, ["course", "title", "details", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            course: dbText(row.course),
-            title: dbText(row.title),
-            details: dbText(row.details),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'course file'
-      );
-
-      const { error: innovativeDeleteError } = await supabase
-        .from('innovative_teaching')
-        .delete()
-        .match({ faculty_email: userEmail, academic_year: info.ay });
-      requireSupabase(innovativeDeleteError, "Could not clear old innovative teaching row");
-
-      if (hasAnyValue({ details: innovDetails, score: innovScore }, ["details", "score"])) {
-        const { error: innovativeInsertError } = await supabase
-          .from('innovative_teaching')
-          .insert([{
-            faculty_email: userEmail,
-            academic_year: info.ay,
-            details: dbText(innovDetails),
-            score: n(innovScore),
-          }]);
-        requireSupabase(innovativeInsertError, "Could not save innovative teaching row");
-      }
-
-      await replaceRows(
-        'projects_guided',
-        projects
-          .filter((row) => hasAnyValue(row, ["label", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            label: dbText(row.label),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'projects'
-      );
-
-      await replaceRows(
-        'qualification_enhancement',
-        quals
-          .filter((row) => hasAnyValue(row, ["label", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            label: dbText(row.label),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'qualification enhancement'
-      );
-
-      await replaceRows(
-        'student_feedback',
-        feedback
-          .filter((row) => hasAnyValue(row, ["code", "fb1", "fb2", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            course_code: dbText(row.code),
-            feedback_1: n(row.fb1),
-            feedback_2: n(row.fb2),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'student feedback'
-      );
-
-      await replaceRows(
-        'department_activities',
-        deptActs
-          .filter((row) => hasAnyValue(row, ["activity", "nature", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            activity: dbText(row.activity),
-            nature: dbText(row.nature),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'department activities'
-      );
-
-      await replaceRows(
-        'university_activities',
-        uniActs
-          .filter((row) => hasAnyValue(row, ["activity", "nature", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            activity: dbText(row.activity),
-            nature: dbText(row.nature),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'university activities'
-      );
-
-      await replaceRows(
-        'social_contributions',
-        society
-          .filter((row) => hasAnyValue(row, ["label", "details", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            label: dbText(row.label),
-            details: dbText(row.details),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'social contribution'
-      );
-
-      await replaceRows(
-        'industry_connect',
-        industry
-          .filter((row) => hasAnyValue(row, ["name", "details", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            name: dbText(row.name),
-            details: dbText(row.details),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'industry connect'
-      );
-
-      await replaceRows(
-        'acr_scores',
-        acr
-          .filter((row) => hasAnyValue(row, ["label", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            label: dbText(row.label),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'ACR'
-      );
-
-      await replaceRows(
-        'journal_publications',
-        journals
-          .filter((row) => hasAnyValue(row, ["title", "journal", "issn", "index", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            title: dbText(row.title),
-            journal: dbText(row.journal),
-            issn: dbText(row.issn),
-            indexing: dbText(row.index),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'journal publications'
-      );
-
-      await replaceRows(
-        'book_publications',
-        books
-          .filter((row) => hasAnyValue(row, ["title", "book", "issn", "pub", "coauth", "first", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            title: dbText(row.title),
-            book: dbText(row.book),
-            issn: dbText(row.issn),
-            publisher: dbText(row.pub),
-            coauthor: dbText(row.coauth),
-            first_author: dbText(row.first),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'book publications'
-      );
-
-      await replaceRows(
-        'ict_pedagogy',
-        ict
-          .filter((row) => hasAnyValue(row, ["title", "desc", "type", "quad", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            title: dbText(row.title),
-            description: dbText(row.desc),
-            type: dbText(row.type),
-            quadrant: dbText(row.quad),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'ICT pedagogy'
-      );
-
-      await replaceRows(
-        'research_guidance',
-        research
-          .filter((row) => hasAnyValue(row, ["degree", "name", "thesis", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            degree: dbText(row.degree),
-            student_name: dbText(row.name),
-            thesis: dbText(row.thesis),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'research guidance'
-      );
-
-      await replaceRows(
-        'research_projects',
-        projects2
-          .filter((row) => hasAnyValue(row, ["title", "agency", "date", "amount", "role", "status", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            title: dbText(row.title),
-            agency: dbText(row.agency),
-            sanction_date: dbDate(row.date),
-            amount: dbNumber(row.amount),
-            role: dbText(row.role),
-            project_status: dbText(row.status),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-          })),
-        'research projects'
-      );
-
-      await replaceRows(
-        'patents',
-        patents
-          .filter((row) => hasAnyValue(row, ["title", "type", "date", "status", "fileNo", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            title: dbText(row.title),
-            type: dbText(row.type),
-            patent_date: dbDate(row.date),
-            patent_status: dbText(row.status),
-            file_no: dbText(row.fileNo),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'patents'
-      );
-
-      await replaceRows(
-        'awards',
-        awards
-          .filter((row) => hasAnyValue(row, ["title", "date", "agency", "level", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            title: dbText(row.title),
-            award_date: dbDate(row.date),
-            agency: dbText(row.agency),
-            level: dbText(row.level),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'awards'
-      );
-
-      await replaceRows(
-        'conferences',
-        confs
-          .filter((row) => hasAnyValue(row, ["title", "type", "org", "level", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            title: dbText(row.title),
-            type: dbText(row.type),
-            organization: dbText(row.org),
-            level: dbText(row.level),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'conferences'
-      );
-
-      await replaceRows(
-        'research_proposals',
-        proposals
-          .filter((row) => hasAnyValue(row, ["title", "duration", "agency", "amount", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            title: dbText(row.title),
-            duration: dbText(row.duration),
-            agency: dbText(row.agency),
-            amount: dbNumber(row.amount),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'research proposals'
-      );
-
-      await replaceRows(
-        'self_development',
-        fdps
-          .filter((row) => hasAnyValue(row, ["program", "duration", "org", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            program: dbText(row.program),
-            duration: dbText(row.duration),
-            organization: dbText(row.org),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'self development'
-      );
-
-      await replaceRows(
-        'industrial_training',
-        training
-          .filter((row) => hasAnyValue(row, ["company", "duration", "nature", "score"]))
-          .map((row, index) => ({
-            ...baseRow(index),
-            company: dbText(row.company),
-            duration: dbText(row.duration),
-            nature: dbText(row.nature),
-            score: n(row.score),
-            hod_score: dbNumber(row.hod),
-            director_score: dbNumber(row.director),
-          })),
-        'industrial training'
-      );
-
-      const documentRows = docsToRows(docs, userEmail, info.ay);
-      const { error: documentDeleteError } = await supabase
-        .from('appraisal_documents')
-        .delete()
-        .match({ faculty_email: userEmail, academic_year: info.ay });
-      requireSupabase(documentDeleteError, "Could not clear old Cloudinary document rows");
-
-      if (documentRows.length > 0) {
-        const { error: documentInsertError } = await supabase
-          .from('appraisal_documents')
-          .insert(documentRows);
-        requireSupabase(documentInsertError, "Could not save Cloudinary document rows");
-      }
-
-      const { error: snapshotError } = await supabase
-        .from("appraisal_snapshots")
-        .upsert({
-          faculty_email: userEmail,
-          academic_year: info.ay,
-          payload: {
-            form: {
-              info,
-              lectures,
-              courseFile,
-              innovDetails,
-              innovScore,
-              projects,
-              quals,
-              feedback,
-              deptActs,
-              uniActs,
-              society,
-              industry,
-              acr,
-              journals,
-              books,
-              ict,
-              research,
-              projects2,
-              externalProjects,
-              patents,
-              awards,
-              confs,
-              proposals,
-              products,
-              fdps,
-              training,
-            },
-            totals: { partATotal, partBTotal, grandTotal },
-            submitterProfile: profileFromsessionStorage(),
-            savedAt: new Date().toISOString(),
-          },
-        }, { onConflict: "faculty_email,academic_year" });
-      requireSupabase(snapshotError, "Could not save appraisal snapshot");
 
       clearDraft(selfDraftKey);
       alert("Appraisal submitted successfully!");
       setAppraisalLocked(true);
       setWorkflowDeclaration({
         status: workflowStatus,
-        submitted_at: declarationData.submitted_at,
-        updated_at: declarationData.submitted_at,
+        submitted_at: submittedAt,
+        updated_at: submittedAt,
       });
       setWorkflowReviews([]);
     } catch (err) {

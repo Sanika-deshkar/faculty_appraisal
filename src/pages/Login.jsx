@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { APP_INFO } from "../constants/formConfig";
-import { CREDENTIALS } from "../data/mockData";
-import { supabase } from "../services/supabase";
-import { buildProfilePayload, normalizeRole, storeUserSession } from "../auth/session";
+import { login, forgotPassword } from "../services/authService";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -28,106 +25,10 @@ export default function Login() {
 
     try {
       const email = username.trim().toLowerCase();
-
-      // 1. Attempt Supabase Auth
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password: password,
-      });
-
-      if (!authError && data?.user) {
-        console.log("Supabase login successful:", data.user);
-        const emailConfirmedAt = data.user.email_confirmed_at || data.user.confirmed_at;
-
-        if (!emailConfirmedAt) {
-          await supabase.auth.signOut();
-          localStorage.clear();
-          setError("Please confirm your email before logging in. Check your inbox for the confirmation link.");
-          return;
-        }
-
-        const { data: profile, error: profileError } = await supabase
-          .from("faculty_profiles")
-          .select("*")
-          .eq("email", data.user.email || email)
-          .maybeSingle();
-
-        if (profileError) {
-          throw profileError;
-        }
-
-        let activeProfile = profile;
-
-        if (!activeProfile) {
-          const metadata = data.user.user_metadata || {};
-          const fallbackProfile = buildProfilePayload({
-            email: data.user.email || email,
-            employeeId: metadata.employeeId || metadata.employee_id || "",
-            name: metadata.name || metadata.full_name || data.user.email || email,
-            qualification: metadata.qualification || "",
-            designation: metadata.designation || "",
-            department: metadata.department || "",
-            school: metadata.school || "",
-            experience: metadata.experience || metadata.teaching_experience || "",
-            phone: metadata.phone || "",
-            role: normalizeRole(metadata.role),
-          }, APP_INFO.DEFAULT_AY);
-
-          const { data: createdProfile, error: createProfileError } = await supabase
-            .from("faculty_profiles")
-            .upsert(fallbackProfile, { onConflict: "email" })
-            .select()
-            .single();
-
-          if (createProfileError) {
-            console.warn("Could not create missing faculty profile:", createProfileError.message);
-          } else {
-            activeProfile = createdProfile;
-          }
-        }
-
-        storeUserSession({
-          session: data.session,
-          user: data.user,
-          profile: activeProfile,
-          fallbackEmail: email,
-        });
-
-        navigate("/dashboard", { replace: true });
-        return;
-      }
-
-      // 2. Fallback to Mock Data (useful during development/migration)
-      if (authError?.message?.toLowerCase().includes("email not confirmed")) {
-        setError("Please confirm your email before logging in. Check your inbox for the confirmation link.");
-        return;
-      }
-
-      console.warn("Supabase auth failed, trying mock fallback...", authError?.message);
-      const cred = CREDENTIALS[email];
-
-      if (cred && cred.password === password) {
-        storeUserSession({
-          profile: {
-            email,
-            full_name: cred.name || email,
-            appraisal_role: cred.role,
-            school: cred.school,
-            department: cred.department,
-            designation: cred.designation,
-            employee_id: cred.employeeId,
-          },
-          fallbackEmail: email,
-        });
-
-        navigate("/dashboard", { replace: true });
-        return;
-      }
-
-      setError(authError?.message || "Invalid credentials. Please try again.");
+      await login(email, password);
+      navigate("/dashboard", { replace: true });
     } catch (err) {
-      console.error("Login error:", err);
-      setError("An unexpected error occurred. Please try again.");
+      setError(err?.message || "Invalid credentials. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -151,19 +52,10 @@ export default function Login() {
     setMessage("");
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (resetError) {
-        setError(resetError.message);
-        return;
-      }
-
+      await forgotPassword(email);
       setMessage("Password reset link sent. Please check your email.");
     } catch (err) {
-      console.error("Password reset error:", err);
-      setError("Unable to send reset link. Please try again.");
+      setError(err?.message || "Unable to send reset link. Please try again.");
     } finally {
       setResetLoading(false);
     }

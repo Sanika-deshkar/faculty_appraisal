@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { APP_INFO } from "../constants/formConfig";
 import { normalizeNonTeachingRole } from "../constants/nonTeachingHierarchy";
-import { uploadToCloudinary } from "../services/cloudinary";
+import { api } from "../services/api";
 import {
   NON_TEACHING_MAX,
   NON_TEACHING_STATUS,
@@ -174,7 +174,10 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
 
     setUploading(true);
     try {
-      const uploaded = await uploadToCloudinary(fileList[0], { folder: `non-teaching-appraisal/${id}` });
+      const fd = new FormData();
+      fd.append("file", fileList[0]);
+      fd.append("folder", `non-teaching-appraisal/${id}`);
+      const uploaded = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setDocs((current) => ({ ...current, [id]: [uploaded] }));
     } catch (err) {
       console.error("Cloudinary upload error:", err);
