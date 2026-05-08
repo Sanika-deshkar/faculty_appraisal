@@ -1773,8 +1773,7 @@ export default function DeanDashboard() {
   const [docs, setDocs] = useState({});
   const [sectionApplicability, setSectionApplicability] = useState({ projects: "applicable", research: "applicable" });
   const [appraisalLocked, setAppraisalLocked] = useState(false);
-  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: false, partB: false });
-  const [savingSection, setSavingSection] = useState("");
+  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: true, partB: true });
 
   useEffect(() => {
     const userEmail = sessionStorage.getItem("username");
@@ -2279,63 +2278,12 @@ export default function DeanDashboard() {
     return true;
   };
 
-  const isMyAppraisalSectionOpen = (section) =>
-    appraisalLocked || section === "partA" || (section === "partB" && sectionSaveStatus.partA) || (section === "summary" && sectionSaveStatus.partB);
+  const isMyAppraisalSectionOpen = (_section) => true;
 
   const handleMyAppraisalSectionChange = (section) => {
-    if (!isMyAppraisalSectionOpen(section)) {
-      alert(section === "partB" ? "Please save Part A before opening Part B." : "Please save Part B before opening Summary.");
-      return;
-    }
     if (hodAppraisalTab === "partA" && section !== "partA" && !validateSelfAppraisalSectionRows("partA")) return;
     if (hodAppraisalTab === "partB" && section === "summary" && !validateSelfAppraisalSectionRows("partB")) return;
     setHodAppraisalTab(section);
-  };
-
-  const handleSaveSelfSection = async (section) => {
-    if (appraisalLocked) {
-      alert("This appraisal has already been submitted and locked.");
-      return;
-    }
-    if (section === "partB" && !sectionSaveStatus.partA) {
-      alert("Please save Part A before saving Part B.");
-      setHodAppraisalTab("partA");
-      return;
-    }
-    if (!validateSelfAppraisalSectionRows(section)) return;
-
-    const userEmail = sessionStorage.getItem("username");
-    if (!userEmail) {
-      alert("Please login again before saving. Your email was not found in this session.");
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    const nextStatus = { ...sectionSaveStatus, [section]: true };
-    const nextForm = { ...buildSelfDraftForm(), sectionSaveStatus: nextStatus };
-    const label = section === "partA" ? "Part A" : "Part B";
-
-    setSavingSection(section);
-    try {
-      await saveAppraisalDraftSection({
-        facultyEmail: userEmail,
-        academicYear: info.ay,
-        totals: { partATotal, partBTotal, grandTotal, effectivePartAMax, effectivePartBMax, effectiveGrandMax },
-        form: nextForm,
-        docs,
-        submitterProfile: profileFromsessionStorage(),
-        sectionSaveStatus: nextStatus,
-      });
-      setSectionSaveStatus(nextStatus);
-      saveDraft(selfDraftKey, { form: nextForm, docs });
-      setHodAppraisalTab(section === "partA" ? "partB" : "summary");
-      alert(`${label} saved successfully.`);
-    } catch (err) {
-      console.error("Section save error:", err);
-      alert(`Unable to save ${label}.\n\n${err.message}`);
-    } finally {
-      setSavingSection("");
-    }
   };
 
   const selfDraftKey = draftKeyFor({ family: "standard-teaching", email: sessionStorage.getItem("username") || "", academicYear: info.ay });
@@ -2392,16 +2340,6 @@ export default function DeanDashboard() {
   const handleSubmitAppraisal = async () => {
     if (appraisalLocked) {
       alert("This appraisal has already been submitted and is locked for review.");
-      return;
-    }
-    if (!sectionSaveStatus.partA) {
-      alert("Please save Part A before submitting the appraisal.");
-      setHodAppraisalTab("partA");
-      return;
-    }
-    if (!sectionSaveStatus.partB) {
-      alert("Please save Part B before submitting the appraisal.");
-      setHodAppraisalTab("partB");
       return;
     }
     if (!accuracyConfirmed) {
@@ -3002,7 +2940,6 @@ export default function DeanDashboard() {
                     </tbody>
                   </table>
                 </div>
-                <SectionSaveFooter label="Part A" saved={sectionSaveStatus.partA} saving={savingSection === "partA"} locked={appraisalLocked} onSave={() => handleSaveSelfSection("partA")} />
               </SC>
             )}
 
@@ -3518,7 +3455,6 @@ export default function DeanDashboard() {
                   </table>
                   <RowBtns onAdd={() => setTraining((p) => [...p, { company: "", duration: "", nature: "", score: "" }])} onDel={() => setTraining((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={training.length > 1} />
                 </div>
-                <SectionSaveFooter label="Part B" saved={sectionSaveStatus.partB} saving={savingSection === "partB"} locked={appraisalLocked} onSave={() => handleSaveSelfSection("partB")} />
               </SC>
             )}
 

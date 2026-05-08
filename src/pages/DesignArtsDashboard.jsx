@@ -775,8 +775,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
   const [loadingQueue, setLoadingQueue] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: false, partB: false });
-  const [savingSection, setSavingSection] = useState("");
+  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: true, partB: true });
   const [declaration, setDeclaration] = useState(null);
   const [reviews, setReviews] = useState([]);
   const userEmail = sessionStorage.getItem("username") || "";
@@ -851,14 +850,9 @@ export default function DesignArtsDashboard({ fixedRole }) {
     loadQueue();
   }, [role, profile.school, profile.department]);
 
-  const isSelfSectionOpen = (section) =>
-    locked || section === "partA" || (section === "partB" && sectionSaveStatus.partA) || (section === "summary" && sectionSaveStatus.partB);
+  const isSelfSectionOpen = (_section) => true;
 
   const handleSelfSectionChange = (section) => {
-    if (!isSelfSectionOpen(section)) {
-      alert(section === "partB" ? "Please save Part A before opening Part B." : "Please save Part B before opening Summary.");
-      return;
-    }
     if (selfSectionView === "partA" && section !== "partA") {
       const validationErrors = validateDesignArtsBeforeSubmit(form, "partA");
       if (validationErrors.length) {
@@ -876,63 +870,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
     setSelfSectionView(section);
   };
 
-  const handleSaveSelfSection = async (section) => {
-    if (locked) {
-      alert("This appraisal has already been submitted and locked.");
-      return;
-    }
-    if (section === "partB" && !sectionSaveStatus.partA) {
-      alert("Please save Part A before saving Part B.");
-      setSelfSectionView("partA");
-      return;
-    }
-    const validationErrors = validateDesignArtsBeforeSubmit(form, section);
-    if (validationErrors.length) {
-      alert(validationErrors.join("\n"));
-      return;
-    }
-    if (!userEmail) {
-      navigate("/login", { replace: true });
-      return;
-    }
-
-    const nextStatus = { ...sectionSaveStatus, [section]: true };
-    const draftForm = { ...form, sectionSaveStatus: nextStatus };
-    const label = section === "partA" ? "Part A" : "Part B";
-
-    setSavingSection(section);
-    try {
-      await saveAppraisalDraftSection({
-        facultyEmail: userEmail,
-        academicYear,
-        totals: { partATotal: totals.partA, partBTotal: totals.partB, grandTotal: totals.total, maxScores: totals.maxScores },
-        form: draftForm,
-        docs,
-        submitterProfile: { ...profile, appraisal_role: role },
-        sectionSaveStatus: nextStatus,
-      });
-      setSectionSaveStatus(nextStatus);
-      saveDraft(draftKey, { form: draftForm, docs });
-      setSelfSectionView(section === "partA" ? "partB" : "summary");
-      alert(`${label} saved successfully.`);
-    } catch (err) {
-      alert(`Unable to save ${label}.\n\n${err.message}`);
-    } finally {
-      setSavingSection("");
-    }
-  };
-
   const handleSubmitAppraisal = async () => {
-    if (!sectionSaveStatus.partA) {
-      alert("Please save Part A before submitting the appraisal.");
-      setSelfSectionView("partA");
-      return;
-    }
-    if (!sectionSaveStatus.partB) {
-      alert("Please save Part B before submitting the appraisal.");
-      setSelfSectionView("partB");
-      return;
-    }
     if (!confirmed) {
       alert("Please verify and confirm the accuracy declaration before submitting.");
       return;
@@ -1083,13 +1021,6 @@ export default function DesignArtsDashboard({ fixedRole }) {
                   mode="self"
                   locked={locked}
                   sectionView={selfSectionView}
-                />
-                <SectionSaveFooter
-                  label={selfSectionView === "partA" ? "Part A" : "Part B"}
-                  saved={Boolean(sectionSaveStatus[selfSectionView])}
-                  saving={savingSection === selfSectionView}
-                  locked={locked}
-                  onSave={() => handleSaveSelfSection(selfSectionView)}
                 />
               </>
             )}
