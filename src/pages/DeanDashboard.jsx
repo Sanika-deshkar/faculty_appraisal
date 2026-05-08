@@ -846,8 +846,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
       </SC>
 
       {/* B8: Self Dev */}
-      <SC title="B8. Self Development — FDP / Training (Max 10)" accent="#10b981">
-        <div style={{ fontWeight: 600, fontSize: 11, color: "#475569", marginBottom: 6 }}>FDP / Workshops</div>
+      <SC title="B8(a). FDP / Workshops Attended (Max 5)" accent="#10b981">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Program</th><th style={TH}>Duration</th><th style={TH}>Organizer</th>
@@ -867,7 +866,9 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
             ))}
           </tbody>
         </table>
-        <div style={{ fontWeight: 600, fontSize: 11, color: "#475569", margin: "12px 0 6px" }}>Industrial Training</div>
+      </SC>
+
+      <SC title="B8(b). Industrial Training (Max 5)" accent="#10b981">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Company</th><th style={TH}>Duration</th><th style={TH}>Nature</th>
@@ -2213,13 +2214,13 @@ export default function DeanDashboard() {
       { label: "B4(a). Research Guidance", rows: research, fields: ["degree", "name", "thesis", "score"], skip: sectionApplicability.research === "notApplicable" },
       { label: "B4(b). Internal Projects", rows: projects2, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
       { label: "B4(c). External Projects", rows: externalProjects, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
-      { label: "B5. Patents", rows: patents, fields: ["title", "type", "date", "status", "fileNo", "score"] },
-      { label: "B5. Awards", rows: awards, fields: ["title", "date", "agency", "level", "score"] },
+      { label: "B5(a). Patents (IPR)", rows: patents, fields: ["title", "type", "date", "status", "fileNo", "score"] },
+      { label: "B5(b). Awards", rows: awards, fields: ["title", "date", "agency", "level", "score"] },
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8. FDP", rows: fdps, fields: ["program", "duration", "org", "score"] },
-      { label: "B8. Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"] },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"] },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"] },
     ];
     const errors = validateCompleteRows(sections);
     [...projects2, ...externalProjects].forEach((row, index) => {
@@ -2254,13 +2255,13 @@ export default function DeanDashboard() {
       { label: "B4(a). Research Guidance", rows: research, fields: ["degree", "name", "thesis", "score"], skip: sectionApplicability.research === "notApplicable" },
       { label: "B4(b). Internal Projects", rows: projects2, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
       { label: "B4(c). External Projects", rows: externalProjects, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
-      { label: "B5. Patents", rows: patents, fields: ["title", "type", "date", "status", "fileNo", "score"] },
-      { label: "B5. Awards", rows: awards, fields: ["title", "date", "agency", "level", "score"] },
+      { label: "B5(a). Patents (IPR)", rows: patents, fields: ["title", "type", "date", "status", "fileNo", "score"] },
+      { label: "B5(b). Awards", rows: awards, fields: ["title", "date", "agency", "level", "score"] },
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8. FDP", rows: fdps, fields: ["program", "duration", "org", "score"] },
-      { label: "B8. Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"] },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"] },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"] },
     ];
     const errors = validateCompleteRows(section === "partA" ? partASections : partBSections);
     if (section === "partA") {
@@ -3258,9 +3259,9 @@ export default function DeanDashboard() {
                   <RowBtns onAdd={() => setExternalProjects((p) => [...p, { title: "", agency: "", date: "", amount: "", role: "", status: "", score: "" }])} onDel={() => setExternalProjects((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={externalProjects.length > 1} />
                 </div>
 
-                {/* B5. Patents (IPR) & Awards */}
+                {/* B5(a). Patents (IPR) */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5. Patents (IPR) & Awards — Max 50 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5(a). Patents (IPR) — Max 40 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3293,11 +3294,32 @@ export default function DeanDashboard() {
                         <td style={{ ...TDC, fontWeight: "bold" }} colSpan={8}>Total Patents Score (Max 40)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{patentScore.toFixed(1)}</td>
                       </tr>
+                    </tbody>
+                  </table>
+                  <RowBtns onAdd={() => setPatents((p) => [...p, { title: "", type: "", date: "", status: "", fileNo: "", score: "" }])} onDel={() => setPatents((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={patents.length > 1} />
+                </div>
+
+                {/* B5(b). Awards */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5(b). Awards — Max 10 marks</div>
+                  <table style={T}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...TH, width: 30 }}>SN</th>
+                        <th style={TH}>Award Title</th>
+                        <th style={TH}>Date</th>
+                        <th style={TH}>Agency</th>
+                        <th style={TH}>Level</th>
+                        <th style={TH}>Attachment</th>
+                        <th style={TH}>View Docs</th>
+                        <th style={TH}>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {awards.map((r, i) => (
-                        <tr key={`award-${i}`} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
-                          <td style={TDC}>{patents.length + i + 1}</td>
+                        <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
+                          <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.title} onChange={(v) => setAwd(i, "title", v)} textOnly /></td>
-                          <td style={TD}><TI val={r.type} onChange={(v) => setAwd(i, "type", v)} textOnly /></td>
                           <td style={TD}><TI val={r.date} onChange={(v) => setAwd(i, "date", maskDateDDMMYYYY(v))} placeholder="DD/MM/YYYY" /></td>
                           <td style={TD}><TI val={r.agency} onChange={(v) => setAwd(i, "agency", v)} textOnly /></td>
                           <td style={TD}><TI val={r.level} onChange={(v) => setAwd(i, "level", v)} textOnly /></td>
@@ -3307,17 +3329,12 @@ export default function DeanDashboard() {
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={8}>Total Awards Score (Max 10)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={7}>Total Awards Score (Max 10)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{awardScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <button style={{ padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={() => setPatents((p) => [...p, { title: "", type: "", date: "", status: "", fileNo: "", score: "" }])}>+ Add Patent</button>
-                    <button style={{ padding: "6px 12px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={() => setPatents((p) => p.length > 1 ? p.slice(0, -1) : p)} disabled={patents.length <= 1}>− Delete Patent</button>
-                    <button style={{ padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={() => setAwards((p) => [...p, { title: "", type: "", date: "", agency: "", level: "", score: "" }])}>+ Add Award</button>
-                    <button style={{ padding: "6px 12px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={() => setAwards((p) => p.length > 1 ? p.slice(0, -1) : p)} disabled={awards.length <= 1}>− Delete Award</button>
-                  </div>
+                  <RowBtns onAdd={() => setAwards((p) => [...p, { title: "", type: "", date: "", agency: "", level: "", score: "" }])} onDel={() => setAwards((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={awards.length > 1} />
                 </div>
 
                 {/* B6. Invited Lectures / Resource Person / Paper Presentations */}
@@ -3430,9 +3447,9 @@ export default function DeanDashboard() {
                   <RowBtns onAdd={() => setProducts((p) => [...p, { details: "", usage: "", score: "" }])} onDel={() => setProducts((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={products.length > 1} />
                 </div>
 
-                {/* B8. Self Development */}
+                {/* B8(a). FDP / Workshops Attended */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8. Self Development — Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(a). FDP / Workshops Attended — Max 5 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3461,9 +3478,30 @@ export default function DeanDashboard() {
                         <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total FDP Score (Max 5)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{fdpScore.toFixed(1)}</td>
                       </tr>
+                    </tbody>
+                  </table>
+                  <RowBtns onAdd={() => setFdps((p) => [...p, { program: "", duration: "", org: "", score: "" }])} onDel={() => setFdps((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={fdps.length > 1} />
+                </div>
+
+                {/* B8(b). Industrial Training */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(b). Industrial Training — Max 5 marks</div>
+                  <table style={T}>
+                    <thead>
+                      <tr>
+                        <th style={{ ...TH, width: 30 }}>SN</th>
+                        <th style={TH}>Company</th>
+                        <th style={TH}>Duration</th>
+                        <th style={TH}>Nature</th>
+                        <th style={TH}>Attachment</th>
+                        <th style={TH}>View Docs</th>
+                        <th style={TH}>Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {training.map((r, i) => (
-                        <tr key={`train-${i}`} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
-                          <td style={TDC}>{fdps.length + i + 1}</td>
+                        <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
+                          <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.company} onChange={(v) => setTrain(i, "company", v)} /></td>
                           <td style={TD}><TI val={r.duration} onChange={(v) => setTrain(i, "duration", v)} /></td>
                           <td style={TD}><TI val={r.nature} onChange={(v) => setTrain(i, "nature", v)} /></td>
@@ -3478,12 +3516,7 @@ export default function DeanDashboard() {
                       </tr>
                     </tbody>
                   </table>
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <button style={{ padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={() => setFdps((p) => [...p, { program: "", duration: "", org: "", score: "" }])}>+ Add FDP</button>
-                    <button style={{ padding: "6px 12px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={() => setFdps((p) => p.length > 1 ? p.slice(0, -1) : p)} disabled={fdps.length <= 1}>− Delete FDP</button>
-                    <button style={{ padding: "6px 12px", background: "#10b981", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={() => setTraining((p) => [...p, { company: "", duration: "", nature: "", score: "" }])}>+ Add Training</button>
-                    <button style={{ padding: "6px 12px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }} onClick={() => setTraining((p) => p.length > 1 ? p.slice(0, -1) : p)} disabled={training.length <= 1}>− Delete Training</button>
-                  </div>
+                  <RowBtns onAdd={() => setTraining((p) => [...p, { company: "", duration: "", nature: "", score: "" }])} onDel={() => setTraining((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={training.length > 1} />
                 </div>
                 <SectionSaveFooter label="Part B" saved={sectionSaveStatus.partB} saving={savingSection === "partB"} locked={appraisalLocked} onSave={() => handleSaveSelfSection("partB")} />
               </SC>

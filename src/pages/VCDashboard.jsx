@@ -519,8 +519,10 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
           render: (r) => [r.title, r.duration, r.agency, r.amount] },
         { title: "B7(b). Product Developed and Used by Students in Lab / Commercialized (Max 10)", key: "products", docPfx: "prod",
           render: (r) => [r.details, r.usage] },
-        { title: "B8. Self Development — FDP (Max 10)", key: "fdps", docPfx: "fdp",
+        { title: "B8(a). FDP / Workshops Attended (Max 5)", key: "fdps", docPfx: "fdp",
           render: (r) => [r.program, r.duration, r.org] },
+        { title: "B8(b). Industrial Training (Max 5)", key: "training", docPfx: "train",
+          render: (r) => [r.company, r.duration, r.nature] },
       ].map(({ title, key, docPfx, render }) => (
         <SC key={key} title={title} accent="#7c3aed">
           <div style={{ overflowX: "auto" }}><table style={T}><thead>
