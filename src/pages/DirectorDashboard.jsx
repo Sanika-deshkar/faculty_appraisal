@@ -69,11 +69,25 @@ function SC({ title, subtitle, accent = "#0ea5e9", children }) {
 }
 
 // ─── Input & Table Controls (Self-Appraisal Mode) ──────────────────────────────
-function TI({ val, onChange, center, placeholder, readOnly = false }) {
+function TI({ val, onChange, center, placeholder, readOnly = false, numeric = false }) {
+  const handleChange = (e) => {
+    if (readOnly) return;
+    let v = e.target.value;
+    if (numeric) {
+      v = v.replace(/[^0-9.]/g, "").replace(/^\./, "0.").replace(/(\.\d*)\./g, "$1");
+    }
+    onChange?.(v);
+  };
+  const handleBlur = (e) => {
+    if (readOnly || !onChange) return;
+    const trimmed = e.target.value.trim();
+    if (trimmed !== e.target.value) onChange(trimmed);
+  };
   return (
     <input
-      value={val ?? ""} disabled={readOnly} onChange={(e) => !readOnly && onChange?.(e.target.value)}
+      value={val ?? ""} disabled={readOnly} onChange={handleChange} onBlur={handleBlur}
       placeholder={placeholder || ""}
+      inputMode={numeric ? "decimal" : undefined}
       style={center
         ? { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none", textAlign: "center" }
         : { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none" }}
@@ -84,10 +98,17 @@ function TI({ val, onChange, center, placeholder, readOnly = false }) {
 function DocCell({ id, docs, setDocs, readOnly = false }) {
   const ref = useRef();
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const handleFiles = async (files) => {
     if (readOnly) return;
     const selectedFiles = Array.from(files || []).slice(0, 1);
     if (!selectedFiles.length) return;
+    const oversized = selectedFiles.find((f) => f.size > 10 * 1024 * 1024);
+    if (oversized) {
+      setUploadError("File exceeds 10 MB limit.");
+      if (ref.current) ref.current.value = "";
+      return;
+    }
 
     setUploading(true);
     try {
@@ -2107,11 +2128,11 @@ export default function DirectorDashboard() {
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.sem} onChange={(v) => setLec(i, "sem", v)} /></td>
                           <td style={TD}><TI val={r.code} onChange={(v) => setLec(i, "code", v)} /></td>
-                          <td style={TDC}><TI val={r.planned} onChange={(v) => setLec(i, "planned", v)} center /></td>
-                          <td style={TDC}><TI val={r.conducted} onChange={(v) => setLec(i, "conducted", v)} center /></td>
+                          <td style={TDC}><TI val={r.planned} numeric onChange={(v) => setLec(i, "planned", v)} center /></td>
+                          <td style={TDC}><TI val={r.conducted} numeric onChange={(v) => setLec(i, "conducted", v)} center /></td>
                           <td style={TD}><DocCell id={`lec-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`lec-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setLec(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setLec(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2147,7 +2168,7 @@ export default function DirectorDashboard() {
                     <td style={TD}><TI val={r.details} onChange={(v) => setCF(i, "details", v)} /></td>
                     <td style={TD}><DocCell id={`courseFile-${i}`} docs={docs} setDocs={setDocs} /></td>
                     <td style={TD}><ViewCell id={`courseFile-${i}`} docs={docs} /></td>
-                    <td style={TDS}><TI val={r.score} onChange={(v) => setCF(i, "score", v)} center /></td>
+                    <td style={TDS}><TI val={r.score} numeric onChange={(v) => setCF(i, "score", v)} center /></td>
                    </tr>
                  ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2217,7 +2238,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.label} readOnly={sectionApplicability.projects === "notApplicable"} onChange={(v) => setProj(i, "label", v)} /></td>
                           <td style={TD}><DocCell id={`proj-${i}`} docs={docs} setDocs={setDocs} readOnly={sectionApplicability.projects === "notApplicable"} /></td>
                           <td style={TD}><ViewCell id={`proj-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} readOnly={sectionApplicability.projects === "notApplicable"} onChange={(v) => setProj(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric readOnly={sectionApplicability.projects === "notApplicable"} onChange={(v) => setProj(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2249,7 +2270,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.label} onChange={(v) => setQual(i, "label", v)} /></td>
                           <td style={TD}><DocCell id={`qual-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`qual-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setQual(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setQual(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2280,8 +2301,8 @@ export default function DirectorDashboard() {
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.code} onChange={(v) => setFb(i, "code", v)} /></td>
-                          <td style={TDC}><TI val={r.fb1} onChange={(v) => setFb(i, "fb1", v)} center /></td>
-                          <td style={TDC}><TI val={r.fb2} onChange={(v) => setFb(i, "fb2", v)} center /></td>
+                          <td style={TDC}><TI val={r.fb1} numeric onChange={(v) => setFb(i, "fb1", v)} center /></td>
+                          <td style={TDC}><TI val={r.fb2} numeric onChange={(v) => setFb(i, "fb2", v)} center /></td>
                           <td style={{ ...TDC, fontWeight: 700, color: "#0ea5e9" }}>{r.fb1 || r.fb2 ? ((n(r.fb1) + n(r.fb2)) / ((r.fb1 ? 1 : 0) + (r.fb2 ? 1 : 0) || 1)).toFixed(2) : ""}</td>
                           <td style={TDS}>{feedbackRowScore(r, 10).toFixed(1)}</td>
                         </tr>
@@ -2317,7 +2338,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.nature} onChange={(v) => setDept(i, "nature", v)} /></td>
                           <td style={TD}><DocCell id={`dept-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`dept-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setDept(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setDept(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2351,7 +2372,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.nature} onChange={(v) => setUni(i, "nature", v)} /></td>
                           <td style={TD}><DocCell id={`uni-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`uni-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setUni(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setUni(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2385,7 +2406,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.details} onChange={(v) => setSoc(i, "details", v)} /></td>
                           <td style={TD}><DocCell id={`soc-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`soc-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setSoc(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setSoc(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2419,7 +2440,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.details} onChange={(v) => setInd(i, "details", v)} /></td>
                           <td style={TD}><DocCell id={`ind-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`ind-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setInd(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setInd(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2447,7 +2468,7 @@ export default function DirectorDashboard() {
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><div style={{ fontWeight: 700 }}>{r.label}</div>{ACR_DETAIL_POINTS[r.label] && <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>{ACR_DETAIL_POINTS[r.label].map((point) => <li key={point}>{point}</li>)}</ul>}</td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setAcrRow(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setAcrRow(i, "score", v)} center /></td>
 
                         </tr>
                       ))}
@@ -2496,7 +2517,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.index} onChange={(v) => setJour(i, "index", v)} /></td>
                           <td style={TD}><DocCell id={`jour-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`jour-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setJour(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setJour(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2538,7 +2559,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><select value={r.first || ""} onChange={(e) => setBook(i, "first", e.target.value)} style={{ width: "100%", height: 30, border: "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, fontFamily: "Georgia, serif" }}><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option></select></td>
                           <td style={TD}><DocCell id={`book-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`book-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setBook(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setBook(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2576,7 +2597,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.quad} onChange={(v) => setIctRow(i, "quad", v)} /></td>
                           <td style={TD}><DocCell id={`ict-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`ict-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setIctRow(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setIctRow(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2619,7 +2640,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.thesis} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "thesis", v)} /></td>
                           <td style={TD}><DocCell id={`res-${i}`} docs={docs} setDocs={setDocs} readOnly={sectionApplicability.research === "notApplicable"} /></td>
                           <td style={TD}><ViewCell id={`res-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2655,13 +2676,13 @@ export default function DirectorDashboard() {
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.title} onChange={(v) => setPrj2(i, "title", v)} /></td>
                           <td style={TD}><TI val={r.agency} onChange={(v) => setPrj2(i, "agency", v)} /></td>
-                          <td style={TD}><TI val={r.date} onChange={(v) => setPrj2(i, "date", maskDateDDMMYYYY(v))} /></td>
-                          <td style={TD}><TI val={r.amount} onChange={(v) => setPrj2(i, "amount", v)} /></td>
+                          <td style={TD}><TI val={r.date} onChange={(v) => setPrj2(i, "date", maskDateDDMMYYYY(v))} placeholder="DD/MM/YYYY" /></td>
+                          <td style={TD}><TI val={r.amount} numeric onChange={(v) => setPrj2(i, "amount", v)} /></td>
                           <td style={TD}><TI val={r.role} onChange={(v) => setPrj2(i, "role", v)} /></td>
                           <td style={TD}><TI val={r.status} onChange={(v) => setPrj2(i, "status", v)} /></td>
                           <td style={TD}><DocCell id={`project2-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`project2-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setPrj2(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setPrj2(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2697,13 +2718,13 @@ export default function DirectorDashboard() {
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.title} onChange={(v) => setExtPrj(i, "title", v)} /></td>
                           <td style={TD}><TI val={r.agency} onChange={(v) => setExtPrj(i, "agency", v)} /></td>
-                          <td style={TD}><TI val={r.date} onChange={(v) => setExtPrj(i, "date", maskDateDDMMYYYY(v))} /></td>
-                          <td style={TD}><TI val={r.amount} onChange={(v) => setExtPrj(i, "amount", v)} /></td>
+                          <td style={TD}><TI val={r.date} onChange={(v) => setExtPrj(i, "date", maskDateDDMMYYYY(v))} placeholder="DD/MM/YYYY" /></td>
+                          <td style={TD}><TI val={r.amount} numeric onChange={(v) => setExtPrj(i, "amount", v)} /></td>
                           <td style={TD}><TI val={r.role} onChange={(v) => setExtPrj(i, "role", v)} /></td>
                           <td style={TD}><TI val={r.status} onChange={(v) => setExtPrj(i, "status", v)} /></td>
                           <td style={TD}><DocCell id={`externalProject-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`externalProject-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setExtPrj(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setExtPrj(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2738,12 +2759,12 @@ export default function DirectorDashboard() {
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.title} onChange={(v) => setPat(i, "title", v)} /></td>
                           <td style={TD}><TI val={r.type} onChange={(v) => setPat(i, "type", v)} /></td>
-                          <td style={TD}><TI val={r.date} onChange={(v) => setPat(i, "date", v)} /></td>
+                          <td style={TD}><TI val={r.date} onChange={(v) => setPat(i, "date", maskDateDDMMYYYY(v))} placeholder="DD/MM/YYYY" /></td>
                           <td style={TD}><TI val={r.status} onChange={(v) => setPat(i, "status", v)} /></td>
                           <td style={TD}><TI val={r.fileNo} onChange={(v) => setPat(i, "fileNo", v)} /></td>
                           <td style={TD}><DocCell id={`pat-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`pat-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setPat(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setPat(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2755,12 +2776,12 @@ export default function DirectorDashboard() {
                           <td style={TDC}>{patents.length + i + 1}</td>
                           <td style={TD}><TI val={r.title} onChange={(v) => setAwd(i, "title", v)} /></td>
                           <td style={TD}><TI val={r.type} onChange={(v) => setAwd(i, "type", v)} /></td>
-                          <td style={TD}><TI val={r.date} onChange={(v) => setAwd(i, "date", v)} /></td>
+                          <td style={TD}><TI val={r.date} onChange={(v) => setAwd(i, "date", maskDateDDMMYYYY(v))} placeholder="DD/MM/YYYY" /></td>
                           <td style={TD}><TI val={r.agency} onChange={(v) => setAwd(i, "agency", v)} /></td>
                           <td style={TD}><TI val={r.level} onChange={(v) => setAwd(i, "level", v)} /></td>
                           <td style={TD}><DocCell id={`awd-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`awd-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setAwd(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setAwd(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2803,7 +2824,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.level} onChange={(v) => setConf(i, "level", v)} /></td>
                           <td style={TD}><DocCell id={`conf-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`conf-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setConf(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setConf(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2838,10 +2859,10 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.title} onChange={(v) => setProp(i, "title", v)} /></td>
                           <td style={TD}><TI val={r.duration} onChange={(v) => setProp(i, "duration", v)} /></td>
                           <td style={TD}><TI val={r.agency} onChange={(v) => setProp(i, "agency", v)} /></td>
-                          <td style={TD}><TI val={r.amount} onChange={(v) => setProp(i, "amount", v)} /></td>
+                          <td style={TD}><TI val={r.amount} numeric onChange={(v) => setProp(i, "amount", v)} /></td>
                           <td style={TD}><DocCell id={`prop-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`prop-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setProp(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setProp(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2875,7 +2896,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.usage} onChange={(v) => setProd(i, "usage", v)} /></td>
                           <td style={TD}><DocCell id={`prod-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`prod-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setProd(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setProd(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2911,7 +2932,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.org} onChange={(v) => setFdp(i, "org", v)} /></td>
                           <td style={TD}><DocCell id={`fdp-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`fdp-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setFdp(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setFdp(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -2926,7 +2947,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.nature} onChange={(v) => setTrain(i, "nature", v)} /></td>
                           <td style={TD}><DocCell id={`train-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`train-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} onChange={(v) => setTrain(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setTrain(i, "score", v)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>

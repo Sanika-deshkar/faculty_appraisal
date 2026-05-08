@@ -241,12 +241,28 @@ function StatusBadge({ status }) {
 }
 
 function TI({ value, onChange, readOnly = false, center = false, type = "text" }) {
+  const numeric = type === "number";
+  const handleChange = (event) => {
+    if (readOnly) return;
+    let v = event.target.value;
+    if (numeric) {
+      v = v.replace(/[^0-9.]/g, "").replace(/^\./, "0.").replace(/(\.\d*)\./g, "$1");
+    }
+    onChange?.(v);
+  };
+  const handleBlur = (event) => {
+    if (readOnly || !onChange) return;
+    const trimmed = event.target.value.trim();
+    if (trimmed !== event.target.value) onChange(trimmed);
+  };
   return (
     <input
-      type={type}
+      type={numeric ? "text" : type}
       value={value ?? ""}
       readOnly={readOnly}
-      onChange={(event) => onChange?.(event.target.value)}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      inputMode={numeric ? "decimal" : undefined}
       style={{ width: "100%", height: 30, boxSizing: "border-box", border: "1px solid #cbd5e1", borderRadius: 4, padding: "5px 7px", fontSize: 11, fontFamily: "Georgia, serif", background: readOnly ? "#f8fafc" : "#fff", textAlign: center ? "center" : "left" }}
     />
   );
@@ -259,11 +275,18 @@ function RO({ value, center = false }) {
 function DocCell({ id, docs, setDocs, readOnly }) {
   const ref = useRef(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const files = docs?.[id] || [];
 
   const handleFiles = async (fileList) => {
     const selected = Array.from(fileList || []);
     if (!selected.length) return;
+    const oversized = selected.find((f) => f.size > 10 * 1024 * 1024);
+    if (oversized) {
+      setUploadError("File exceeds 10 MB limit.");
+      if (ref.current) ref.current.value = "";
+      return;
+    }
     setUploading(true);
     try {
       const fd = new FormData();
