@@ -193,29 +193,41 @@ function HodInput({ val, onChange }) {
 }
 
 // --- Text Input ---------------------------------------------------------------
-function TI({ val, onChange, center, placeholder, readOnly = false, numeric = false }) {
+function TI({ val, onChange, center, placeholder, readOnly = false, numeric = false, textOnly = false }) {
+  const [textErr, setTextErr] = useState(false);
   const handleChange = (e) => {
     if (readOnly) return;
     let v = e.target.value;
     if (numeric) {
       v = v.replace(/[^0-9.]/g, "").replace(/^\./, "0.").replace(/(\.\d*)\./g, "$1");
     }
+    if (textOnly && textErr) setTextErr(false);
     onChange?.(v);
   };
   const handleBlur = (e) => {
     if (readOnly || !onChange) return;
     const trimmed = e.target.value.trim();
     if (trimmed !== e.target.value) onChange(trimmed);
+    if (textOnly && trimmed.length > 0 && /^[\d\s.,+\-/\\()[\]{}]+$/.test(trimmed)) {
+      setTextErr(true);
+    }
   };
   return (
-    <input
-      value={val ?? ""} disabled={readOnly} onChange={handleChange} onBlur={handleBlur}
-      placeholder={placeholder || ""}
-      inputMode={numeric ? "decimal" : undefined}
-      style={center
-        ? { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none", textAlign: "center" }
-        : { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none" }}
-    />
+    <div style={{ position: "relative", width: "100%" }}>
+      <input
+        value={val ?? ""} disabled={readOnly} onChange={handleChange} onBlur={handleBlur}
+        placeholder={placeholder || ""}
+        inputMode={numeric ? "decimal" : undefined}
+        style={center
+          ? { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none", textAlign: "center" }
+          : { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none" }}
+      />
+      {textErr && (
+        <span style={{ position: "absolute", left: 0, top: "100%", fontSize: 9, color: "#ef4444", whiteSpace: "nowrap", lineHeight: 1.2 }}>
+          Text expected
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -2077,7 +2089,7 @@ export default function HODDashboard() {
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.sem} onChange={(v) => setLec(i, "sem", v)} /></td>
-                          <td style={TD}><TI val={r.code} onChange={(v) => setLec(i, "code", v)} /></td>
+                          <td style={TD}><TI val={r.code} onChange={(v) => setLec(i, "code", v)} textOnly /></td>
                           <td style={TDC}><TI val={r.planned} onChange={(v) => setLec(i, "planned", v)} center numeric /></td>
                           <td style={TDC}><TI val={r.conducted} onChange={(v) => setLec(i, "conducted", v)} center numeric /></td>
                           <td style={TD}><DocCell id={`lec-${i}`} docs={docs} setDocs={setDocs} /></td>
@@ -2114,7 +2126,7 @@ export default function HODDashboard() {
                     <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                     <td style={TDC}>{i + 1}</td>
                     <td style={TD}><TI val={r.course} onChange={(v) => setCF(i, "course", v)} /></td>
-                    <td style={TD}><TI val={r.title} onChange={(v) => setCF(i, "title", v)} /></td>
+                    <td style={TD}><TI val={r.title} onChange={(v) => setCF(i, "title", v)} textOnly /></td>
                     <td style={TD}><TI val={r.details} onChange={(v) => setCF(i, "details", v)} /></td>
                     <td style={TD}><DocCell id={`courseFile-${i}`} docs={docs} setDocs={setDocs} /></td>
                     <td style={TD}><ViewCell id={`courseFile-${i}`} docs={docs} /></td>
@@ -2260,7 +2272,7 @@ export default function HODDashboard() {
                       {feedback.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.code} onChange={(v) => setFb(i, "code", v)} /></td>
+                          <td style={TD}><TI val={r.code} onChange={(v) => setFb(i, "code", v)} textOnly /></td>
                           <td style={TDC}><TI val={r.fb1} onChange={(v) => setFb(i, "fb1", v)} center numeric /></td>
                           <td style={TDC}><TI val={r.fb2} onChange={(v) => setFb(i, "fb2", v)} center numeric /></td>
                           <td style={{ ...TDC, fontWeight: 700, color: "#0ea5e9" }}>{r.fb1 || r.fb2 ? ((n(r.fb1) + n(r.fb2)) / ((r.fb1 ? 1 : 0) + (r.fb2 ? 1 : 0) || 1)).toFixed(2) : ""}</td>
@@ -2396,7 +2408,7 @@ export default function HODDashboard() {
                       {industry.map((r, i) => (
                         <tr key={i}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.name} onChange={(v) => setInd(i, "name", v)} /></td>
+                          <td style={TD}><TI val={r.name} onChange={(v) => setInd(i, "name", v)} textOnly /></td>
                           <td style={TD}><TI val={r.details} onChange={(v) => setInd(i, "details", v)} /></td>
                           <td style={TD}><DocCell id={`ind-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`ind-${i}`} docs={docs} /></td>
@@ -2470,7 +2482,7 @@ export default function HODDashboard() {
                       {journals.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setJour(i, "title", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setJour(i, "title", v)} textOnly /></td>
                           <td style={TD}><TI val={r.journal} onChange={(v) => setJour(i, "journal", v)} /></td>
                           <td style={TD}><TI val={r.issn} onChange={(v) => setJour(i, "issn", v)} /></td>
                           <td style={TD}><TI val={r.index} onChange={(v) => setJour(i, "index", v)} /></td>
@@ -2510,7 +2522,7 @@ export default function HODDashboard() {
                       {books.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setBook(i, "title", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setBook(i, "title", v)} textOnly /></td>
                           <td style={TD}><TI val={r.book} onChange={(v) => setBook(i, "book", v)} /></td>
                           <td style={TD}><TI val={r.issn} onChange={(v) => setBook(i, "issn", v)} /></td>
                           <td style={TD}><TI val={r.pub} onChange={(v) => setBook(i, "pub", v)} /></td>
@@ -2550,9 +2562,9 @@ export default function HODDashboard() {
                       {ict.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setIctRow(i, "title", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setIctRow(i, "title", v)} textOnly /></td>
                           <td style={TD}><TI val={r.desc} onChange={(v) => setIctRow(i, "desc", v)} /></td>
-                          <td style={TD}><TI val={r.type} onChange={(v) => setIctRow(i, "type", v)} /></td>
+                          <td style={TD}><TI val={r.type} onChange={(v) => setIctRow(i, "type", v)} textOnly /></td>
                           <td style={TD}><TI val={r.quad} onChange={(v) => setIctRow(i, "quad", v)} /></td>
                           <td style={TD}><DocCell id={`ict-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`ict-${i}`} docs={docs} /></td>
@@ -2594,9 +2606,9 @@ export default function HODDashboard() {
                       {research.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.degree} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "degree", v)} /></td>
-                          <td style={TD}><TI val={r.name} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "name", v)} /></td>
-                          <td style={TD}><TI val={r.thesis} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "thesis", v)} /></td>
+                          <td style={TD}><TI val={r.degree} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "degree", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.name} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "name", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.thesis} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "thesis", v)} textOnly /></td>
                           <td style={TD}><DocCell id={`res-${i}`} docs={docs} setDocs={setDocs} readOnly={sectionApplicability.research === "notApplicable"} /></td>
                           <td style={TD}><ViewCell id={`res-${i}`} docs={docs} /></td>
                           <td style={TDS}><TI val={r.score} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "score", v)} center numeric /></td>
@@ -2633,12 +2645,12 @@ export default function HODDashboard() {
                       {projects2.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setPrj2(i, "title", v)} /></td>
-                          <td style={TD}><TI val={r.agency} onChange={(v) => setPrj2(i, "agency", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setPrj2(i, "title", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.agency} onChange={(v) => setPrj2(i, "agency", v)} textOnly /></td>
                           <td style={TD}><TI val={r.date} onChange={(v) => setPrj2(i, "date", maskDateDDMMYYYY(v))} placeholder="DD/MM/YYYY" /></td>
                           <td style={TD}><TI val={r.amount} onChange={(v) => setPrj2(i, "amount", v)} numeric /></td>
-                          <td style={TD}><TI val={r.role} onChange={(v) => setPrj2(i, "role", v)} /></td>
-                          <td style={TD}><TI val={r.status} onChange={(v) => setPrj2(i, "status", v)} /></td>
+                          <td style={TD}><TI val={r.role} onChange={(v) => setPrj2(i, "role", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.status} onChange={(v) => setPrj2(i, "status", v)} textOnly /></td>
                           <td style={TD}><DocCell id={`project2-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`project2-${i}`} docs={docs} /></td>
                           <td style={TDS}><TI val={r.score} onChange={(v) => setPrj2(i, "score", v)} center numeric /></td>
@@ -2675,12 +2687,12 @@ export default function HODDashboard() {
                       {externalProjects.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setExtPrj(i, "title", v)} /></td>
-                          <td style={TD}><TI val={r.agency} onChange={(v) => setExtPrj(i, "agency", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setExtPrj(i, "title", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.agency} onChange={(v) => setExtPrj(i, "agency", v)} textOnly /></td>
                           <td style={TD}><TI val={r.date} onChange={(v) => setExtPrj(i, "date", maskDateDDMMYYYY(v))} placeholder="DD/MM/YYYY" /></td>
                           <td style={TD}><TI val={r.amount} onChange={(v) => setExtPrj(i, "amount", v)} numeric /></td>
-                          <td style={TD}><TI val={r.role} onChange={(v) => setExtPrj(i, "role", v)} /></td>
-                          <td style={TD}><TI val={r.status} onChange={(v) => setExtPrj(i, "status", v)} /></td>
+                          <td style={TD}><TI val={r.role} onChange={(v) => setExtPrj(i, "role", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.status} onChange={(v) => setExtPrj(i, "status", v)} textOnly /></td>
                           <td style={TD}><DocCell id={`externalProject-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`externalProject-${i}`} docs={docs} /></td>
                           <td style={TDS}><TI val={r.score} onChange={(v) => setExtPrj(i, "score", v)} center numeric /></td>
@@ -2716,10 +2728,10 @@ export default function HODDashboard() {
                       {patents.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setPat(i, "title", v)} /></td>
-                          <td style={TD}><TI val={r.type} onChange={(v) => setPat(i, "type", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setPat(i, "title", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.type} onChange={(v) => setPat(i, "type", v)} textOnly /></td>
                           <td style={TD}><TI val={r.date} onChange={(v) => setPat(i, "date", maskDateDDMMYYYY(v))} placeholder="DD/MM/YYYY" /></td>
-                          <td style={TD}><TI val={r.status} onChange={(v) => setPat(i, "status", v)} /></td>
+                          <td style={TD}><TI val={r.status} onChange={(v) => setPat(i, "status", v)} textOnly /></td>
                           <td style={TD}><TI val={r.fileNo} onChange={(v) => setPat(i, "fileNo", v)} /></td>
                           <td style={TD}><DocCell id={`pat-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`pat-${i}`} docs={docs} /></td>
@@ -2733,11 +2745,11 @@ export default function HODDashboard() {
                       {awards.map((r, i) => (
                         <tr key={`award-${i}`} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{patents.length + i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setAwd(i, "title", v)} /></td>
-                          <td style={TD}><TI val={r.type} onChange={(v) => setAwd(i, "type", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setAwd(i, "title", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.type} onChange={(v) => setAwd(i, "type", v)} textOnly /></td>
                           <td style={TD}><TI val={r.date} onChange={(v) => setAwd(i, "date", maskDateDDMMYYYY(v))} placeholder="DD/MM/YYYY" /></td>
-                          <td style={TD}><TI val={r.agency} onChange={(v) => setAwd(i, "agency", v)} /></td>
-                          <td style={TD}><TI val={r.level} onChange={(v) => setAwd(i, "level", v)} /></td>
+                          <td style={TD}><TI val={r.agency} onChange={(v) => setAwd(i, "agency", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.level} onChange={(v) => setAwd(i, "level", v)} textOnly /></td>
                           <td style={TD}><DocCell id={`awd-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`awd-${i}`} docs={docs} /></td>
                           <td style={TDS}><TI val={r.score} onChange={(v) => setAwd(i, "score", v)} center numeric /></td>
@@ -2777,10 +2789,10 @@ export default function HODDashboard() {
                       {confs.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setConf(i, "title", v)} /></td>
-                          <td style={TD}><TI val={r.type} onChange={(v) => setConf(i, "type", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setConf(i, "title", v)} textOnly /></td>
+                          <td style={TD}><TI val={r.type} onChange={(v) => setConf(i, "type", v)} textOnly /></td>
                           <td style={TD}><TI val={r.org} onChange={(v) => setConf(i, "org", v)} /></td>
-                          <td style={TD}><TI val={r.level} onChange={(v) => setConf(i, "level", v)} /></td>
+                          <td style={TD}><TI val={r.level} onChange={(v) => setConf(i, "level", v)} textOnly /></td>
                           <td style={TD}><DocCell id={`conf-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`conf-${i}`} docs={docs} /></td>
                           <td style={TDS}><TI val={r.score} onChange={(v) => setConf(i, "score", v)} center numeric /></td>
@@ -2815,9 +2827,9 @@ export default function HODDashboard() {
                       {proposals.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.title} onChange={(v) => setProp(i, "title", v)} /></td>
+                          <td style={TD}><TI val={r.title} onChange={(v) => setProp(i, "title", v)} textOnly /></td>
                           <td style={TD}><TI val={r.duration} onChange={(v) => setProp(i, "duration", v)} /></td>
-                          <td style={TD}><TI val={r.agency} onChange={(v) => setProp(i, "agency", v)} /></td>
+                          <td style={TD}><TI val={r.agency} onChange={(v) => setProp(i, "agency", v)} textOnly /></td>
                           <td style={TD}><TI val={r.amount} onChange={(v) => setProp(i, "amount", v)} numeric /></td>
                           <td style={TD}><DocCell id={`prop-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`prop-${i}`} docs={docs} /></td>

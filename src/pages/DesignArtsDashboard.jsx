@@ -243,33 +243,42 @@ function StatusBadge({ status }) {
   return <span style={{ display: "inline-flex", alignItems: "center", borderRadius: 20, padding: "4px 10px", background: bg, color, fontSize: 11, fontWeight: 800 }}>{status || "Pending Review"}</span>;
 }
 
-function TI({ value, onChange, readOnly = false, center = false, type = "text" }) {
+function TI({ value, onChange, readOnly = false, center = false, type = "text", textOnly = false }) {
   const numeric = type === "number";
+  const [textErr, setTextErr] = useState(false);
   const handleChange = (event) => {
     if (readOnly) return;
     let v = event.target.value;
     if (numeric) {
       v = v.replace(/[^0-9.]/g, "").replace(/^\./, "0.").replace(/(\.\d*)\./g, "$1");
     }
+    if (textOnly && textErr) setTextErr(false);
     onChange?.(v);
   };
   const handleBlur = (event) => {
     if (readOnly || !onChange) return;
     const trimmed = event.target.value.trim();
     if (trimmed !== event.target.value) onChange(trimmed);
+    if (textOnly && trimmed.length > 0 && /^[\d\s.,+\-/\\()[\]{}]+$/.test(trimmed)) setTextErr(true);
   };
   return (
-    <input
-      type={numeric ? "text" : type}
-      value={value ?? ""}
-      readOnly={readOnly}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      inputMode={numeric ? "decimal" : undefined}
-      style={{ width: "100%", height: 30, boxSizing: "border-box", border: "1px solid #cbd5e1", borderRadius: 4, padding: "5px 7px", fontSize: 11, fontFamily: "Georgia, serif", background: readOnly ? "#f8fafc" : "#fff", textAlign: center ? "center" : "left" }}
-    />
+    <div style={{ position: "relative", width: "100%" }}>
+      <input
+        type={numeric ? "text" : type}
+        value={value ?? ""}
+        readOnly={readOnly}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        inputMode={numeric ? "decimal" : undefined}
+        style={{ width: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #cbd5e1", borderRadius: 4, padding: "5px 7px", fontSize: 11, fontFamily: "Georgia, serif", background: readOnly ? "#f8fafc" : "#fff", textAlign: center ? "center" : "left" }}
+      />
+      {textErr && <span style={{ position: "absolute", left: 0, top: "100%", fontSize: 9, color: "#ef4444", whiteSpace: "nowrap", lineHeight: 1.2 }}>Text expected</span>}
+    </div>
   );
 }
+
+const NUMERIC_KEYS = new Set(["planned", "conducted", "fb1", "fb2", "amount"]);
+const TEXT_ONLY_KEYS = new Set(["title", "code", "course", "name", "degree", "thesis", "agency", "role", "status", "type", "level", "activity", "nature", "journal", "book", "publisher", "org", "program", "company", "desc", "coAuthors", "media", "film"]);
 
 function RO({ value, center = false }) {
   return <span style={{ display: "block", minHeight: 18, color: value ? "#1e293b" : "#94a3b8", fontSize: 11, textAlign: center ? "center" : "left" }}>{value || "-"}</span>;
@@ -444,7 +453,7 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
                       </select>
                     ) : (
                       <>
-                        <TI value={row[key]} readOnly={!editableSelf || readOnlyField || notApplicable} onChange={(value) => updateRow(index, key, value)} />
+                        <TI value={row[key]} type={NUMERIC_KEYS.has(key) ? "number" : "text"} textOnly={TEXT_ONLY_KEYS.has(key)} readOnly={!editableSelf || readOnlyField || notApplicable} onChange={(value) => updateRow(index, key, value)} />
                         {section.key === "acr" && key === "label" && ACR_DETAIL_POINTS[row[key]] && (
                           <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>
                             {ACR_DETAIL_POINTS[row[key]].map((point) => <li key={point}>{point}</li>)}
@@ -507,7 +516,7 @@ function InnovativeSection({ form, setForm, docs, setDocs, mode, locked, reviewe
         </thead>
         <tbody>
           <tr>
-            <td style={tdStyle}>{mode === "self" ? <TI value={form.innovDetails} readOnly={!editableSelf} onChange={(value) => setForm((prev) => ({ ...prev, innovDetails: value }))} /> : <RO value={form.innovDetails} />}</td>
+            <td style={tdStyle}>{mode === "self" ? <TI value={form.innovDetails} textOnly readOnly={!editableSelf} onChange={(value) => setForm((prev) => ({ ...prev, innovDetails: value }))} /> : <RO value={form.innovDetails} />}</td>
             <td style={tdStyle}><DocCell id="innov-0" docs={docs} setDocs={setDocs} readOnly={!editableSelf} /></td>
             <td style={tdCenter}>{mode === "self" ? <TI type="number" center value={form.innovScore} readOnly={!editableSelf} onChange={(value) => setForm((prev) => ({ ...prev, innovScore: value }))} /> : <RO value={form.innovScore} center />}</td>
             {mode === "review" && previousRoles.map((role) => <td key={role} style={tdCenter}><RO value={form[scoreKeyForInnov(role)]} center /></td>)}
