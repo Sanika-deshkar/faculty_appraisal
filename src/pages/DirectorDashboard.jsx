@@ -3,7 +3,7 @@ import { HodInput } from "../components/Inputs";
 import { useNavigate } from "react-router-dom";
 import { ACR_DETAIL_POINTS, SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/formConfig";
 import { DIRECTOR_USER, HOD_LIST, FACULTY_LIST, DIRECTOR_SELF_DATA } from "../data/mockData";
-import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal, saveAppraisalDraftSection } from "../services/appraisalPersistence";
+import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal, saveAppraisalDraftSection } from "../services/appraisalPersistence";
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { clampScore, effectiveMaxScore, clearDraft, draftKeyFor, feedbackAverage, feedbackRowScore, feedbackSectionScore, isValidDDMMYYYY, loadDraft, maskDateDDMMYYYY, saveDraft, scoreRemaining, sumSectionScore, validateCompleteRows } from "../utils/appraisalFormUtils";
@@ -1141,6 +1141,7 @@ export default function DirectorDashboard() {
   const [hodAppraisalTab, setHodAppraisalTab] = useState("partA");
   const [reviewingFaculty, setReviewingFaculty] = useState(null);
   const [reviewingHod, setReviewingHod] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(null);
 
   const dirSchool = sessionStorage.getItem("school");
   const hasHOD = sessionStorage.getItem("hasHod") === "true";
@@ -3092,9 +3093,27 @@ export default function DirectorDashboard() {
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
                       <div style={{ fontSize: 10, color: "#94a3b8" }}>Submitted: {item.submittedOn}</div>
-                      <button onClick={() => activeMainTab === "facultyApprovals" ? setReviewingFaculty(item) : setReviewingHod(item)}
-                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Rejected/.test(item.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
-                        {/Reviewed|Rejected/.test(item.status) ? "View Review" : "Review Form"}
+                      <button
+                        disabled={reviewLoading === item.id}
+                        onClick={async () => {
+                          setReviewLoading(item.id);
+                          try {
+                            const data = await fetchSavedAppraisal({
+                              facultyEmail: item.email,
+                              academicYear: item.academic_year || item.academicYear || APP_INFO.DEFAULT_AY || "2025-2026",
+                            });
+                            const form = data?.payload?.form || data?.form || {};
+                            const docs = data?.payload?.docs || data?.docs || {};
+                            const merged = { ...item, ...form, docs };
+                            activeMainTab === "facultyApprovals" ? setReviewingFaculty(merged) : setReviewingHod(merged);
+                          } catch {
+                            activeMainTab === "facultyApprovals" ? setReviewingFaculty(item) : setReviewingHod(item);
+                          } finally {
+                            setReviewLoading(null);
+                          }
+                        }}
+                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Rejected/.test(item.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === item.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif", opacity: reviewLoading === item.id ? 0.7 : 1 }}>
+                        {reviewLoading === item.id ? "Loading..." : /Reviewed|Rejected/.test(item.status) ? "View Review" : "Review Form"}
                       </button>
                     </div>
                   </div>

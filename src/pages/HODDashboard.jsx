@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ACR_DETAIL_POINTS, APP_INFO } from "../constants/formConfig";
 import { HOD_USER, FACULTY_LIST } from "../data/mockData";
-import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal, saveAppraisalDraftSection } from "../services/appraisalPersistence";
+import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal, saveAppraisalDraftSection } from "../services/appraisalPersistence";
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { clampScore, effectiveMaxScore, clearDraft, draftKeyFor, feedbackAverage, feedbackRowScore, feedbackSectionScore, isValidDDMMYYYY, loadDraft, maskDateDDMMYYYY, saveDraft, scoreRemaining, sumSectionScore, validateCompleteRows } from "../utils/appraisalFormUtils";
@@ -1088,6 +1088,7 @@ export default function HODDashboard({
   const [activeMainTab, setActiveMainTab] = useState("myAppraisal");
   const [hodAppraisalTab, setHodAppraisalTab] = useState("partA");
   const [reviewingFaculty, setReviewingFaculty] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(null);
   const [facultyList, setFacultyList] = useState([]);
 
   const hodSchool = sessionStorage.getItem("school");
@@ -3018,9 +3019,26 @@ export default function HODDashboard({
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
                       <div style={{ fontSize: 10, color: "#94a3b8" }}>Submitted: {faculty.submittedOn}</div>
-                      <button onClick={() => setReviewingFaculty(faculty)}
-                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Rejected/.test(faculty.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
-                        {/Reviewed|Rejected/.test(faculty.status) ? "View Review" : "Review Form"}
+                      <button
+                        disabled={reviewLoading === faculty.id}
+                        onClick={async () => {
+                          setReviewLoading(faculty.id);
+                          try {
+                            const data = await fetchSavedAppraisal({
+                              facultyEmail: faculty.email,
+                              academicYear: faculty.academic_year || faculty.academicYear || APP_INFO.DEFAULT_AY || "2025-2026",
+                            });
+                            const form = data?.payload?.form || data?.form || {};
+                            const docs = data?.payload?.docs || data?.docs || {};
+                            setReviewingFaculty({ ...faculty, ...form, docs });
+                          } catch {
+                            setReviewingFaculty(faculty);
+                          } finally {
+                            setReviewLoading(null);
+                          }
+                        }}
+                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Rejected/.test(faculty.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === faculty.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif", opacity: reviewLoading === faculty.id ? 0.7 : 1 }}>
+                        {reviewLoading === faculty.id ? "Loading..." : /Reviewed|Rejected/.test(faculty.status) ? "View Review" : "Review Form"}
                       </button>
                     </div>
                   </div>
