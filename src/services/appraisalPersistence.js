@@ -176,6 +176,45 @@ export const fetchSavedAppraisal = async ({ facultyEmail, academicYear }) => {
   }
 };
 
+const renameKeys = (rows, mapping) =>
+  (rows || []).map((row) => {
+    const out = { ...row };
+    Object.entries(mapping).forEach(([from, to]) => {
+      if (from in out) { out[to] = out[from]; delete out[from]; }
+    });
+    return out;
+  });
+
+const mapFormForSubmit = (form) => ({
+  ...form,
+  lectures: renameKeys(form.lectures, {
+    sem: "semester", code: "course_code",
+    planned: "planned_classes", conducted: "conducted_classes",
+  }),
+  feedback: renameKeys(form.feedback, {
+    code: "course_code", fb1: "feedback_1", fb2: "feedback_2",
+  }),
+  society: renameKeys(form.society, { label: "activity" }),
+  journals: renameKeys(form.journals, { index: "indexing" }),
+  books: renameKeys(form.books, {
+    pub: "publisher", coauth: "coauthor", first: "first_author",
+  }),
+  ict: renameKeys(form.ict, { desc: "description", quad: "quadrant" }),
+  research: renameKeys(form.research, { name: "student_name" }),
+  projects2: renameKeys(form.projects2, {
+    date: "sanction_date", status: "project_status",
+  }),
+  externalProjects: renameKeys(form.externalProjects, {
+    date: "sanction_date", status: "project_status",
+  }),
+  patents: renameKeys(form.patents, {
+    date: "patent_date", status: "patent_status", fileNo: "file_no",
+  }),
+  awards: renameKeys(form.awards, { date: "award_date" }),
+  confs: renameKeys(form.confs, { org: "organization" }),
+  fdps: renameKeys(form.fdps, { org: "organization" }),
+});
+
 export const submitAppraisal = async ({
   facultyEmail,
   academicYear,
@@ -190,7 +229,7 @@ export const submitAppraisal = async ({
 
   await api.post("/appraisal/submit", {
     academic_year: academicYear,
-    form,
+    form: mapFormForSubmit(form),
     totals,
     docs,
     submitter_profile: submitterProfile || activeProfile,
