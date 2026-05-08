@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { APP_INFO } from "../constants/formConfig";
 import {
   canAuthorityReviewProfile,
   getReviewChain,
@@ -31,8 +32,9 @@ export const fetchReviewQueueForRole = async ({
   if (!role || role === "faculty") return [];
 
   try {
-    const params = {};
-    if (academicYear) params.academic_year = academicYear;
+    const params = {
+      academic_year: academicYear || APP_INFO.DEFAULT_AY || "2025-2026",
+    };
     if (schoolValues?.length) params.schools = schoolValues.join(",");
 
     const items = await api.get("/dashboard/subordinates", { params });
