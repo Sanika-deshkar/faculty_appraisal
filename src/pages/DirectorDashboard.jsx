@@ -932,7 +932,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
   const [dirRemarks, setDirRemarks] = useState(faculty.directorRemarks || "");
   const [tab, setTab] = useState("form");
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
-  const reviewLocked = readOnly || /Reviewed|Rejected/.test(faculty.status || "");
+  const reviewLocked = readOnly || faculty.status === "Reviewed" || /Director\s*(Reviewed|Rejected)/i.test(faculty.status || "");
 
   // Compute HOD total from hodData
   const calcHodScore = () => {
@@ -1431,10 +1431,13 @@ export default function DirectorDashboard() {
   };
   const g = gradeFunc();
 
-  const facultyPendingCount = facultyList.filter(f => f.status === "Pending Review").length;
-  const facultyReviewedCount = facultyList.filter(f => f.status === "Reviewed").length;
-  const hodPendingCount = hodList.filter(h => h.status === "Pending Review").length;
-  const hodReviewedCount = hodList.filter(h => h.status === "Reviewed").length;
+  const isDirectorPending = (item) => item.status !== "Reviewed" && !/Director\s*(Reviewed|Rejected)/i.test(item.status || "");
+  const isDirectorReviewed = (item) => item.status === "Reviewed" || /Director\s*Reviewed/i.test(item.status || "");
+
+  const facultyPendingCount = facultyList.filter(isDirectorPending).length;
+  const facultyReviewedCount = facultyList.filter(isDirectorReviewed).length;
+  const hodPendingCount = hodList.filter(isDirectorPending).length;
+  const hodReviewedCount = hodList.filter(isDirectorReviewed).length;
 
   const navItems = [
     { id: "myAppraisal", icon: "👤", label: "My Appraisal", sub: "View your self-appraisal form" },
@@ -1964,8 +1967,8 @@ export default function DirectorDashboard() {
   };
 
   const filtered = activeMainTab === "hodApprovals"
-    ? (filterStatus === "All" ? hodList : (filterStatus === "Pending Review" ? hodList.filter(h => h.status === "Pending Review") : hodList.filter(h => h.status === "Reviewed")))
-    : (filterStatus === "All" ? facultyList : (filterStatus === "Pending Review" ? facultyList.filter(f => f.status === "Pending Review") : facultyList.filter(f => f.status === "Reviewed")));
+    ? (filterStatus === "All" ? hodList : (filterStatus === "Pending Review" ? hodList.filter(isDirectorPending) : hodList.filter(isDirectorReviewed)))
+    : (filterStatus === "All" ? facultyList : (filterStatus === "Pending Review" ? facultyList.filter(isDirectorPending) : facultyList.filter(isDirectorReviewed)));
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "Georgia, serif", background: "#f8fafc", color: "#1e293b" }}>
@@ -3112,8 +3115,8 @@ export default function DirectorDashboard() {
                             setReviewLoading(null);
                           }
                         }}
-                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Rejected/.test(item.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === item.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif", opacity: reviewLoading === item.id ? 0.7 : 1 }}>
-                        {reviewLoading === item.id ? "Loading..." : /Reviewed|Rejected/.test(item.status) ? "View Review" : "Review Form"}
+                        style={{ fontSize: 11, padding: "7px 18px", background: isDirectorReviewed(item) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === item.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif", opacity: reviewLoading === item.id ? 0.7 : 1 }}>
+                        {reviewLoading === item.id ? "Loading..." : isDirectorReviewed(item) ? "View Review" : "Review Form"}
                       </button>
                     </div>
                   </div>
@@ -3137,7 +3140,7 @@ export default function DirectorDashboard() {
             faculty={reviewingFaculty}
             onBack={() => setReviewingFaculty(null)}
             onSubmit={(id, total, remarks, sectionScores, reviewConfirmed) => handleSubmitReview("faculty", id, total, remarks, sectionScores, reviewConfirmed)}
-            readOnly={/Reviewed|Rejected/.test(reviewingFaculty.status || "")}
+            readOnly={isDirectorReviewed(reviewingFaculty)}
           />
         )}
         {activeMainTab === "hodApprovals" && reviewingHod && (
@@ -3145,7 +3148,7 @@ export default function DirectorDashboard() {
             faculty={reviewingHod}
             onBack={() => setReviewingHod(null)}
             onSubmit={(id, total, remarks, sectionScores, reviewConfirmed) => handleSubmitReview("hod", id, total, remarks, sectionScores, reviewConfirmed)}
-            readOnly={/Reviewed|Rejected/.test(reviewingHod.status || "")}
+            readOnly={isDirectorReviewed(reviewingHod)}
           />
         )}
       </main>

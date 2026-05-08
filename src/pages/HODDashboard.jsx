@@ -919,7 +919,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false, reviewerLabe
   const [remarks, setRemarks] = useState(faculty.hodRemarks || "");
   const [tab, setTab] = useState("form");
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
-  const reviewLocked = readOnly || /Reviewed|Rejected/.test(faculty.status || "");
+  const reviewLocked = readOnly || faculty.status === "Reviewed" || /HOD\s*(Reviewed|Rejected)/i.test(faculty.status || "");
 
   // Compute HOD total from hodData
   const calcHodScore = () => {
@@ -1374,8 +1374,11 @@ export default function HODDashboard({
   };
   const g = gradeFunc();
 
-  const pendingCount = facultyList.filter(f => f.status === "Pending Review").length;
-  const reviewedCount = facultyList.filter(f => f.status === "Reviewed").length;
+  const isHodPending = (item) => item.status !== "Reviewed" && !/HOD\s*(Reviewed|Rejected)/i.test(item.status || "");
+  const isHodReviewed = (item) => item.status === "Reviewed" || /HOD\s*Reviewed/i.test(item.status || "");
+
+  const pendingCount = facultyList.filter(isHodPending).length;
+  const reviewedCount = facultyList.filter(isHodReviewed).length;
 
   const navItems = [
     { id: "myAppraisal", icon: "👤", label: "My Appraisal", sub: "View your self-appraisal form" },
@@ -1896,7 +1899,7 @@ export default function HODDashboard({
     }
   };
 
-  const filtered = filterStatus === "All" ? facultyList : facultyList.filter(f => f.status === filterStatus);
+  const filtered = filterStatus === "All" ? facultyList : (filterStatus === "Pending Review" ? facultyList.filter(isHodPending) : facultyList.filter(isHodReviewed));
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: "Georgia, serif", background: "#f8fafc", color: "#1e293b" }}>
@@ -3037,8 +3040,8 @@ export default function HODDashboard({
                             setReviewLoading(null);
                           }
                         }}
-                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Rejected/.test(faculty.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === faculty.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif", opacity: reviewLoading === faculty.id ? 0.7 : 1 }}>
-                        {reviewLoading === faculty.id ? "Loading..." : /Reviewed|Rejected/.test(faculty.status) ? "View Review" : "Review Form"}
+                        style={{ fontSize: 11, padding: "7px 18px", background: isHodReviewed(faculty) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === faculty.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif", opacity: reviewLoading === faculty.id ? 0.7 : 1 }}>
+                        {reviewLoading === faculty.id ? "Loading..." : isHodReviewed(faculty) ? "View Review" : "Review Form"}
                       </button>
                     </div>
                   </div>
@@ -3062,7 +3065,7 @@ export default function HODDashboard({
             faculty={reviewingFaculty}
             onBack={() => setReviewingFaculty(null)}
             onSubmit={handleSubmitReview}
-            readOnly={/Reviewed|Rejected/.test(reviewingFaculty.status || "")}
+            readOnly={isHodReviewed(reviewingFaculty)}
             reviewerLabel={reviewerLabel}
           />
         )}

@@ -1487,7 +1487,7 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
   const [deanData, setDeanData] = useState({});
   const [tab, setTab] = useState("form");
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
-  const reviewLocked = readOnly || /Reviewed|Approved|Rejected/.test(approval?.status || "");
+  const reviewLocked = readOnly || approval?.status === "Reviewed" || /Dean\s*(Reviewed|Approved|Rejected)/i.test(approval?.status || "");
   const sectionScores = deanScorePayload(approval, deanData);
   const deanScores = deanScoreTotals(sectionScores);
   const selfTotal = n(approval?.declaration?.grand_total || approval?.grandTotal || approval?.total);
@@ -1878,12 +1878,15 @@ export default function DeanDashboard() {
   };
   const g = gradeFunc();
 
-  const facultyPendingCount = facultyList.filter(f => f.status === "Pending Review").length;
-  const facultyReviewedCount = facultyList.filter(f => f.status === "Reviewed").length;
-  const hodPendingCount = hodList.filter(h => h.status === "Pending Review").length;
-  const hodReviewedCount = hodList.filter(h => h.status === "Reviewed").length;
-  const directorPendingCount = directorList.filter(d => d.status === "Pending Review").length;
-  const directorReviewedCount = directorList.filter(d => d.status === "Reviewed").length;
+  const isDeanPending = (item) => item.status !== "Reviewed" && !/Dean\s*(Reviewed|Rejected)/i.test(item.status || "");
+  const isDeanReviewed = (item) => item.status === "Reviewed" || /Dean\s*Reviewed/i.test(item.status || "");
+
+  const facultyPendingCount = facultyList.filter(isDeanPending).length;
+  const facultyReviewedCount = facultyList.filter(isDeanReviewed).length;
+  const hodPendingCount = hodList.filter(isDeanPending).length;
+  const hodReviewedCount = hodList.filter(isDeanReviewed).length;
+  const directorPendingCount = directorList.filter(isDeanPending).length;
+  const directorReviewedCount = directorList.filter(isDeanReviewed).length;
 
   const activeApprovalList = activeMainTab === "hodApprovals"
     ? hodList
@@ -1897,15 +1900,15 @@ export default function DeanDashboard() {
     ? activeApprovalList
     : activeApprovalList.filter((item) => getSchoolKey(item.school) === selectedSchoolCode);
 
-  const pendingCount = activeSchoolApprovalList.filter(f => f.status === "Pending Review").length;
+  const pendingCount = activeSchoolApprovalList.filter(isDeanPending).length;
 
-  const reviewedCount = activeSchoolApprovalList.filter(f => f.status === "Reviewed").length;
+  const reviewedCount = activeSchoolApprovalList.filter(isDeanReviewed).length;
 
   const filtered = filterStatus === "All"
     ? activeSchoolApprovalList
     : (filterStatus === "Pending Review"
-      ? activeSchoolApprovalList.filter(f => f.status === "Pending Review")
-      : activeSchoolApprovalList.filter(f => f.status === "Reviewed"));
+      ? activeSchoolApprovalList.filter(isDeanPending)
+      : activeSchoolApprovalList.filter(isDeanReviewed));
 
   const schoolTabs = [
     { code: "all", label: "All Schools", count: activeApprovalList.length, icon: "All", color: "#0f172a", bg: "#e2e8f0" },
@@ -3657,8 +3660,8 @@ export default function DeanDashboard() {
                             setReviewLoading(null);
                           }
                         }}
-                        style={{ fontSize: 11, padding: "7px 18px", background: /Reviewed|Approved|Rejected/.test(faculty.status) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === faculty.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif", opacity: reviewLoading === faculty.id ? 0.7 : 1 }}>
-                        {reviewLoading === faculty.id ? "Loading..." : /Reviewed|Approved|Rejected/.test(faculty.status) ? "View Review" : "Review Form"}
+                        style={{ fontSize: 11, padding: "7px 18px", background: isDeanReviewed(faculty) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === faculty.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif", opacity: reviewLoading === faculty.id ? 0.7 : 1 }}>
+                        {reviewLoading === faculty.id ? "Loading..." : isDeanReviewed(faculty) ? "View Review" : "Review Form"}
                       </button>
                     </div>
                   </div>
@@ -3683,7 +3686,7 @@ export default function DeanDashboard() {
             approvalType={activeMainTab}
             onBack={() => setReviewingApproval(null)}
             onSubmit={handleSubmitReview}
-            readOnly={/Reviewed|Approved|Rejected/.test(reviewingApproval.status || "")}
+            readOnly={isDeanReviewed(reviewingApproval)}
           />
         )}
       </main>
