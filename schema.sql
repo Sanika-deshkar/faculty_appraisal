@@ -650,6 +650,7 @@ create table public.appraisal_reviews (
   part_b_score numeric not null default 0,
   total_score numeric not null default 0,
   remarks text,
+  section_scores jsonb not null default '{}'::jsonb,
   status text not null,
   reviewed_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
@@ -722,7 +723,8 @@ create table public.feedback (
   ip_address  varchar,
   user_agent  varchar(512),
   submitted_at timestamptz not null default now(),
-  created_at   timestamptz not null default now()
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
 );
 
 create table public.non_teaching_part_b_ratings (
@@ -864,6 +866,22 @@ create table if not exists public.announcements (
 );
 
 create index if not exists idx_announcements_is_active on public.announcements (is_active);
+
+-- password_reset_tokens: stores hashed one-time tokens for the forgot-password flow.
+-- The backend generates a random token, emails the raw value, and stores only its hash here.
+-- On /auth/reset-password the backend verifies the hash, checks used=false and expires_at > now(),
+-- then sets used=true and updates password_hash in faculty_profiles.
+create table public.password_reset_tokens (
+  id         uuid primary key default gen_random_uuid(),
+  email      text not null,
+  token_hash text not null unique,
+  expires_at timestamptz not null,
+  used       boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index password_reset_tokens_email_idx   on public.password_reset_tokens (email);
+create index password_reset_tokens_expires_idx on public.password_reset_tokens (expires_at);
 
 do $$
 declare
