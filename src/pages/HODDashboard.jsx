@@ -1374,8 +1374,15 @@ export default function HODDashboard({
   };
   const g = gradeFunc();
 
-  const isHodPending = (item) => item.status !== "Reviewed" && !/HOD\s*(Reviewed|Rejected)/i.test(item.status || "");
-  const isHodReviewed = (item) => item.status === "Reviewed" || /HOD\s*Reviewed/i.test(item.status || "");
+  const isHodPending = (item) => {
+    const s = item.status || "";
+    return s === "pending_hod" || s === "Pending Review" ||
+      (s !== "Reviewed" && s !== "pending_director" && s !== "hod_reviewed" && !/HOD\s*(Reviewed|Rejected)/i.test(s) && s !== "completed");
+  };
+  const isHodReviewed = (item) => {
+    const s = item.status || "";
+    return s === "Reviewed" || s === "pending_director" || s === "hod_reviewed" || /HOD\s*Reviewed/i.test(s);
+  };
 
   const pendingCount = facultyList.filter(isHodPending).length;
   const reviewedCount = facultyList.filter(isHodReviewed).length;

@@ -1598,9 +1598,14 @@ export default function NonEngineeringDeanDashboard() {
           reviewerRole: "dean",
           reviewerProfile: profileFromsessionStorage(),
         });
-        const scopedItems = items.filter((item) => NON_ENGINEERING_SCHOOL_CODES.includes(getSchoolKey(item.school)));
-        setFacultyList(scopedItems.filter((item) => item.appraisalRole === "faculty"));
-        setDirectorList(scopedItems.filter((item) => item.appraisalRole === "director"));
+        const schoolOf = (item) => getSchoolKey(item.school || item.school_name || item.schoolName || "");
+        const roleOf = (item) => (item.appraisalRole || item.appraisal_role || "").toLowerCase();
+        const scopedItems = items.filter((item) => {
+          const code = schoolOf(item);
+          return NON_ENGINEERING_SCHOOL_CODES.includes(code) || NON_ENGINEERING_SCHOOL_CODES.includes(item.school);
+        });
+        setFacultyList(scopedItems.filter((item) => roleOf(item) === "faculty"));
+        setDirectorList(scopedItems.filter((item) => roleOf(item) === "director"));
       } catch (err) {
         console.error("Could not load Non-Engineering Dean review queue:", err);
         setFacultyList([]);
@@ -1876,8 +1881,15 @@ export default function NonEngineeringDeanDashboard() {
   };
   const g = gradeFunc();
 
-  const isDeanPending = (item) => item.status !== "Reviewed" && !/Dean\s*(Reviewed|Rejected)/i.test(item.status || "");
-  const isDeanReviewed = (item) => item.status === "Reviewed" || /Dean\s*Reviewed/i.test(item.status || "");
+  const isDeanPending = (item) => {
+    const s = item.status || "";
+    return s === "pending_dean" ||
+      (s !== "Reviewed" && s !== "pending_vc" && s !== "dean_reviewed" && !/Dean\s*(Reviewed|Rejected)/i.test(s) && s !== "completed");
+  };
+  const isDeanReviewed = (item) => {
+    const s = item.status || "";
+    return s === "Reviewed" || s === "pending_vc" || s === "dean_reviewed" || s === "completed" || /Dean\s*Reviewed/i.test(s);
+  };
 
   const facultyPendingCount = facultyList.filter(isDeanPending).length;
   const facultyReviewedCount = facultyList.filter(isDeanReviewed).length;

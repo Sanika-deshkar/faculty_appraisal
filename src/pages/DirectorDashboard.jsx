@@ -1431,8 +1431,15 @@ export default function DirectorDashboard() {
   };
   const g = gradeFunc();
 
-  const isDirectorPending = (item) => item.status !== "Reviewed" && !/Director\s*(Reviewed|Rejected)/i.test(item.status || "");
-  const isDirectorReviewed = (item) => item.status === "Reviewed" || /Director\s*Reviewed/i.test(item.status || "");
+  const isDirectorPending = (item) => {
+    const s = item.status || "";
+    return s === "pending_director" || s === "Pending Review" || s === "pending_hod" ||
+      (s !== "Reviewed" && s !== "pending_dean" && s !== "director_reviewed" && !/Director\s*(Reviewed|Rejected)/i.test(s) && s !== "completed");
+  };
+  const isDirectorReviewed = (item) => {
+    const s = item.status || "";
+    return s === "Reviewed" || s === "pending_dean" || s === "director_reviewed" || /Director\s*Reviewed/i.test(s);
+  };
 
   const facultyPendingCount = facultyList.filter(isDirectorPending).length;
   const facultyReviewedCount = facultyList.filter(isDirectorReviewed).length;
