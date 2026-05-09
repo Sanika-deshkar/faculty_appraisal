@@ -1596,7 +1596,6 @@ export default function DeanDashboard() {
         const items = await fetchReviewQueueForRole({
           reviewerRole: "dean",
           reviewerProfile: profileFromsessionStorage(),
-          schoolValues: ENGINEERING_SCHOOL_VALUES,
         });
         const schoolOf = (item) => getSchoolKey(item.school || item.school_name || item.schoolName || "");
         const roleOf = (item) => (item.appraisalRole || item.appraisal_role || "").toLowerCase();
@@ -1886,11 +1885,11 @@ export default function DeanDashboard() {
   const isDeanPending = (item) => {
     const s = item.status || "";
     return s === "pending_dean" ||
-      (s !== "Reviewed" && s !== "pending_vc" && s !== "dean_reviewed" && !/Dean\s*(Reviewed|Rejected)/i.test(s) && s !== "completed");
+      (s !== "Reviewed" && s !== "pending_vc" && s !== "completed" && !/Dean\s*(Reviewed|Rejected)/i.test(s));
   };
   const isDeanReviewed = (item) => {
     const s = item.status || "";
-    return s === "Reviewed" || s === "pending_vc" || s === "dean_reviewed" || s === "completed" || /Dean\s*Reviewed/i.test(s);
+    return s === "Reviewed" || s === "pending_vc" || s === "completed" || /Dean\s*Reviewed/i.test(s);
   };
 
   const facultyPendingCount = facultyList.filter(isDeanPending).length;
