@@ -30,6 +30,7 @@ const VC_ACCENT = "#6d28d9";
 
 const n = (value) => parseFloat(value) || 0;
 const pct = (value, max) => Math.min(100, Math.round((n(value) / max) * 100)) || 0;
+const clampOptionalScore = (value, max) => String(value ?? "").trim() === "" ? "" : clampScore(value, max);
 
 const T = { width: "100%", borderCollapse: "collapse", fontSize: 12 };
 const TH = { border: "1px solid #cbd5e1", padding: "7px 8px", background: "#0f172a", color: "#e2e8f0", fontWeight: 700, textAlign: "center", fontSize: 10 };
@@ -132,7 +133,7 @@ function MarksInput({ value, onChange, max, readOnly = false, accent = ACCENT })
         max={max}
         step="0.5"
         value={value ?? ""}
-        onChange={(event) => onChange(clampScore(event.target.value, max))}
+        onChange={(event) => onChange(clampOptionalScore(event.target.value, max))}
         readOnly={readOnly}
         style={{ width: 62, textAlign: "center", border: `1.5px solid ${accent}`, borderRadius: 6, padding: "5px 6px", fontSize: 12, fontFamily: "Georgia, serif", outline: "none", background: readOnly ? "#f8fafc" : "#eff6ff" }}
       />

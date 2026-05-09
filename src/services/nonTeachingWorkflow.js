@@ -94,6 +94,14 @@ export const RATING_SECTIONS = [
 
 const n = (value) => parseFloat(value) || 0;
 const clean = (value) => String(value ?? "").trim();
+const clampOptionalScore = (value, max) =>
+  clean(value) === "" ? "" : clampScore(value, max);
+const clampOptionalRating = (value) => {
+  if (clean(value) === "") return "";
+  const rating = n(value);
+  if (rating < 1) return "";
+  return Math.min(5, rating);
+};
 const firstNonEmpty = (...values) =>
   values.find((value) => clean(value) !== "") || "";
 const emailKey = (value) => clean(value).toLowerCase();
@@ -193,11 +201,14 @@ export const normalizeNonTeachingForm = (
     merged.info.email || profile.email || sessionStorage.getItem("username"),
   );
 
-  SELF_ITEMS.forEach(({ key }) => {
+  SELF_ITEMS.forEach(({ key, max }) => {
     merged[key] = {
       ...(base[key] || {}),
       ...(form[key] || {}),
     };
+    ["marks", "roMarks", "regMarks", "vcMarks"].forEach((field) => {
+      merged[key][field] = clampOptionalScore(merged[key][field], max);
+    });
   });
 
   RATING_SECTIONS.forEach(({ key }) => {
@@ -205,6 +216,17 @@ export const normalizeNonTeachingForm = (
       ...(base.partB[key] || {}),
       ...(form.partB?.[key] || {}),
     };
+  });
+
+  RATING_SECTIONS.forEach(({ key, params }) => {
+    const rows = merged.partB[key] || {};
+    params.forEach((_label, index) => {
+      ["self", "ro", "reg", "vc"].forEach((suffix) => {
+        const field = `p${index}_${suffix}`;
+        rows[field] = clampOptionalRating(rows[field]);
+      });
+    });
+    merged.partB[key] = rows;
   });
 
   return merged;
@@ -232,7 +254,7 @@ export const calculateNonTeachingTotals = (form = {}, authority = "self") => {
   const normalized = normalizeNonTeachingForm(form);
   const partA = clampScore(SELF_ITEMS.reduce(
     (total, item) =>
-      total + n(valueForAuthority(normalized[item.key], authority)),
+      total + n(clampOptionalScore(valueForAuthority(normalized[item.key], authority), item.max)),
     0,
   ), NON_TEACHING_MAX.partA);
   const partB =
@@ -240,14 +262,12 @@ export const calculateNonTeachingTotals = (form = {}, authority = "self") => {
       ? 0
       : clampScore(RATING_SECTIONS.reduce((sectionTotal, section) => {
           const rows = normalized.partB?.[section.key] || {};
-          return (
-            sectionTotal +
-            section.params.reduce(
-              (total, _label, index) =>
-                total + n(ratingForAuthority(rows, index, authority)),
-              0,
-            )
+          const sectionScore = section.params.reduce(
+            (total, _label, index) =>
+              total + n(clampOptionalRating(ratingForAuthority(rows, index, authority))),
+            0,
           );
+          return sectionTotal + clampScore(sectionScore, section.max);
         }, 0), NON_TEACHING_MAX.partB);
 
   return {

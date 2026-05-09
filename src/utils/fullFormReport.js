@@ -1,3 +1,5 @@
+import { clampScore, researchGuidanceScore, rowMaxForSection } from "./appraisalFormUtils";
+
 const n = (value) => parseFloat(value) || 0;
 
 export const safeHtml = (value) => String(value ?? "")
@@ -33,6 +35,12 @@ const docsFor = (docs, key) => {
 const roleColumnLabel = (role, roleLabel = (value) => value) =>
   role === "score" ? "Faculty Score" : `${safeHtml(roleLabel(role))} Score`;
 
+const displaySectionScore = (section, row, role) => {
+  if (section.key === "research" && role === "score") return researchGuidanceScore(row).toFixed(1);
+  if (role === "score") return clampScore(row?.[role], rowMaxForSection(section.key, row, section.max));
+  return row?.[role];
+};
+
 const renderSection = ({ section, rows = [], docs = {}, scoreRoles = ["score"], roleLabel }) => `
   <h3>${safeHtml(section.title)} <span>(Max ${safeHtml(section.max)})</span></h3>
   <table>
@@ -50,7 +58,7 @@ const renderSection = ({ section, rows = [], docs = {}, scoreRoles = ["score"], 
           <td class="center">${index + 1}</td>
           ${section.fields.map(([key]) => `<td>${displayValue(row?.[key])}</td>`).join("")}
           <td>${docsFor(docs, `${section.doc}-${index}`)}</td>
-          ${scoreRoles.map((role) => `<td class="center">${displayValue(row?.[role])}</td>`).join("")}
+          ${scoreRoles.map((role) => `<td class="center">${displayValue(displaySectionScore(section, row, role))}</td>`).join("")}
         </tr>
       `).join("")}
     </tbody>
@@ -68,17 +76,21 @@ const renderInnovativeSection = ({ form, docs, scoreRoles, roleLabel }) => `
   <table>
     <thead>
       <tr>
-        <th>Description</th>
+        <th>Methods Used</th>
+        <th>Details</th>
         <th>Documents</th>
         ${scoreRoles.map((role) => `<th>${roleColumnLabel(role, roleLabel)}</th>`).join("")}
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td>${displayValue(form.innovDetails)}</td>
-        <td>${docsFor(docs, "innov-0")}</td>
-        ${scoreRoles.map((role) => `<td class="center">${displayValue(role === "score" ? form.innovScore : form[scoreKeyForInnov(role)])}</td>`).join("")}
-      </tr>
+      ${(form.innovRows?.length ? form.innovRows : [{ method: form.innovDetails, details: "" }]).map((row, index) => `
+        <tr>
+          <td>${displayValue(row.method || form.innovDetails)}</td>
+          <td>${displayValue(row.details)}</td>
+          <td>${docsFor(docs, `innov-${index}`)}</td>
+          ${scoreRoles.map((role) => `<td class="center">${displayValue(role === "score" ? (row.score || form.innovScore) : form[scoreKeyForInnov(role)])}</td>`).join("")}
+        </tr>
+      `).join("")}
     </tbody>
   </table>`;
 

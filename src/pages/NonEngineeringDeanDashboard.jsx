@@ -5,7 +5,7 @@ import { HodInput } from "../components/Inputs";
 import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAppraisal, saveAppraisalDraftSection } from "../services/appraisalPersistence";
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
-import { clampScore, effectiveMaxScore, clearDraft, draftKeyFor, feedbackAverage, feedbackRowScore, feedbackSectionScore, isValidDDMMYYYY, loadDraft, maskDateDDMMYYYY, saveDraft, scoreRemaining, sumSectionScore, validateCompleteRows } from "../utils/appraisalFormUtils";
+import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, clearDraft, draftKeyFor, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isValidDDMMYYYY, loadDraft, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, saveDraft, scoreRemaining, societyRowScore, societySelectionForRow, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
 import { DEAN_TRACKS, getSchoolKey, getSchoolsByDeanTrack } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
 import { reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
@@ -75,30 +75,33 @@ function StatusBadge({ status }) {
 function RO({ val, center }) {
   return <span style={{ fontSize: 11, fontFamily: "Georgia, serif", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{val || <span style={{ color: "#cbd5e1" }}>—</span>}</span>;
 }
-function DeanInput({ val, onChange }) {
+function DeanInput({ val, onChange, max }) {
   return (
     <input type="number" min="0" step="0.5" value={val ?? ""}
-      onChange={e => onChange(e.target.value)}
+      max={max}
+      onChange={e => onChange(e.target.value === "" || max === undefined ? e.target.value : String(clampScore(e.target.value, max)))}
       style={{ width: 58, textAlign: "center", border: "1.5px solid #7c3aed", borderRadius: 5, padding: "3px 5px", fontSize: 11, fontFamily: "Georgia, serif", outline: "none", background: "#faf5ff" }}
     />
   );
 }
-function SelfInput({ val, onChange }) {
+function SelfInput({ val, onChange, max }) {
   return (
     <input type="number" min="0" step="0.5" value={val ?? ""}
-      onChange={e => onChange(e.target.value)}
+      max={max}
+      onChange={e => onChange(e.target.value === "" || max === undefined ? e.target.value : String(clampScore(e.target.value, max)))}
       style={{ width: 58, textAlign: "center", border: "1.5px solid #10b981", borderRadius: 5, padding: "3px 5px", fontSize: 11, fontFamily: "Georgia, serif", outline: "none", background: "#f0fff8" }}
     />
   );
 }
 // ─── Input & Table Controls (Self-Appraisal Mode) ──────────────────────────────
-function TI({ val, onChange, center, placeholder, readOnly = false, numeric = false, textOnly = false }) {
+function TI({ val, onChange, center, placeholder, readOnly = false, numeric = false, textOnly = false, max }) {
   const [textErr, setTextErr] = useState(false);
   const handleChange = (e) => {
     if (readOnly) return;
     let v = e.target.value;
     if (numeric) {
       v = v.replace(/[^0-9.]/g, "").replace(/^\./, "0.").replace(/(\.\d*)\./g, "$1");
+      if (v !== "" && max !== undefined) v = String(clampScore(v, max));
     }
     if (textOnly && textErr) setTextErr(false);
     onChange?.(v);
@@ -353,18 +356,22 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
       <SC title="A2. Course File (Max 20)" accent="#6366f1">
         <table style={T}>
           <thead><tr>
+            <th style={{ ...TH, width: 30 }}>SN</th>
             <th style={TH}>Course</th><th style={TH}>Title</th><th style={TH}>Details</th>
             <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
           </tr></thead>
           <tbody>
-            <tr>
-              <td style={TD}><RO val={courseFile?.course} /></td>
-              <td style={TD}><RO val={courseFile?.title} /></td>
-              <td style={TDC}><RO val={courseFile?.details} center /></td>
-              <td style={TDV}><ViewDocsCell docKey="cf-0" docs={docs} /></td>
-              <td style={TDS}><RO val={courseFile?.score} center /></td>
-              <td style={TDS_HOD}><HodInput val={get("courseFile", null, "hod")} onChange={v => set("courseFile", null, "hod", v)} /></td>
-            </tr>
+            {rows(courseFile).map((r, i) => (
+              <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
+                <td style={TDC}>{i + 1}</td>
+                <td style={TD}><RO val={r.course} /></td>
+                <td style={TD}><RO val={r.title} /></td>
+                <td style={TDC}><RO val={r.details} center /></td>
+                <td style={TDV}><ViewDocsCell docKey={`cf-${i}`} docs={docs} /></td>
+                <td style={TDS}><RO val={courseFileRowScore(r) ? String(courseFileRowScore(r)) : ""} center /></td>
+                <td style={TDS_HOD}><HodInput val={get("courseFile", i, "hod")} onChange={v => set("courseFile", i, "hod", v)} max={SCORE_LIMITS.courseFileRow} /></td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </SC>
@@ -398,8 +405,8 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
                 <td style={TDC}>{i + 1}</td>
                 <td style={TD}><RO val={r.label} /></td>
                 <td style={TDV}><ViewDocsCell docKey={`proj-${i}`} docs={docs} /></td>
-                <td style={TDS}><RO val={r.score} center /></td>
-                <td style={TDS_HOD}><HodInput val={get("projects", i, "hod")} onChange={v => set("projects", i, "hod", v)} /></td>
+                <td style={TDS}><RO val={clampScore(r.score, projectGuidanceRowMax(r))} center /></td>
+                <td style={TDS_HOD}><HodInput val={get("projects", i, "hod")} max={projectGuidanceRowMax(r)} onChange={v => set("projects", i, "hod", v)} /></td>
               </tr>
             ))}
           </tbody>
@@ -420,7 +427,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
                 <td style={TD}><RO val={r.label} /></td>
                 <td style={TDV}><ViewDocsCell docKey={`qual-${i}`} docs={docs} /></td>
                 <td style={TDS}><RO val={r.score} center /></td>
-                <td style={TDS_HOD}><HodInput val={get("quals", i, "hod")} onChange={v => set("quals", i, "hod", v)} /></td>
+                <td style={TDS_HOD}><HodInput val={get("quals", i, "hod")} onChange={v => set("quals", i, "hod", v)} max={SCORE_LIMITS.qualificationRow} /></td>
               </tr>
             ))}
           </tbody>
@@ -498,21 +505,22 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
       </SC>
 
       {/* E: Society */}
-      <SC title="E. Contribution to Society (Max 10)" accent="#10b981">
+      <SC title="E. Contribution to Society (Max 10, Max 5 per row)" accent="#10b981">
         <table style={T}>
           <thead><tr>
-            <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Details</th>
-            <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
+            <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Yes/No</th><th style={TH}>Details</th>
+            <th style={TH}>View Docs</th><th style={TH}>Faculty Score (Max 5)</th><th style={TH_HOD}>HOD Score</th>
           </tr></thead>
           <tbody>
             {rows(society).map((r, i) => (
               <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
                 <td style={TDC}>{i + 1}</td>
                 <td style={TD}><RO val={r.label} /></td>
+                <td style={TDC}><RO val={societySelectionForRow(r) || "No"} center /></td>
                 <td style={TD}><RO val={r.details} /></td>
                 <td style={TDV}><ViewDocsCell docKey={`soc-${i}`} docs={docs} /></td>
-                <td style={TDS}><RO val={r.score} center /></td>
-                <td style={TDS_HOD}><HodInput val={get("society", i, "hod")} onChange={v => set("society", i, "hod", v)} /></td>
+                <td style={TDS}><RO val={societyRowScore(r)} center /></td>
+                <td style={TDS_HOD}><HodInput val={get("society", i, "hod")} max={SCORE_LIMITS.societyRow} onChange={v => set("society", i, "hod", v)} /></td>
               </tr>
             ))}
           </tbody>
@@ -657,7 +665,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
                 <td style={TD}><RO val={r.name} /></td>
                 <td style={TD}><RO val={r.thesis} /></td>
                 <td style={TDV}><ViewDocsCell docKey={`res-${i}`} docs={docs} /></td>
-                <td style={TDS}><RO val={r.score} center /></td>
+                <td style={TDS}><RO val={researchGuidanceScore(r).toFixed(1)} center /></td>
                 <td style={TDS_HOD}><HodInput val={get("research", i, "hod")} onChange={v => set("research", i, "hod", v)} /></td>
               </tr>
             ))}
@@ -665,7 +673,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
         </table>
       </SC>
 
-      <SC title="B4(b). Research / Consultancy Internal Projects (Max 45)" accent="#059669">
+      <SC title="B4(b). Research / Consultancy Internal Projects (Max 15)" accent="#059669">
         <div style={{ overflowX: "auto" }}>
           <table style={T}>
             <thead><tr>
@@ -685,7 +693,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
                   <td style={TD}><RO val={r.status} /></td>
                   <td style={TDV}><ViewDocsCell docKey={`project2-${i}`} docs={docs} /></td>
                   <td style={TDS}><RO val={r.score} center /></td>
-                  <td style={TDS_HOD}><HodInput val={get("projects2", i, "hod")} onChange={v => set("projects2", i, "hod", v)} /></td>
+                  <td style={TDS_HOD}><HodInput val={get("projects2", i, "hod")} max={SCORE_LIMITS.researchInternalProjects} onChange={v => set("projects2", i, "hod", v)} /></td>
                 </tr>
               ))}
             </tbody>
@@ -693,7 +701,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
         </div>
       </SC>
 
-      <SC title="B4(c). Research / Consultancy External Projects (Max 45)" accent="#059669">
+      <SC title="B4(c). Research / Consultancy External Projects (Max 30)" accent="#059669">
         <div style={{ overflowX: "auto" }}>
           <table style={T}>
             <thead><tr>
@@ -713,7 +721,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
                   <td style={TD}><RO val={r.status} /></td>
                   <td style={TDV}><ViewDocsCell docKey={`externalProject-${i}`} docs={docs} /></td>
                   <td style={TDS}><RO val={r.score} center /></td>
-                  <td style={TDS_HOD}><HodInput val={get("externalProjects", i, "hod")} onChange={v => set("externalProjects", i, "hod", v)} /></td>
+                  <td style={TDS_HOD}><HodInput val={get("externalProjects", i, "hod")} max={SCORE_LIMITS.researchExternalProjects} onChange={v => set("externalProjects", i, "hod", v)} /></td>
                 </tr>
               ))}
             </tbody>
@@ -849,7 +857,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
       </SC>
 
       {/* B8: Self Dev */}
-      <SC title="B8(a). FDP / Workshops Attended (Max 5)" accent="#10b981">
+      <SC title="B8(a). FDP / Workshops Attended (Max 10)" accent="#10b981">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Program</th><th style={TH}>Duration</th><th style={TH}>Organizer</th>
@@ -863,15 +871,15 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
                 <td style={TDC}><RO val={r.duration} center /></td>
                 <td style={TD}><RO val={r.org} /></td>
                 <td style={TDV}><ViewDocsCell docKey={`fdp-${i}`} docs={docs} /></td>
-                <td style={TDS}><RO val={r.score} center /></td>
-                <td style={TDS_HOD}><HodInput val={get("fdps", i, "hod")} onChange={v => set("fdps", i, "hod", v)} /></td>
+                <td style={TDS}><RO val={clampScore(r.score, SCORE_LIMITS.fdpRow)} center /></td>
+                <td style={TDS_HOD}><HodInput val={get("fdps", i, "hod")} max={SCORE_LIMITS.fdpRow} onChange={v => set("fdps", i, "hod", v)} /></td>
               </tr>
             ))}
           </tbody>
         </table>
       </SC>
 
-      <SC title="B8(b). Industrial Training (Max 5)" accent="#10b981">
+      <SC title="B8(b). Industrial Training (Max 10)" accent="#10b981">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Company</th><th style={TH}>Duration</th><th style={TH}>Nature</th>
@@ -885,8 +893,8 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
                 <td style={TDC}><RO val={r.duration} center /></td>
                 <td style={TD}><RO val={r.nature} /></td>
                 <td style={TDV}><ViewDocsCell docKey={`train-${i}`} docs={docs} /></td>
-                <td style={TDS}><RO val={r.score} center /></td>
-                <td style={TDS_HOD}><HodInput val={get("training", i, "hod")} onChange={v => set("training", i, "hod", v)} /></td>
+                <td style={TDS}><RO val={clampScore(r.score, SCORE_LIMITS.fdpRow)} center /></td>
+                <td style={TDS_HOD}><HodInput val={get("training", i, "hod")} max={SCORE_LIMITS.fdpRow} onChange={v => set("training", i, "hod", v)} /></td>
               </tr>
             ))}
           </tbody>
@@ -913,7 +921,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
     };
     const getS = (key) => n(hodData[key] ?? faculty[key]);
 
-    const lec = (faculty.lectures || []).reduce((a, _, i) => a + get("lectures", i, "hod"), 0);
+    const lec = (() => { const rows = faculty.lectures || []; const filled = rows.filter((_, i) => get("lectures", i, "hod") > 0); return filled.length ? clampScore(rows.reduce((a, _, i) => a + get("lectures", i, "hod"), 0) / filled.length, 50) : 0; })();
     const cf = get("courseFile", null, "hod");
     const innov = getS("innovHod");
     const proj = (faculty.projects || []).reduce((a, _, i) => a + get("projects", i, "hod"), 0);
@@ -930,15 +938,15 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
     const bk = (faculty.books || []).reduce((a, _, i) => a + get("books", i, "hod"), 0);
     const ictT = (faculty.ict || []).reduce((a, _, i) => a + get("ict", i, "hod"), 0);
     const res = (faculty.research || []).reduce((a, _, i) => a + get("research", i, "hod"), 0);
-    const resProjects = (faculty.projects2 || []).reduce((a, _, i) => a + get("projects2", i, "hod"), 0);
-    const externalResProjects = (faculty.externalProjects || []).reduce((a, _, i) => a + get("externalProjects", i, "hod"), 0);
+    const resProjects = clampScore((faculty.projects2 || []).reduce((a, _, i) => a + get("projects2", i, "hod"), 0), SCORE_LIMITS.researchInternalProjects);
+    const externalResProjects = clampScore((faculty.externalProjects || []).reduce((a, _, i) => a + get("externalProjects", i, "hod"), 0), SCORE_LIMITS.researchExternalProjects);
     const pat = (faculty.patents || []).reduce((a, _, i) => a + get("patents", i, "hod"), 0);
     const awd = (faculty.awards || []).reduce((a, _, i) => a + get("awards", i, "hod"), 0);
     const conf = (faculty.confs || []).reduce((a, _, i) => a + get("confs", i, "hod"), 0);
     const prop = (faculty.proposals || []).reduce((a, _, i) => a + get("proposals", i, "hod"), 0);
     const prod = (faculty.products || []).reduce((a, _, i) => a + get("products", i, "hod"), 0);
-    const fdp = (faculty.fdps || []).reduce((a, _, i) => a + get("fdps", i, "hod"), 0);
-    const train = (faculty.training || []).reduce((a, _, i) => a + get("training", i, "hod"), 0);
+    const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
+    const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
     const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train;
 
     return { partA, partB, total: partA + partB };
@@ -1041,6 +1049,8 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
 const DEAN_REVIEW_PART_A_KEYS = ["lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs", "society", "industry", "acr"];
 const DEAN_REVIEW_PART_B_KEYS = ["journals", "books", "ict", "research", "projects2", "externalProjects", "patents", "awards", "confs", "proposals", "products", "fdps", "training"];
 const DEAN_REVIEW_ARRAY_KEYS = [...DEAN_REVIEW_PART_A_KEYS, ...DEAN_REVIEW_PART_B_KEYS];
+const DEAN_SECTION_MAX = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 10, training: 10 };
+const DEAN_ROW_MAX = { courseFile: () => SCORE_LIMITS.courseFileRow, projects: projectGuidanceRowMax, quals: () => SCORE_LIMITS.qualificationRow, feedback: () => 10, society: () => SCORE_LIMITS.societyRow, research: researchGuidanceRowMax, fdps: () => SCORE_LIMITS.fdpRow, training: () => SCORE_LIMITS.fdpRow };
 
 const deanScorePayload = (approval, deanData) => {
   const payload = {};
@@ -1061,12 +1071,16 @@ const deanScorePayload = (approval, deanData) => {
 };
 
 const sumDeanRows = (payload, keys) =>
-  keys.reduce((total, key) => total + (payload[key] || []).reduce((sum, row) => sum + n(row.dean), 0), 0);
+  keys.reduce((total, key) => total + clampScore((payload[key] || []).reduce((sum, row) => {
+    const rowMax = DEAN_ROW_MAX[key]?.(row);
+    return sum + (rowMax ? clampScore(row.dean, rowMax) : n(row.dean));
+  }, 0), DEAN_SECTION_MAX[key] || 0), 0);
 
 const deanScoreTotals = (payload) => {
-  const partA = sumDeanRows(payload, DEAN_REVIEW_PART_A_KEYS) + n(payload.innovativeTeaching?.dean);
+  const partA = clampScore(sumDeanRows(payload, DEAN_REVIEW_PART_A_KEYS) + clampScore(payload.innovativeTeaching?.dean, 10), 200);
   const partB = sumDeanRows(payload, DEAN_REVIEW_PART_B_KEYS);
-  return { partA, partB, total: partA + partB };
+  const cappedPartB = clampScore(partB, 420);
+  return { partA, partB: cappedPartB, total: clampScore(partA + cappedPartB, 620) };
 };
 
 function DeanScoreCell({ sectionKey, index, row, deanData, setDeanData }) {
@@ -1081,7 +1095,7 @@ function DeanScoreCell({ sectionKey, index, row, deanData, setDeanData }) {
     });
   };
 
-  return <DeanInput val={value} onChange={update} />;
+  return <DeanInput val={value} max={DEAN_ROW_MAX[sectionKey]?.(row) || DEAN_SECTION_MAX[sectionKey]} onChange={update} />;
 }
 
 function DeanInnovativeScoreCell({ approval, deanData, setDeanData }) {
@@ -1089,6 +1103,7 @@ function DeanInnovativeScoreCell({ approval, deanData, setDeanData }) {
   return (
     <DeanInput
       val={value}
+      max={10}
       onChange={(nextValue) => setDeanData((prev) => ({
         ...prev,
         innovativeTeaching: { ...(prev.innovativeTeaching || {}), dean: nextValue },
@@ -1111,7 +1126,7 @@ function DeanReviewScoreForm({ approval, deanData, setDeanData }) {
 
   const ScoreCells = ({ sectionKey, row, index }) => (
     <>
-      <td style={TDS}>{cell(row.score, true)}</td>
+      <td style={TDS}>{cell(sectionKey === "research" ? researchGuidanceScore(row).toFixed(1) : row.score, true)}</td>
       <td style={TDS_DEAN}><DeanScoreCell sectionKey={sectionKey} index={index} row={row} deanData={deanData} setDeanData={setDeanData} /></td>
     </>
   );
@@ -1642,7 +1657,13 @@ export default function NonEngineeringDeanDashboard() {
   const setLec = (i, k, v) => setLectures((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
 
   const [courseFile, setCourseFile] = useState([{ course: "", title: "", details: "", score: "", hod: "", director: "" }]);
-  const setCF = (i, k, v) => setCourseFile((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
+  const setCF = (i, k, v) => setCourseFile((p) => p.map((r, j) => {
+    if (j !== i) return r;
+    const next = { ...r, [k]: v };
+    return ["course", "title", "details"].includes(k)
+      ? { ...next, score: courseFileRowScore(next) ? String(courseFileRowScore(next)) : "" }
+      : next;
+  }));
   const [innovScore, setInnovScore] = useState("");
   const [innovDetails, setInnovDetails] = useState("");
   const [projects, setProjects] = useState([
@@ -1651,7 +1672,11 @@ export default function NonEngineeringDeanDashboard() {
     { label: "Award received (Max 5 marks)", score: "", hod: "", director: "" },
     { label: "Project outcome: events/publications (Max 5)", score: "", hod: "", director: "" },
   ]);
-  const setProj = (i, k, v) => setProjects((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
+  const setProj = (i, k, v) => setProjects((p) => p.map((r, j) => {
+    if (j !== i) return r;
+    const next = { ...r, [k]: k === "score" ? String(clampScore(v, projectGuidanceRowMax(r)) || "") : v };
+    return k === "label" ? { ...next, score: String(clampScore(next.score, projectGuidanceRowMax(next)) || "") } : next;
+  }));
 
   const [quals, setQuals] = useState([
     { label: "Higher Qualification achieved (5 Marks)", score: "", hod: "", director: "" },
@@ -1717,7 +1742,13 @@ export default function NonEngineeringDeanDashboard() {
     { degree: "PhD", name: "", thesis: "", score: "", hod: "", director: "" },
     { degree: "PhD", name: "", thesis: "", score: "", hod: "", director: "" },
   ]);
-  const setRes = (i, k, v) => setResearch((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
+  const setRes = (i, k, v) => setResearch((p) => p.map((r, j) => {
+    if (j !== i) return r;
+    const next = { ...r, [k]: v };
+    return ["degree", "name", "thesis"].includes(k)
+      ? { ...next, score: next.name || next.thesis ? String(researchGuidanceScore(next)) : "" }
+      : next;
+  }));
 
   const [projects2, setProjects2] = useState([
     { title: "", agency: "", date: "", amount: "", role: "", status: "", score: "", hod: "" },
@@ -1839,15 +1870,15 @@ export default function NonEngineeringDeanDashboard() {
 
   // ── Computed scores for HOD appraisal ──
   const totalLecScore = sumSectionScore(lectures, 50);
-  const courseFileScore = sumSectionScore(courseFile, 20);
-  const innovTotal = clampScore(innovScore, 10);
-  const projectTotal = sectionApplicability.projects === "notApplicable" ? 0 : sumSectionScore(projects, 10);
-  const qualTotal = sumSectionScore(quals, 10);
+  const courseFileScore = clampScore(courseFile.reduce((total, row) => total + courseFileRowScore(row), 0), 20);
+  const innovTotal = innovativeTeachingScore(innovDetails, innovScore, 10);
+  const projectTotal = sectionApplicability.projects === "notApplicable" ? 0 : sumSectionScore(projects, 10, "score", projectGuidanceRowMax);
+  const qualTotal = sumSectionScore(quals, 10, "score", SCORE_LIMITS.qualificationRow);
   const teachingRaw = totalLecScore + courseFileScore + innovTotal + projectTotal + qualTotal;
   const stuFeedbackScore = feedbackSectionScore(feedback, 10);
   const deptScore = sumSectionScore(deptActs, 20);
   const uniScore = sumSectionScore(uniActs, 30);
-  const societyScore = sumSectionScore(society, 10);
+  const societyScore = clampScore(society.reduce((total, row) => total + societyRowScore(row), 0), 10);
   const industryScore = sumSectionScore(industry, 5);
   const acrScore = sumSectionScore(acr, 25);
   const effectivePartAMax = effectiveMaxScore(200, sectionApplicability, [{ key: "projects", max: 10 }]);
@@ -1856,16 +1887,16 @@ export default function NonEngineeringDeanDashboard() {
   const journalScore = sumSectionScore(journals, 120);
   const bookScore = sumSectionScore(books, 50);
   const ictScore = sumSectionScore(ict, 20);
-  const researchScore = sectionApplicability.research === "notApplicable" ? 0 : sumSectionScore(research, 30);
-  const projectBScore = sumSectionScore(projects2, 45);
-  const externalProjectScore = sumSectionScore(externalProjects, 45);
+  const researchScore = sectionApplicability.research === "notApplicable" ? 0 : clampScore(research.reduce((total, row) => total + researchGuidanceScore(row), 0), 30);
+  const projectBScore = sumSectionScore(projects2, SCORE_LIMITS.researchInternalProjects);
+  const externalProjectScore = sumSectionScore(externalProjects, SCORE_LIMITS.researchExternalProjects);
   const patentScore = sumSectionScore(patents, 40);
   const awardScore = sumSectionScore(awards, 10);
   const confScore = sumSectionScore(confs, 30);
   const proposalScore = sumSectionScore(proposals, 10);
   const productScore = sumSectionScore(products, 10);
-  const fdpScore = sumSectionScore(fdps, 5);
-  const trainScore = sumSectionScore(training, 5);
+  const fdpScore = sumSectionScore(fdps, 10, "score", SCORE_LIMITS.fdpRow);
+  const trainScore = sumSectionScore(training, 10, "score", SCORE_LIMITS.fdpRow);
   const effectivePartBMax = effectiveMaxScore(420, sectionApplicability, [{ key: "research", max: 30 }]);
   const effectiveGrandMax = effectivePartAMax + effectivePartBMax;
   const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + fdpScore + trainScore, effectivePartBMax);
@@ -1880,6 +1911,12 @@ export default function NonEngineeringDeanDashboard() {
     return { label: "Needs Improvement", color: "#ef4444" };
   };
   const g = gradeFunc();
+  const selectedInnovMethods = innovativeSelectionsFromDetails(innovDetails);
+  const handleInnovMethodToggle = (method) => {
+    const nextDetails = toggleInnovativeMethod(innovDetails, method);
+    setInnovDetails(nextDetails);
+    setInnovScore(String(innovativeTeachingScore(nextDetails, "", 10)));
+  };
 
   const isDeanPending = (item) => {
     const s = item.status || "";
@@ -2044,7 +2081,7 @@ export default function NonEngineeringDeanDashboard() {
     <h3>A4: Projects</h3>
     <table>
       <tr><th>Project Type</th><th>Score</th></tr>
-      ${projects.map(p => `<tr><td>${p.label || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
+      ${projects.map(p => `<tr><td>${p.label || "&nbsp;"}</td><td class="center">${clampScore(p.score, projectGuidanceRowMax(p)) || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
     <!-- A5 -->
@@ -2085,8 +2122,8 @@ export default function NonEngineeringDeanDashboard() {
     <!-- Society -->
     <h3>E: Contribution to Society</h3>
     <table>
-      <tr><th>Activity</th><th>Details</th><th>Score</th></tr>
-      ${society.map(s => `<tr><td>${s.label || "&nbsp;"}</td><td>${s.details || "&nbsp;"}</td><td class="center">${s.score || "&nbsp;"}</td></tr>`).join('')}
+      <tr><th>Activity</th><th>Yes/No</th><th>Details</th><th>Score</th></tr>
+      ${society.map(s => `<tr><td>${s.label || "&nbsp;"}</td><td class="center">${societySelectionForRow(s) || "&nbsp;"}</td><td>${s.details || "&nbsp;"}</td><td class="center">${societyRowScore(s)}</td></tr>`).join('')}
     </table>
 
     <!-- Industry -->
@@ -2131,16 +2168,16 @@ export default function NonEngineeringDeanDashboard() {
     <h3>B4(a). Research Guidance</h3>
     <table>
       <tr><th>Degree</th><th>Name</th><th>Thesis</th><th>Score</th></tr>
-      ${research.map(r => `<tr><td>${r.degree || "&nbsp;"}</td><td>${r.name || "&nbsp;"}</td><td>${r.thesis || "&nbsp;"}</td><td class="center">${r.score || "&nbsp;"}</td></tr>`).join('')}
+      ${research.map(r => `<tr><td>${r.degree || "&nbsp;"}</td><td>${r.name || "&nbsp;"}</td><td>${r.thesis || "&nbsp;"}</td><td class="center">${researchGuidanceScore(r).toFixed(1)}</td></tr>`).join('')}
     </table>
 
-    <h3>B4(b). Ongoing & Completed Research / Consultancy Internal Projects</h3>
+    <h3>B4(b). Ongoing & Completed Research / Consultancy Internal Projects (Max 15)</h3>
     <table>
       <tr><th>Title</th><th>Funding Agency</th><th>Date of Sanction</th><th>Grant Amount</th><th>Role</th><th>Status</th><th>Score</th></tr>
       ${projects2.map(p => `<tr><td>${p.title || "&nbsp;"}</td><td>${p.agency || "&nbsp;"}</td><td>${p.date || "&nbsp;"}</td><td>${p.amount || "&nbsp;"}</td><td>${p.role || "&nbsp;"}</td><td>${p.status || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
-    <h3>B4(c). Ongoing & Completed Research / Consultancy External Projects</h3>
+    <h3>B4(c). Ongoing & Completed Research / Consultancy External Projects (Max 30)</h3>
     <table>
       <tr><th>Title</th><th>Funding Agency</th><th>Date of Sanction</th><th>Grant Amount</th><th>Role</th><th>Status</th><th>Score</th></tr>
       ${externalProjects.map(p => `<tr><td>${p.title || "&nbsp;"}</td><td>${p.agency || "&nbsp;"}</td><td>${p.date || "&nbsp;"}</td><td>${p.amount || "&nbsp;"}</td><td>${p.role || "&nbsp;"}</td><td>${p.status || "&nbsp;"}</td><td class="center">${p.score || "&nbsp;"}</td></tr>`).join('')}
@@ -2180,13 +2217,13 @@ export default function NonEngineeringDeanDashboard() {
     <h3>B8(a). FDP / Training</h3>
     <table>
       <tr><th>Program</th><th>Duration</th><th>Organization</th><th>Score</th></tr>
-      ${fdps.map(f => `<tr><td>${f.program || "&nbsp;"}</td><td>${f.duration || "&nbsp;"}</td><td>${f.org || "&nbsp;"}</td><td class="center">${f.score || "&nbsp;"}</td></tr>`).join('')}
+      ${fdps.map(f => `<tr><td>${f.program || "&nbsp;"}</td><td>${f.duration || "&nbsp;"}</td><td>${f.org || "&nbsp;"}</td><td class="center">${clampScore(f.score, SCORE_LIMITS.fdpRow) || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
     <h3>B8(b). Industrial Training</h3>
     <table>
       <tr><th>Company</th><th>Duration</th><th>Nature</th><th>Score</th></tr>
-      ${training.map(t => `<tr><td>${t.company || "&nbsp;"}</td><td>${t.duration || "&nbsp;"}</td><td>${t.nature || "&nbsp;"}</td><td class="center">${t.score || "&nbsp;"}</td></tr>`).join('')}
+      ${training.map(t => `<tr><td>${t.company || "&nbsp;"}</td><td>${t.duration || "&nbsp;"}</td><td>${t.nature || "&nbsp;"}</td><td class="center">${clampScore(t.score, SCORE_LIMITS.fdpRow) || "&nbsp;"}</td></tr>`).join('')}
     </table>
 
     <p class="total">Part B Total: ${partBTotal} / ${effectivePartBMax}</p>
@@ -2208,18 +2245,18 @@ export default function NonEngineeringDeanDashboard() {
   const validateSelfAppraisalRows = () => {
     const sections = [
       { label: "A(i). Lectures", rows: lectures, fields: ["sem", "code", "planned", "conducted", "score"] },
-      { label: "A(ii). Course File", rows: courseFile, fields: ["course", "title", "details", "score"] },
-      { label: "A(iv). Projects", rows: projects, fields: ["label", "score"], skip: sectionApplicability.projects === "notApplicable" },
+      { label: "A(ii). Course File", rows: courseFile, fields: ["course", "title", "details"] },
+      { label: "A(iv). Projects", rows: projects, fields: ["label", "score"], rowMax: projectGuidanceRowMax, maxScore: 10, skip: sectionApplicability.projects === "notApplicable" },
       { label: "A(v). Qualifications", rows: quals, fields: ["label", "score"] },
       { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
       { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
       { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
-      { label: "A(ix). Contribution to Society", rows: society, fields: ["label", "details", "score"] },
+      { label: "A(ix). Contribution to Society", rows: society, fields: ["details", "participated"] },
       { label: "A(x). Industry Connect", rows: industry, fields: ["name", "details", "score"] },
       { label: "B1. Journals", rows: journals, fields: ["title", "journal", "issn", "index", "score"] },
       { label: "B2. Books / Chapters", rows: books, fields: ["title", "book", "issn", "pub", "coauth", "first", "score"] },
       { label: "B3. ICT Pedagogy", rows: ict, fields: ["title", "desc", "type", "quad", "score"] },
-      { label: "B4(a). Research Guidance", rows: research, fields: ["degree", "name", "thesis", "score"], skip: sectionApplicability.research === "notApplicable" },
+      { label: "B4(a). Research Guidance", rows: research, fields: ["degree", "name", "thesis"], skip: sectionApplicability.research === "notApplicable" },
       { label: "B4(b). Internal Projects", rows: projects2, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
       { label: "B4(c). External Projects", rows: externalProjects, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
       { label: "B5(a). Patents (IPR)", rows: patents, fields: ["title", "type", "date", "status", "fileNo", "score"] },
@@ -2227,8 +2264,8 @@ export default function NonEngineeringDeanDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"] },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"] },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
     ];
     const errors = validateCompleteRows(sections);
     [...projects2, ...externalProjects].forEach((row, index) => {
@@ -2247,20 +2284,20 @@ export default function NonEngineeringDeanDashboard() {
   const validateSelfAppraisalSectionRows = (section) => {
     const partASections = [
       { label: "A(i). Lectures", rows: lectures, fields: ["sem", "code", "planned", "conducted", "score"] },
-      { label: "A(ii). Course File", rows: courseFile, fields: ["course", "title", "details", "score"] },
-      { label: "A(iv). Projects", rows: projects, fields: ["label", "score"], skip: sectionApplicability.projects === "notApplicable" },
+      { label: "A(ii). Course File", rows: courseFile, fields: ["course", "title", "details"] },
+      { label: "A(iv). Projects", rows: projects, fields: ["label", "score"], rowMax: projectGuidanceRowMax, maxScore: 10, skip: sectionApplicability.projects === "notApplicable" },
       { label: "A(v). Qualifications", rows: quals, fields: ["label", "score"] },
       { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
       { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
       { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
-      { label: "A(ix). Contribution to Society", rows: society, fields: ["label", "details", "score"] },
+      { label: "A(ix). Contribution to Society", rows: society, fields: ["details", "participated"] },
       { label: "A(x). Industry Connect", rows: industry, fields: ["name", "details", "score"] },
     ];
     const partBSections = [
       { label: "B1. Journals", rows: journals, fields: ["title", "journal", "issn", "index", "score"] },
       { label: "B2. Books / Chapters", rows: books, fields: ["title", "book", "issn", "pub", "coauth", "first", "score"] },
       { label: "B3. ICT Pedagogy", rows: ict, fields: ["title", "desc", "type", "quad", "score"] },
-      { label: "B4(a). Research Guidance", rows: research, fields: ["degree", "name", "thesis", "score"], skip: sectionApplicability.research === "notApplicable" },
+      { label: "B4(a). Research Guidance", rows: research, fields: ["degree", "name", "thesis"], skip: sectionApplicability.research === "notApplicable" },
       { label: "B4(b). Internal Projects", rows: projects2, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
       { label: "B4(c). External Projects", rows: externalProjects, fields: ["title", "agency", "date", "amount", "role", "status", "score"] },
       { label: "B5(a). Patents (IPR)", rows: patents, fields: ["title", "type", "date", "status", "fileNo", "score"] },
@@ -2268,8 +2305,8 @@ export default function NonEngineeringDeanDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"] },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"] },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
     ];
     const errors = validateCompleteRows(section === "partA" ? partASections : partBSections);
     if (section === "partA") {
@@ -2296,7 +2333,7 @@ export default function NonEngineeringDeanDashboard() {
   };
 
   const selfDraftKey = draftKeyFor({ family: "standard-teaching", email: sessionStorage.getItem("username") || "", academicYear: info.ay });
-  const buildSelfDraftForm = () => ({
+  const buildSelfDraftForm = () => normalizeAutoScores({
     info, lectures, courseFile, innovDetails, innovScore, projects, quals, feedback,
     deptActs, uniActs, society, industry, acr, journals, books, ict, research,
     projects2, externalProjects, patents, awards, confs, proposals, products, fdps,
@@ -2379,33 +2416,7 @@ export default function NonEngineeringDeanDashboard() {
         facultyEmail: userEmail,
         academicYear: info.ay,
         totals: { partATotal, partBTotal, grandTotal },
-        form: {
-          lectures,
-          courseFile,
-          innovDetails,
-          innovScore,
-          projects,
-          quals,
-          feedback,
-          deptActs,
-          uniActs,
-          society,
-          industry,
-          acr,
-          journals,
-          books,
-          ict,
-          research,
-          projects2,
-          externalProjects,
-          patents,
-          awards,
-          confs,
-          proposals,
-          products,
-          fdps,
-          training,
-        },
+        form: buildSelfDraftForm(),
         docs,
       });
 
@@ -2624,6 +2635,7 @@ export default function NonEngineeringDeanDashboard() {
                         <th style={TH}>Course / Paper</th>
                         <th style={TH}>Title</th>
                         <th style={TH}>Details</th>
+                        <th style={TH}>Participation</th>
                         <th style={TH}>Attachment</th>
                         <th style={TH}>View Docs</th>
                         <th style={TH}>Score</th>
@@ -2638,7 +2650,7 @@ export default function NonEngineeringDeanDashboard() {
                     <td style={TD}><TI val={r.details} onChange={(v) => setCF(i, "details", v)} /></td>
                     <td style={TD}><DocCell id={`courseFile-${i}`} docs={docs} setDocs={setDocs} /></td>
                     <td style={TD}><ViewCell id={`courseFile-${i}`} docs={docs} /></td>
-                    <td style={TDS}><TI val={r.score} numeric onChange={(v) => setCF(i, "score", v)} center /></td>
+                    <td style={TDS}><RO val={courseFileRowScore(r) ? String(courseFileRowScore(r)) : ""} center /></td>
                    </tr>
                  ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2667,15 +2679,31 @@ export default function NonEngineeringDeanDashboard() {
                     <tbody>
                       <tr>
                         <td style={TDC}>1</td>
-                        <td style={{ ...TD, fontSize: 10, color: "#555" }}>Blended learning, Virtual Lab, LMS, Project Based Learning, Flip classroom, Any other</td>
+                        <td style={{ ...TD, minWidth: 220 }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {INNOVATIVE_METHODS.map((method) => {
+                              const selected = selectedInnovMethods.includes(method);
+                              return (
+                                <button
+                                  key={method}
+                                  type="button"
+                                  onClick={() => handleInnovMethodToggle(method)}
+                                  style={{ border: selected ? "1px solid #4f46e5" : "1px solid #cbd5e1", background: selected ? "#eef2ff" : "#fff", color: selected ? "#3730a3" : "#334155", borderRadius: 5, padding: "5px 7px", fontSize: 10, fontWeight: 700, cursor: "pointer" }}
+                                >
+                                  {method}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </td>
                         <td style={TD}><TI val={innovDetails} onChange={setInnovDetails} /></td>
                         <td style={TD}><DocCell id="innov" docs={docs} setDocs={setDocs} /></td>
                         <td style={TD}><ViewCell id="innov" docs={docs} /></td>
-                        <td style={TDS}><TI val={innovScore} onChange={setInnovScore} center /></td>
+                        <td style={TDS}><RO val={innovTotal.toFixed(1)} center /></td>
                       </tr>
                       <tr style={{ background: "#eff6ff" }}>
                         <td style={{ ...TDC, fontWeight: "bold" }} colSpan={5}>Total Score (Max 10)</td>
-                        <td style={{ ...TDS, fontWeight: "bold" }}>{n(innovScore).toFixed(1)}</td>
+                        <td style={{ ...TDS, fontWeight: "bold" }}>{innovTotal.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -2708,7 +2736,7 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TD}><TI val={r.label} readOnly={sectionApplicability.projects === "notApplicable"} onChange={(v) => setProj(i, "label", v)} /></td>
                           <td style={TD}><DocCell id={`proj-${i}`} docs={docs} setDocs={setDocs} readOnly={sectionApplicability.projects === "notApplicable"} /></td>
                           <td style={TD}><ViewCell id={`proj-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} numeric readOnly={sectionApplicability.projects === "notApplicable"} onChange={(v) => setProj(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric readOnly={sectionApplicability.projects === "notApplicable"} onChange={(v) => setProj(i, "score", v)} center max={projectGuidanceRowMax(r)} /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2740,7 +2768,7 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TD}><TI val={r.label} onChange={(v) => setQual(i, "label", v)} /></td>
                           <td style={TD}><DocCell id={`qual-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`qual-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setQual(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setQual(i, "score", v)} center max={SCORE_LIMITS.qualificationRow} /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
@@ -2771,9 +2799,9 @@ export default function NonEngineeringDeanDashboard() {
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.code} onChange={(v) => setFb(i, "code", v)} textOnly /></td>
-                          <td style={TDC}><TI val={r.fb1} numeric onChange={(v) => setFb(i, "fb1", v)} center /></td>
-                          <td style={TDC}><TI val={r.fb2} numeric onChange={(v) => setFb(i, "fb2", v)} center /></td>
-                          <td style={{ ...TDC, fontWeight: 700, color: "#0ea5e9" }}>{r.fb1 || r.fb2 ? ((n(r.fb1) + n(r.fb2)) / ((r.fb1 ? 1 : 0) + (r.fb2 ? 1 : 0) || 1)).toFixed(2) : ""}</td>
+                          <td style={TDC}><TI val={r.fb1} numeric onChange={(v) => setFb(i, "fb1", v)} center max={SCORE_LIMITS.feedbackAverage} /></td>
+                          <td style={TDC}><TI val={r.fb2} numeric onChange={(v) => setFb(i, "fb2", v)} center max={SCORE_LIMITS.feedbackAverage} /></td>
+                          <td style={{ ...TDC, fontWeight: 700, color: "#0ea5e9" }}>{r.fb1 || r.fb2 ? feedbackAverage(r).toFixed(2) : ""}</td>
                           <td style={TDS}>{feedbackRowScore(r, 10).toFixed(1)}</td>
                         </tr>
                       ))}
@@ -2856,16 +2884,17 @@ export default function NonEngineeringDeanDashboard() {
 
                 {/* A9. Contribution to Society */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(ix) Contribution to Society — Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(ix) Contribution to Society - Max 10 marks (Max 5 per row)</div>
                   <table style={T}>
                     <thead>
                       <tr>
                         <th style={{ ...TH, width: 30 }}>SN</th>
                         <th style={TH}>Activity</th>
+                        <th style={TH}>Yes/No</th>
                         <th style={TH}>Details</th>
                         <th style={TH}>Attachment</th>
                         <th style={TH}>View Docs</th>
-                        <th style={TH}>Score</th>
+                        <th style={TH}>Score (Max 5)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2873,19 +2902,29 @@ export default function NonEngineeringDeanDashboard() {
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.label} onChange={(v) => setSoc(i, "label", v)} /></td>
+                          <td style={TDC}>
+                            <label style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "#334155" }}>
+                              <input
+                                type="checkbox"
+                                checked={societySelectionForRow(r) === "Yes"}
+                                onChange={(event) => setSociety((rows) => rows.map((row, rowIndex) => rowIndex === i ? { ...row, participated: event.target.checked ? "Yes" : "No", score: event.target.checked ? String(societyRowScore({ participated: "Yes" })) : "0" } : row))}
+                              />
+                              {societySelectionForRow(r) === "Yes" ? "Yes" : "No"}
+                            </label>
+                          </td>
                           <td style={TD}><TI val={r.details} onChange={(v) => setSoc(i, "details", v)} /></td>
                           <td style={TD}><DocCell id={`soc-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`soc-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setSoc(i, "score", v)} center /></td>
+                          <td style={TDS}><RO val={String(societyRowScore(r))} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#eff6ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={5}>Total Score (Max 10)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Score (Max 10)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{societyScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>
-                  <RowBtns onAdd={() => setSociety((p) => [...p, { label: "", details: "", score: "" }])} onDel={() => setSociety((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={society.length > 1} />
+                  <RowBtns onAdd={() => setSociety((p) => [...p, { label: "", details: "", participated: "", score: "" }])} onDel={() => setSociety((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={society.length > 1} />
                 </div>
 
                 {/* A10. Industry Connect */}
@@ -2925,6 +2964,7 @@ export default function NonEngineeringDeanDashboard() {
                 {/* A11. ACR */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(xi) Annual Confidential Report (ACR) — Max 25 marks</div>
+                  <div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>⚠️ This section is filled by your superior (VC). Your scores here are read-only.</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2938,7 +2978,7 @@ export default function NonEngineeringDeanDashboard() {
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><div style={{ fontWeight: 700 }}>{r.label}</div>{ACR_DETAIL_POINTS[r.label] && <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>{ACR_DETAIL_POINTS[r.label].map((point) => <li key={point}>{point}</li>)}</ul>}</td>
-                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setAcrRow(i, "score", v)} center /></td>
+                          <td style={TDS}><RO val={r.score || "-"} center /></td>
 
                         </tr>
                       ))}
@@ -3104,12 +3144,23 @@ export default function NonEngineeringDeanDashboard() {
                       {research.map((r, i) => (
                         <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
-                          <td style={TD}><TI val={r.degree} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "degree", v)} textOnly /></td>
+                          <td style={TD}>
+                            <select
+                              value={r.degree || ""}
+                              disabled={sectionApplicability.research === "notApplicable"}
+                              onChange={(event) => setRes(i, "degree", event.target.value)}
+                              style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, fontFamily: "Georgia, serif" }}
+                            >
+                              <option value="">Select</option>
+                              <option value="PhD">PhD</option>
+                              <option value="PG">PG</option>
+                            </select>
+                          </td>
                           <td style={TD}><TI val={r.name} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "name", v)} textOnly /></td>
                           <td style={TD}><TI val={r.thesis} readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "thesis", v)} textOnly /></td>
                           <td style={TD}><DocCell id={`res-${i}`} docs={docs} setDocs={setDocs} readOnly={sectionApplicability.research === "notApplicable"} /></td>
                           <td style={TD}><ViewCell id={`res-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} numeric readOnly={sectionApplicability.research === "notApplicable"} onChange={(v) => setRes(i, "score", v)} center /></td>
+                          <td style={TDS}><RO val={sectionApplicability.research === "notApplicable" ? "0" : researchGuidanceScore(r).toFixed(1)} center /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
@@ -3123,7 +3174,7 @@ export default function NonEngineeringDeanDashboard() {
 
                 {/* B4(b). Research / Consultancy Internal Projects */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4(b). Ongoing & Completed Research / Consultancy Internal Projects - Max 45 marks (Ongoing: 15, Completed: 30)</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4(b). Ongoing & Completed Research / Consultancy Internal Projects - Max 15 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3151,11 +3202,11 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TD}><TI val={r.status} onChange={(v) => setPrj2(i, "status", v)} textOnly /></td>
                           <td style={TD}><DocCell id={`project2-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`project2-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setPrj2(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setPrj2(i, "score", v)} center max={SCORE_LIMITS.researchInternalProjects} /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={9}>Total Score (Max 45)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={9}>Total Score (Max 15)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{projectBScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
@@ -3165,7 +3216,7 @@ export default function NonEngineeringDeanDashboard() {
 
                 {/* B4(c). Research / Consultancy External Projects */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4(c). Ongoing & Completed Research / Consultancy External Projects - Max 45 marks (Ongoing: 15, Completed: 30)</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B4(c). Ongoing & Completed Research / Consultancy External Projects - Max 30 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3193,11 +3244,11 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TD}><TI val={r.status} onChange={(v) => setExtPrj(i, "status", v)} textOnly /></td>
                           <td style={TD}><DocCell id={`externalProject-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`externalProject-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setExtPrj(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setExtPrj(i, "score", v)} center max={SCORE_LIMITS.researchExternalProjects} /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={9}>Total Score (Max 45)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={9}>Total Score (Max 30)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{externalProjectScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
@@ -3395,7 +3446,7 @@ export default function NonEngineeringDeanDashboard() {
 
                 {/* B8(a). FDP / Workshops Attended */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(a). FDP / Workshops Attended — Max 5 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(a). FDP / Workshops Attended - Max 10 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3417,11 +3468,11 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TD}><TI val={r.org} onChange={(v) => setFdp(i, "org", v)} /></td>
                           <td style={TD}><DocCell id={`fdp-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`fdp-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setFdp(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setFdp(i, "score", v)} center max={SCORE_LIMITS.fdpRow} /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total FDP Score (Max 5)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total FDP Score (Max 10)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{fdpScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
@@ -3431,7 +3482,7 @@ export default function NonEngineeringDeanDashboard() {
 
                 {/* B8(b). Industrial Training */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(b). Industrial Training — Max 5 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(b). Industrial Training - Max 10 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3453,11 +3504,11 @@ export default function NonEngineeringDeanDashboard() {
                           <td style={TD}><TI val={r.nature} onChange={(v) => setTrain(i, "nature", v)} /></td>
                           <td style={TD}><DocCell id={`train-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`train-${i}`} docs={docs} /></td>
-                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setTrain(i, "score", v)} center /></td>
+                          <td style={TDS}><TI val={r.score} numeric onChange={(v) => setTrain(i, "score", v)} center max={SCORE_LIMITS.fdpRow} /></td>
                         </tr>
                       ))}
                       <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Training Score (Max 5)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Training Score (Max 10)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{trainScore.toFixed(1)}</td>
                       </tr>
                     </tbody>

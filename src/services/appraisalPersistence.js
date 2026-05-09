@@ -5,6 +5,7 @@ const SNAPSHOT_SETTERS = {
   info: "setInfo",
   lectures: "setLectures",
   courseFile: "setCourseFile",
+  innovRows: "setInnovRows",
   innovDetails: "setInnovDetails",
   innovScore: "setInnovScore",
   innovHod: "setInnovHod",

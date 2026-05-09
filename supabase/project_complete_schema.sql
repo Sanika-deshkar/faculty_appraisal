@@ -155,11 +155,11 @@ create table public.projects_guided (
   max_marks numeric,
   row_no integer,
   label text,
-  score numeric not null default 0,
-  hod_score numeric,
-  director_score numeric,
-  dean_score numeric,
-  vc_score numeric,
+  score numeric not null default 0 check (score between 0 and 5),
+  hod_score numeric check (hod_score is null or hod_score between 0 and 5),
+  director_score numeric check (director_score is null or director_score between 0 and 5),
+  dean_score numeric check (dean_score is null or dean_score between 0 and 5),
+  vc_score numeric check (vc_score is null or vc_score between 0 and 5),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -586,11 +586,11 @@ create table public.self_development (
   program text,
   duration text,
   organization text,
-  score numeric not null default 0,
-  hod_score numeric,
-  director_score numeric,
-  dean_score numeric,
-  vc_score numeric,
+  score numeric not null default 0 check (score between 0 and 5),
+  hod_score numeric check (hod_score is null or hod_score between 0 and 5),
+  director_score numeric check (director_score is null or director_score between 0 and 5),
+  dean_score numeric check (dean_score is null or dean_score between 0 and 5),
+  vc_score numeric check (vc_score is null or vc_score between 0 and 5),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -606,11 +606,11 @@ create table public.industrial_training (
   company text,
   duration text,
   nature text,
-  score numeric not null default 0,
-  hod_score numeric,
-  director_score numeric,
-  dean_score numeric,
-  vc_score numeric,
+  score numeric not null default 0 check (score between 0 and 5),
+  hod_score numeric check (hod_score is null or hod_score between 0 and 5),
+  director_score numeric check (director_score is null or director_score between 0 and 5),
+  dean_score numeric check (dean_score is null or dean_score between 0 and 5),
+  vc_score numeric check (vc_score is null or vc_score between 0 and 5),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -727,14 +727,14 @@ values
   ('standard_lectures_50', 'standard', 'A', 'lectures', 'A1. Lectures / Tutorials / Practicals', 50, 'teaching_process', '["semester","course_code","planned_classes","conducted_classes"]'),
   ('design_lectures_40', 'design_arts', 'A', 'lectures', 'A(i). Lectures / Tutorials / Practicals', 40, 'teaching_process', '["semester","course_code","planned_classes","conducted_classes"]'),
   ('course_file_20', 'all_teaching', 'A', 'courseFile', 'A2. Course File', 20, 'course_files', '["course","title","details"]'),
-  ('innovative_teaching_10', 'all_teaching', 'A', 'innovativeTeaching', 'A3. Innovative Teaching-Learning', 10, 'innovative_teaching', '["details"]'),
+  ('innovative_teaching_10', 'all_teaching', 'A', 'innovativeTeaching', 'A3. Innovative Teaching-Learning', 10, 'innovative_teaching', '["method","details","score"]'),
   ('standard_projects_10', 'standard', 'A', 'projects', 'A4. Projects', 10, 'projects_guided', '["label"]'),
   ('design_projects_20', 'design_arts', 'A', 'projects', 'A(iv). Project Guidance', 20, 'projects_guided', '["label"]'),
   ('qualification_10', 'all_teaching', 'A', 'quals', 'A5. Qualification Enhancement', 10, 'qualification_enhancement', '["label"]'),
   ('student_feedback_10', 'all_teaching', 'A', 'feedback', 'Student Feedback', 10, 'student_feedback', '["course_code","feedback_1","feedback_2"]'),
   ('department_activities_20', 'all_teaching', 'A', 'deptActs', 'Departmental / School Activities', 20, 'department_activities', '["activity","nature"]'),
   ('university_activities_30', 'all_teaching', 'A', 'uniActs', 'University Level Activities', 30, 'university_activities', '["activity","nature"]'),
-  ('society_10', 'all_teaching', 'A', 'society', 'Contribution to Society', 10, 'social_contributions', '["label","details"]'),
+  ('society_10', 'all_teaching', 'A', 'society', 'Contribution to Society', 10, 'social_contributions', '["label","participated","details"]'),
   ('industry_5', 'standard_design', 'A', 'industry', 'Industry Connect', 5, 'industry_connect', '["name","details"]'),
   ('acr_25', 'all_teaching', 'A', 'acr', 'Annual Confidential Report - School Level', 25, 'acr_scores', '["label"]'),
   ('standard_journals_120', 'standard', 'B', 'journals', 'B1. Research Papers / Journal Publications', 120, 'journal_publications', '["title","journal","issn","indexing"]'),
@@ -746,8 +746,8 @@ values
   ('media_ict_30', 'media', 'B', 'ict', 'B3. ICT Mediated Teaching-Learning Pedagogy / New Curricula', 30, 'ict_pedagogy', '["title","description","type","quadrant"]'),
   ('design_ict_50', 'design_arts', 'B', 'ict', 'B3. ICT Mediated Teaching-Learning Pedagogy / New Curricula', 50, 'ict_pedagogy', '["title","description","type","quadrant"]'),
   ('research_guidance_30', 'all_teaching', 'B', 'research', 'B4(a). Research Guidance - PhD / PG', 30, 'research_guidance', '["degree","student_name","thesis"]'),
-  ('standard_internal_projects_45', 'standard', 'B', 'projects2', 'B4(b). Research / Consultancy Internal Projects', 45, 'research_projects', '["title","agency","sanction_date","amount","role","project_status"]'),
-  ('standard_external_projects_45', 'standard', 'B', 'externalProjects', 'B4(c). Research / Consultancy External Projects', 45, 'external_research_projects', '["title","agency","sanction_date","amount","role","project_status"]'),
+  ('standard_internal_projects_15', 'standard', 'B', 'projects2', 'B4(b). Ongoing & Completed Research / Consultancy Internal Projects', 15, 'research_projects', '["title","agency","sanction_date","amount","role","project_status"]'),
+  ('standard_external_projects_30', 'standard', 'B', 'externalProjects', 'B4(c). Ongoing & Completed Research / Consultancy External Projects', 30, 'external_research_projects', '["title","agency","sanction_date","amount","role","project_status"]'),
   ('media_design_internal_projects_15', 'media_design', 'B', 'internalProjects', 'B4(b). Internal Research Projects', 15, 'research_projects', '["title","agency","sanction_date","amount","role","project_status"]'),
   ('media_external_projects_30', 'media', 'B', 'externalProjects', 'B4(c). External Research Projects', 30, 'external_research_projects', '["title","agency","sanction_date","amount","role","project_status"]'),
   ('design_external_projects_30', 'design_arts', 'B', 'externalProjects', 'B4(c). External Research / Consultancy Projects', 30, 'external_research_projects', '["title","agency","sanction_date","amount","role","project_status"]'),
@@ -762,10 +762,10 @@ values
   ('design_proposals_10', 'design_arts', 'B', 'proposals', 'B7. Research Proposals', 10, 'research_proposals', '["title","duration","agency","amount"]'),
   ('standard_products_10', 'standard', 'B', 'products', 'B7(b). Product Developed and Used by Students in Lab / Commercialized', 10, 'products_developed', '["details","usage"]'),
   ('media_products_20', 'media', 'B', 'products', 'B6(b). Products Developed / Used', 20, 'products_developed', '["details","usage"]'),
-  ('standard_fdp_5', 'standard', 'B', 'fdps', 'B8(a). FDP / Workshops Attended', 5, 'self_development', '["program","duration","organization"]'),
-  ('media_fdp_20', 'media', 'B', 'fdps', 'B7. FDP / Self Development', 20, 'self_development', '["program","duration","organization"]'),
+  ('standard_fdp_10', 'standard', 'B', 'fdps', 'B8(a). FDP / Workshops Attended', 10, 'self_development', '["program","duration","organization"]'),
+  ('media_fdp_10', 'media', 'B', 'fdps', 'B7. FDP / Self Development', 10, 'self_development', '["program","duration","organization"]'),
   ('design_fdp_10', 'design_arts', 'B', 'fdps', 'B8(a). FDP / Self Development', 10, 'self_development', '["program","duration","organization"]'),
-  ('standard_industrial_training_5', 'standard', 'B', 'training', 'B8(b). Industrial Training', 5, 'industrial_training', '["company","duration","nature"]'),
+  ('standard_industrial_training_10', 'standard', 'B', 'training', 'B8(b). Industrial Training', 10, 'industrial_training', '["company","duration","nature"]'),
   ('media_industrial_training_10', 'media', 'B', 'training', 'B8. Industrial Training', 10, 'industrial_training', '["company","duration","nature"]'),
   ('design_industrial_training_10', 'design_arts', 'B', 'training', 'B8(b). Industrial Training', 10, 'industrial_training', '["company","duration","nature"]'),
   ('non_teaching_resp_10', 'non_teaching', 'A', 'selfResp', 'Current Responsibilities', 10, 'non_teaching_part_a_items', '["details"]'),
@@ -780,16 +780,21 @@ on conflict (code) do nothing;
 -- Compatibility patch for older section-definition seeds.
 -- On a fresh reset this is a no-op because the corrected rows above are already inserted.
 update public.form_section_definitions
-set code = 'standard_fdp_5',
+set code = 'standard_fdp_10',
     title = 'B8(a). FDP / Workshops Attended',
-    max_marks = 5
-where code = 'standard_fdp_10';
+    max_marks = 10
+where code in ('standard_fdp_5', 'standard_fdp_10');
 
 update public.form_section_definitions
-set code = 'standard_industrial_training_5',
+set code = 'standard_industrial_training_10',
     form_family = 'standard',
-    max_marks = 5
-where code = 'industrial_training_10';
+    max_marks = 10
+where code in ('industrial_training_10', 'standard_industrial_training_5');
+
+update public.form_section_definitions
+set code = 'media_fdp_10',
+    max_marks = 10
+where code in ('media_fdp_20', 'media_fdp_10');
 
 insert into public.form_section_definitions
   (code, form_family, part, section_key, title, max_marks, storage_table, fields)

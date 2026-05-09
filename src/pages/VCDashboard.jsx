@@ -11,6 +11,7 @@ import { openFullFormReport } from "../utils/fullFormReport";
 import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
 import { NonTeachingAuthorityReviewPanel } from "./NonTeachingStaffDashboard";
+import { SCORE_LIMITS, clampScore, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore } from "../utils/appraisalFormUtils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -79,10 +80,11 @@ function RoleBadge({ role }) {
 function RO({ val, center }) {
   return <span style={{ fontSize: 11, fontFamily: "Georgia, serif", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{val || <span style={{ color: "#cbd5e1" }}>—</span>}</span>;
 }
-function VCInput({ val, onChange }) {
+function VCInput({ val, onChange, max }) {
   return (
     <input type="number" min="0" step="0.5" value={val ?? ""}
-      onChange={e => onChange(e.target.value)}
+      max={max}
+      onChange={e => onChange(e.target.value === "" || max === undefined ? e.target.value : String(clampScore(e.target.value, max)))}
       style={{ width: 58, textAlign: "center", border: "1.5px solid #7c3aed", borderRadius: 5, padding: "3px 5px", fontSize: 11, fontFamily: "Georgia, serif", outline: "none", background: "#fdf4ff" }}
     />
   );
@@ -237,15 +239,15 @@ const VC_REPORT_PART_B_SECTIONS = [
   { key: "books", title: "B2. Books / Book Chapters", max: 50, doc: "book", fields: [["title", "Title with Page Nos."], ["book", "Book Title, Editor & Publisher"], ["issn", "ISSN / ISBN No."], ["pub", "Type of Publisher"], ["coauth", "Co-authors (from DYPIU)"], ["first", "First Author"]] },
   { key: "ict", title: "B3. ICT / E-Content", max: 20, doc: "ict", fields: [["title", "Title"], ["desc", "Description"], ["type", "Type"], ["quad", "Quadrants"]] },
   { key: "research", title: "B4(a). Research Guidance", max: 30, doc: "res", fields: [["degree", "Degree"], ["name", "Student Name"], ["thesis", "Thesis / Status"]] },
-  { key: "projects2", title: "B4(b). Research / Consultancy Internal Projects", max: 45, doc: "project2", fields: [["title", "Title"], ["agency", "Funding Agency"], ["date", "Date of Sanction"], ["amount", "Grant Amount"], ["role", "Role PI / Co-PI / Consultant"], ["status", "Status"]] },
-  { key: "externalProjects", title: "B4(c). Research / Consultancy External Projects", max: 45, doc: "externalProject", fields: [["title", "Title"], ["agency", "Funding Agency"], ["date", "Date of Sanction"], ["amount", "Grant Amount"], ["role", "Role PI / Co-PI / Consultant"], ["status", "Status"]] },
+  { key: "projects2", title: "B4(b). Research / Consultancy Internal Projects", max: 15, doc: "project2", fields: [["title", "Title"], ["agency", "Funding Agency"], ["date", "Date of Sanction"], ["amount", "Grant Amount"], ["role", "Role PI / Co-PI / Consultant"], ["status", "Status"]] },
+  { key: "externalProjects", title: "B4(c). Research / Consultancy External Projects", max: 30, doc: "externalProject", fields: [["title", "Title"], ["agency", "Funding Agency"], ["date", "Date of Sanction"], ["amount", "Grant Amount"], ["role", "Role PI / Co-PI / Consultant"], ["status", "Status"]] },
   { key: "patents", title: "B5(a). Patents (IPR)", max: 40, doc: "pat", fields: [["title", "Title"], ["type", "National / International"], ["date", "Date"], ["status", "Status"], ["fileNo", "File No."]] },
   { key: "awards", title: "B5(b). Awards", max: 10, doc: "awd", fields: [["title", "Title"], ["date", "Date"], ["agency", "Agency"], ["level", "Level"]] },
   { key: "confs", title: "B6. Invited Lectures / Resource Person / Paper Presentations", max: 30, doc: "conf", fields: [["title", "Title"], ["type", "Type"], ["org", "Organization"], ["level", "Level"]] },
   { key: "proposals", title: "B7(a). Submitted Research Proposals", max: 10, doc: "prop", fields: [["title", "Title"], ["duration", "Duration"], ["agency", "Funding Agency"], ["amount", "Grant Amount Requested"]] },
   { key: "products", title: "B7(b). Product Developed and Used by Students in Lab / Commercialized", max: 10, doc: "prod", fields: [["details", "Details of Product"], ["usage", "Used by Students in Lab / Commercialized"]] },
-  { key: "fdps", title: "B8(a). FDP / Workshops Attended", max: 5, doc: "fdp", fields: [["program", "Program"], ["duration", "Duration"], ["org", "Organization"]] },
-  { key: "training", title: "B8(b). Industrial Training", max: 5, doc: "train", fields: [["company", "Company"], ["duration", "Duration"], ["nature", "Nature"]] },
+  { key: "fdps", title: "B8(a). FDP / Workshops Attended", max: 10, doc: "fdp", fields: [["program", "Program"], ["duration", "Duration"], ["org", "Organization"]] },
+  { key: "training", title: "B8(b). Industrial Training", max: 10, doc: "train", fields: [["company", "Company"], ["duration", "Duration"], ["nature", "Nature"]] },
 ];
 
 const buildVcSectionScores = (person, vcData) => {
@@ -300,6 +302,14 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
   const { docs } = person;
   const courseFileRow = Array.isArray(person.courseFile) ? (person.courseFile[0] || {}) : (person.courseFile || {});
   const rows = (arr) => arr && arr.length > 0 ? arr : [{}];
+  const vcRowMax = (section, row = {}) => ({
+    courseFile: SCORE_LIMITS.courseFileRow,
+    quals: SCORE_LIMITS.qualificationRow,
+    feedback: 10,
+    society: SCORE_LIMITS.societyRow,
+    fdps: SCORE_LIMITS.fdpRow,
+    training: SCORE_LIMITS.fdpRow,
+  }[section] || (section === "projects" ? projectGuidanceRowMax(row) : section === "research" ? researchGuidanceRowMax(row) : undefined));
 
   const ScoreHeaders = () => (
     <>
@@ -312,16 +322,20 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
     </>
   );
 
-  const ScoreCells = ({ r, section, i }) => (
-    <>
-      <td style={TDS}><RO val={r?.score} center /></td>
-      {reviewRoles.map((role) => {
-        const meta = vcRoleMeta(role);
-        return <td key={role} style={meta.cellStyle}><RO val={vcScoreForRole(r, role)} center /></td>;
-      })}
-      <td style={TDS_VC}><VCInput val={get(section, i, "vc")} onChange={v => set(section, i, "vc", v)} /></td>
-    </>
-  );
+  const ScoreCells = ({ r, section, i }) => {
+    const maxForRow = vcRowMax(section, r);
+    const displayScore = (value) => maxForRow ? clampScore(value, maxForRow) : value;
+    return (
+      <>
+        <td style={TDS}><RO val={section === "research" ? researchGuidanceScore(r).toFixed(1) : displayScore(r?.score)} center /></td>
+        {reviewRoles.map((role) => {
+          const meta = vcRoleMeta(role);
+          return <td key={role} style={meta.cellStyle}><RO val={displayScore(vcScoreForRole(r, role))} center /></td>;
+        })}
+        <td style={TDS_VC}><VCInput val={get(section, i, "vc")} max={maxForRow} onChange={v => set(section, i, "vc", v)} /></td>
+      </>
+    );
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -397,7 +411,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
             const meta = vcRoleMeta(role);
             return <td key={role} style={meta.cellStyle}><RO val={vcInnovScoreForRole(person, role)} center /></td>;
           })}
-          <td style={TDS_VC}><VCInput val={getS("innovVc") || getS("innovVC")} onChange={v => setScalar("innovVc", v)} /></td>
+          <td style={TDS_VC}><VCInput val={getS("innovVc") || getS("innovVC")} max={10} onChange={v => setScalar("innovVc", v)} /></td>
         </tr></tbody></table>
       </SC>
 
@@ -505,9 +519,9 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
           render: (r) => [r.title, r.type, r.quad] },
         { title: "B4(a). Research Guidance (Max 30)", key: "research", docPfx: "res",
           render: (r) => [r.degree, r.name, r.thesis] },
-        { title: "B4(b). Research / Consultancy Internal Projects (Max 45)", key: "projects2", docPfx: "project2",
+        { title: "B4(b). Research / Consultancy Internal Projects (Max 15)", key: "projects2", docPfx: "project2",
           render: (r) => [r.title, r.agency, r.date, r.amount, r.role, r.status] },
-        { title: "B4(c). Research / Consultancy External Projects (Max 45)", key: "externalProjects", docPfx: "externalProject",
+        { title: "B4(c). Research / Consultancy External Projects (Max 30)", key: "externalProjects", docPfx: "externalProject",
           render: (r) => [r.title, r.agency, r.date, r.amount, r.role, r.status] },
         { title: "B5(a). Patents (IPR) (Max 40)", key: "patents", docPfx: "pat",
           render: (r) => [r.title, r.type, r.date, r.status, r.fileNo] },
@@ -519,9 +533,9 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
           render: (r) => [r.title, r.duration, r.agency, r.amount] },
         { title: "B7(b). Product Developed and Used by Students in Lab / Commercialized (Max 10)", key: "products", docPfx: "prod",
           render: (r) => [r.details, r.usage] },
-        { title: "B8(a). FDP / Workshops Attended (Max 5)", key: "fdps", docPfx: "fdp",
+        { title: "B8(a). FDP / Workshops Attended (Max 10)", key: "fdps", docPfx: "fdp",
           render: (r) => [r.program, r.duration, r.org] },
-        { title: "B8(b). Industrial Training (Max 5)", key: "training", docPfx: "train",
+        { title: "B8(b). Industrial Training (Max 10)", key: "training", docPfx: "train",
           render: (r) => [r.company, r.duration, r.nature] },
       ].map(({ title, key, docPfx, render }) => (
         <SC key={key} title={title} accent="#7c3aed">
@@ -564,10 +578,15 @@ function calcVCScore(person, vcData) {
     return idx === null ? n(Array.isArray(source) ? source[0]?.[field] : source?.[field]) : n(source?.[idx]?.[field]);
   };
   const getS = (key) => n(vcData[key] ?? person[key]);
-  const sum = (arr, s, f) => (arr || []).reduce((a, _, i) => a + get(s, i, f), 0);
+  const sectionMax = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 10, training: 10 };
+  const rowMax = { courseFile: () => SCORE_LIMITS.courseFileRow, projects: projectGuidanceRowMax, quals: () => SCORE_LIMITS.qualificationRow, feedback: () => 10, society: () => SCORE_LIMITS.societyRow, research: researchGuidanceRowMax, fdps: () => SCORE_LIMITS.fdpRow, training: () => SCORE_LIMITS.fdpRow };
+  const sum = (arr, s, f) => clampScore((arr || []).reduce((a, row, i) => {
+    const limit = rowMax[s]?.(row);
+    return a + (limit ? clampScore(get(s, i, f), limit) : get(s, i, f));
+  }, 0), sectionMax[s] || 0);
 
-  const partA = sum(person.lectures, "lectures", "vc") + get("courseFile", null, "vc") +
-    n(vcData.innovVc ?? vcData.innovVC ?? person.innovVc) + sum(person.projects, "projects", "vc") +
+  const partA = sum(person.lectures, "lectures", "vc") + sum(person.courseFile, "courseFile", "vc") +
+    clampScore(vcData.innovVc ?? vcData.innovVC ?? person.innovVc, 10) + sum(person.projects, "projects", "vc") +
     sum(person.quals, "quals", "vc") + sum(person.feedback, "feedback", "vc") +
     sum(person.deptActs, "deptActs", "vc") + sum(person.uniActs, "uniActs", "vc") +
     sum(person.society, "society", "vc") + sum(person.industry, "industry", "vc") +
@@ -579,7 +598,9 @@ function calcVCScore(person, vcData) {
     sum(person.confs, "confs", "vc") + sum(person.proposals, "proposals", "vc") + sum(person.products, "products", "vc") +
     sum(person.fdps, "fdps", "vc") + sum(person.training || [], "training", "vc");
 
-  return { partA, partB, total: partA + partB };
+  const cappedPartA = clampScore(partA, MAX_SCORES.PART_A || 200);
+  const cappedPartB = clampScore(partB, MAX_SCORES.PART_B || 420);
+  return { partA: cappedPartA, partB: cappedPartB, total: clampScore(cappedPartA + cappedPartB, MAX_SCORES.GRAND_TOTAL || 620) };
 }
 
 // ─── VC Review Panel ──────────────────────────────────────────────────────────
