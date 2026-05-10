@@ -105,6 +105,8 @@ const clampOptionalRating = (value) => {
 const firstNonEmpty = (...values) =>
   values.find((value) => clean(value) !== "") || "";
 const emailKey = (value) => clean(value).toLowerCase();
+const pickFirstNonEmpty = (source = {}, keys = []) =>
+  firstNonEmpty(...keys.map((key) => source?.[key]));
 const academicYear = (value) =>
   clean(value) || APP_INFO.DEFAULT_AY || "2025-2026";
 const initialsFor = (name = "", fallback = "U") =>
@@ -177,6 +179,7 @@ export const normalizeNonTeachingForm = (
 ) => {
   const base = emptyNonTeachingForm(profile, role);
   const form = payload && typeof payload === "object" ? payload : {};
+  const partBPayload = form.partB || {};
   const merged = {
     ...base,
     ...form,
@@ -186,7 +189,26 @@ export const normalizeNonTeachingForm = (
     },
     partB: {
       ...base.partB,
-      ...(form.partB || {}),
+      ...partBPayload,
+      profComp:
+        partBPayload.profComp ||
+        partBPayload.professional_competence ||
+        partBPayload.professionalCompetence ||
+        base.partB.profComp,
+      quality:
+        partBPayload.quality ||
+        partBPayload.quality_of_work ||
+        partBPayload.qualityOfWork ||
+        base.partB.quality,
+      personal:
+        partBPayload.personal ||
+        partBPayload.personal_characteristics ||
+        partBPayload.personalCharacteristics ||
+        base.partB.personal,
+      regular:
+        partBPayload.regular ||
+        partBPayload.regularity ||
+        base.partB.regular,
     },
     docs: form.docs || base.docs,
   };
@@ -202,10 +224,20 @@ export const normalizeNonTeachingForm = (
   );
 
   SELF_ITEMS.forEach(({ key, max }) => {
+    const sourceRow =
+      form[key] ||
+      (key === "selfResp" ? (form.current_responsibilities || form.currentResponsibilities) : null) ||
+      (key === "selfContrib" ? (form.other_contributions || form.otherContributions || form.useful_contributions || form.usefulContributions) : null) ||
+      (key === "selfAchieve" ? (form.achievements || form.achievement) : null);
     merged[key] = {
       ...(base[key] || {}),
-      ...(form[key] || {}),
+      ...(sourceRow || {}),
     };
+    const row = merged[key];
+    row.marks = pickFirstNonEmpty(row, ["marks", "selfMarks", "self_marks", "self_score", "selfScore"]);
+    row.roMarks = pickFirstNonEmpty(row, ["roMarks", "ro_marks", "reportingOfficerMarks", "reporting_officer_marks", "reportingOfficerScore", "reporting_officer_score"]);
+    row.regMarks = pickFirstNonEmpty(row, ["regMarks", "reg_marks", "registrarMarks", "registrar_marks", "registrarScore", "registrar_score"]);
+    row.vcMarks = pickFirstNonEmpty(row, ["vcMarks", "vc_marks", "vcScore", "vc_score"]);
     ["marks", "roMarks", "regMarks", "vcMarks"].forEach((field) => {
       merged[key][field] = clampOptionalScore(merged[key][field], max);
     });
@@ -221,6 +253,26 @@ export const normalizeNonTeachingForm = (
   RATING_SECTIONS.forEach(({ key, params }) => {
     const rows = merged.partB[key] || {};
     params.forEach((_label, index) => {
+      const roValue = pickFirstNonEmpty(rows, [
+        `p${index}_ro`,
+        `p${index}_reporting_officer`,
+        `p${index}_reportingOfficer`,
+        `p${index}_ro_score`,
+        `p${index}_reporting_officer_score`,
+      ]);
+      const regValue = pickFirstNonEmpty(rows, [
+        `p${index}_reg`,
+        `p${index}_registrar`,
+        `p${index}_reg_score`,
+        `p${index}_registrar_score`,
+      ]);
+      const vcValue = pickFirstNonEmpty(rows, [
+        `p${index}_vc`,
+        `p${index}_vc_score`,
+      ]);
+      if (clean(roValue) !== "") rows[`p${index}_ro`] = roValue;
+      if (clean(regValue) !== "") rows[`p${index}_reg`] = regValue;
+      if (clean(vcValue) !== "") rows[`p${index}_vc`] = vcValue;
       ["self", "ro", "reg", "vc"].forEach((suffix) => {
         const field = `p${index}_${suffix}`;
         rows[field] = clampOptionalRating(rows[field]);
@@ -419,13 +471,16 @@ export const submitNonTeachingSelfAppraisal = async ({
     finalForm.info.email || profile.email || sessionStorage.getItem("username"),
   );
   const ay = academicYear(finalForm.info.ay);
-
-  const data = await api.put("/non-teaching/appraisal", {
+  const requestPayload = {
     staff_email: staffEmail,
     academic_year: ay,
     payload: finalForm,
     status,
-  });
+  };
+
+  console.log("PUT /non-teaching/appraisal payload", requestPayload);
+
+  const data = await api.put("/non-teaching/appraisal", requestPayload);
 
   return {
     ...data,
@@ -642,15 +697,21 @@ export const submitNonTeachingReview = async ({
 
   const staffEmail = emailKey(item?.email || finalForm.info.email);
   const ay = academicYear(item?.academicYear || finalForm.info.ay);
+  const requestPayload = {
+    academic_year: ay,
+    payload: finalForm,
+    status,
+    remarks,
+  };
+
+  console.log(
+    `PUT /non-teaching/review/${staffEmail} request body`,
+    requestPayload,
+  );
 
   const data = await api.put(
     `/non-teaching/review/${encodeURIComponent(staffEmail)}`,
-    {
-      academic_year: ay,
-      payload: finalForm,
-      status,
-      remarks,
-    },
+    requestPayload,
   );
 
   return decorateNonTeachingRow(data || {}, {

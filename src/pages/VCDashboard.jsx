@@ -82,6 +82,10 @@ function RoleBadge({ role }) {
 function RO({ val, center }) {
   return <span style={{ fontSize: 11, fontFamily: "Georgia, serif", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{val || <span style={{ color: "#cbd5e1" }}>—</span>}</span>;
 }
+function ScoreValue({ val, center }) {
+  const empty = val === undefined || val === null || val === "";
+  return <span style={{ fontSize: 11, fontFamily: "Georgia, serif", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{empty ? <span style={{ color: "#cbd5e1" }}>-</span> : val}</span>;
+}
 function VCInput({ val, onChange, max }) {
   return (
     <input type="number" min="0" step="0.5" value={val ?? ""}
@@ -211,7 +215,19 @@ const vcRoleMeta = (role) => VC_CHAIN_ROLE_META[role] || {
   color: "#64748b",
 };
 
-const vcScoreForRole = (row = {}, role) => row?.[vcRoleMeta(role).field];
+const vcScoreForRole = (row = {}, role) => {
+  const field = vcRoleMeta(role).field;
+  return row?.[field] ??
+    row?.[`${field}_score`] ??
+    row?.[`${field}Score`] ??
+    row?.[`${field}_marks`] ??
+    row?.[`${field}Marks`] ??
+    (role === "center_head" ? (row.center_head_score ?? row.centerHeadScore ?? row.center_head_marks ?? row.centerHeadMarks) : undefined) ??
+    row?.[`${role}_score`] ??
+    row?.[`${role}Score`] ??
+    row?.[`${role}_marks`] ??
+    row?.[`${role}Marks`];
+};
 const vcInnovScoreForRole = (person = {}, role) => {
   if (role === "hod" || role === "center_head") return person.innovHod;
   if (role === "director") return person.innovDirector ?? person.innovDir;
@@ -221,11 +237,54 @@ const vcInnovScoreForRole = (person = {}, role) => {
 const vcTotalForRole = (person = {}, role) => {
   if (role === "hod" || role === "center_head") return n(person.hodTotal ?? person.hodScore);
   if (role === "director") return n(person.directorTotal ?? person.directorScore);
-  if (role === "dean") return n(person.deanTotal ?? person.deanSelfScore);
+  if (role === "dean") return n(person.deanTotal ?? person.deanScore);
+  return 0;
+};
+const vcPartAForRole = (person = {}, role) => {
+  if (role === "hod" || role === "center_head") return n(person.hodPartA ?? person.centerHeadPartA);
+  if (role === "director") return n(person.directorPartA);
+  if (role === "dean") return n(person.deanPartA);
+  return 0;
+};
+const vcPartBForRole = (person = {}, role) => {
+  if (role === "hod" || role === "center_head") return n(person.hodPartB ?? person.centerHeadPartB);
+  if (role === "director") return n(person.directorPartB);
+  if (role === "dean") return n(person.deanPartB);
   return 0;
 };
 const vcSelfTotalForPerson = (person = {}) =>
-  n(person.declaration?.grand_total ?? person.grandTotal ?? person.totalScore ?? person.total ?? person.selfTotal);
+  n(person.declaration?.grand_total ?? person.grandTotal ?? person.grand_total ?? person.totalScore ?? person.total ?? person.selfTotal);
+
+const firstReviewValue = (...values) =>
+  values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
+
+const vcReviewSummaryFrom = (...sources) => {
+  const summary = {};
+  const assign = (target, keys) => {
+    const value = firstReviewValue(
+      ...sources.flatMap((source = {}) => keys.map((key) => source?.[key])),
+    );
+    if (value !== undefined) summary[target] = value;
+  };
+
+  assign("hodTotal", ["hodTotal", "hod_total", "hodScore", "hod_score", "centerHeadTotal", "center_head_total"]);
+  assign("hodPartA", ["hodPartA", "hod_part_a", "hodPartAScore", "hod_part_a_score", "centerHeadPartA", "center_head_part_a"]);
+  assign("hodPartB", ["hodPartB", "hod_part_b", "hodPartBScore", "hod_part_b_score", "centerHeadPartB", "center_head_part_b"]);
+  assign("hodRemarks", ["hodRemarks", "hod_remarks", "centerHeadRemarks", "center_head_remarks"]);
+  assign("directorTotal", ["directorTotal", "director_total", "directorScore", "director_score"]);
+  assign("directorPartA", ["directorPartA", "director_part_a", "directorPartAScore", "director_part_a_score"]);
+  assign("directorPartB", ["directorPartB", "director_part_b", "directorPartBScore", "director_part_b_score"]);
+  assign("directorRemarks", ["directorRemarks", "director_remarks"]);
+  assign("deanTotal", ["deanTotal", "dean_total", "deanScore", "dean_score"]);
+  assign("deanPartA", ["deanPartA", "dean_part_a", "deanPartAScore", "dean_part_a_score"]);
+  assign("deanPartB", ["deanPartB", "dean_part_b", "deanPartBScore", "dean_part_b_score"]);
+  assign("deanRemarks", ["deanRemarks", "dean_remarks"]);
+  assign("vcTotal", ["vcTotal", "vc_total", "vcScore", "vc_score"]);
+  assign("vcPartA", ["vcPartA", "vc_part_a", "vcPartAScore", "vc_part_a_score"]);
+  assign("vcPartB", ["vcPartB", "vc_part_b", "vcPartBScore", "vc_part_b_score"]);
+  assign("vcRemarks", ["vcRemarks", "vc_remarks"]);
+  return summary;
+};
 
 const VC_REVIEW_ARRAY_KEYS = ["lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs", "society", "industry", "acr", "journals", "books", "ict", "research", "projects2", "externalProjects", "patents", "awards", "confs", "proposals", "products", "fdps", "training"];
 const VC_REPORT_PART_A_SECTIONS = [
@@ -330,12 +389,16 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
   const renderScoreCells = (r, section, i) => {
     const maxForRow = vcRowMax(section, r);
     const displayScore = (value) => maxForRow ? clampScore(value, maxForRow) : value;
+    const displayReviewScore = (value) =>
+      value === undefined || value === null || String(value).trim() === ""
+        ? undefined
+        : displayScore(value);
     return (
       <>
-        <td style={TDS}><RO val={section === "research" ? researchGuidanceScore(r).toFixed(1) : displayScore(r?.score)} center /></td>
+        <td style={TDS}><ScoreValue val={section === "research" ? researchGuidanceScore(r).toFixed(1) : displayScore(r?.score)} center /></td>
         {reviewRoles.map((role) => {
           const meta = vcRoleMeta(role);
-          return <td key={role} style={meta.cellStyle}><RO val={displayScore(vcScoreForRole(r, role))} center /></td>;
+          return <td key={role} style={meta.cellStyle}><ScoreValue val={displayReviewScore(vcScoreForRole(r, role))} center /></td>;
         })}
         <td style={TDS_VC}><VCInput val={get(section, i, "vc")} max={maxForRow} onChange={v => set(section, i, "vc", v)} /></td>
       </>
@@ -414,10 +477,10 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
         </tr></thead>
         <tbody><tr>
           <td style={TD}>Innovative / participatory teaching methods used</td>
-          <td style={TDS}><RO val={person.innovScore} center /></td>
+          <td style={TDS}><ScoreValue val={person.innovScore} center /></td>
           {reviewRoles.map((role) => {
             const meta = vcRoleMeta(role);
-            return <td key={role} style={meta.cellStyle}><RO val={vcInnovScoreForRole(person, role)} center /></td>;
+            return <td key={role} style={meta.cellStyle}><ScoreValue val={vcInnovScoreForRole(person, role)} center /></td>;
           })}
           <td style={TDS_VC}><VCInput val={getS("innovVc") || getS("innovVC")} max={10} onChange={v => setScalar("innovVc", v)} /></td>
         </tr></tbody></table>
@@ -618,7 +681,10 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const reviewLocked = readOnly || isVcReviewed(person);
 
-  const { partA, partB, total } = calcVCScore(person, vcData);
+  const calculatedScores = calcVCScore(person, vcData);
+  const partA = reviewLocked && n(person.vcPartA) > 0 ? n(person.vcPartA) : calculatedScores.partA;
+  const partB = reviewLocked && n(person.vcPartB) > 0 ? n(person.vcPartB) : calculatedScores.partB;
+  const total = reviewLocked && n(person.vcTotal) > 0 ? n(person.vcTotal) : calculatedScores.total;
   const g = grade(total, MAX_SCORES.GRAND_TOTAL);
   const previousRoles = vcPreviousRolesFor(person, personMode);
   const selfPartA = n(person.declaration?.part_a_total ?? person.selfPartA ?? person.partATotal);
@@ -758,7 +824,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
                   <td style={TDS}>{selfPartA || "-"}</td>
                   {previousRoles.map((role) => {
                     const meta = vcRoleMeta(role);
-                    return <td key={role} style={meta.cellStyle}>-</td>;
+                    return <td key={role} style={meta.cellStyle}>{vcPartAForRole(person, role) || "-"}</td>;
                   })}
                   <td style={{ ...TDS_VC, fontWeight: 700 }}>{partA.toFixed(1)}</td>
                 </tr>
@@ -767,7 +833,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
                   <td style={TDS}>{selfPartB || "-"}</td>
                   {previousRoles.map((role) => {
                     const meta = vcRoleMeta(role);
-                    return <td key={role} style={meta.cellStyle}>-</td>;
+                    return <td key={role} style={meta.cellStyle}>{vcPartBForRole(person, role) || "-"}</td>;
                   })}
                   <td style={{ ...TDS_VC, fontWeight: 700 }}>{partB.toFixed(1)}</td>
                 </tr>
@@ -1238,8 +1304,9 @@ export default function VCDashboard() {
       });
       const form = data?.payload?.form || data?.form || {};
       const docs = data?.payload?.docs || data?.docs || {};
+      const reviewSummary = vcReviewSummaryFrom(person, data, data?.payload);
       setReviewing({
-        person: { ...person, ...form, docs, academicYear, academic_year: academicYear },
+        person: { ...person, ...form, ...reviewSummary, docs, academicYear, academic_year: academicYear },
         personMode,
       });
     } catch (err) {

@@ -374,6 +374,51 @@ Returns the full saved snapshot (same shape as `GET /appraisal/snapshot` payload
 The logged-in user must have authority over that faculty member — otherwise **403**.  
 Used by reviewer dashboards to open and read a faculty's submitted form.
 
+**REQUIRED BACKEND CHANGE — per-row reviewer scores (currently missing):**  
+The VC review panel shows HOD / Director / Dean score columns for every row in every form section (lectures, courseFile, quals, feedback, journals, etc.). These scores are stored in the DB tables (`teaching_process.hod_score`, `teaching_process.director_score`, etc.) but are **not currently returned** in this response. The frontend pipeline is fully implemented to display them — it just needs the data.
+
+The backend must include per-row reviewer scores in one of two ways:
+
+**Option A — embed in form rows (preferred):** Add `hod_score`, `director_score`, `dean_score`, `vc_score` columns directly into each form row object by JOINing from the corresponding table:
+
+```json
+// payload.form.lectures — WITH per-row reviewer scores
+[
+  {
+    "semester": "Odd", "course_code": "CS101", "planned_classes": 40, "conducted_classes": 40,
+    "hod_score": 40, "director_score": 50, "dean_score": 50, "vc_score": null
+  }
+]
+```
+
+The frontend's `normalizeReviewScoreAliasesOnRows` already aliases `hod_score → hod`, `director_score → director`, `dean_score → dean`, `vc_score → vc` on every form row. No frontend change needed.
+
+**Option B — include a `reviews` array:** Add a top-level `reviews` array alongside `payload`, same structure as `GET /appraisal/status`, with per-row arrays in `section_scores`:
+
+```json
+{
+  "payload": { ... },
+  "reviews": [
+    {
+      "reviewer_role": "hod",
+      "section_scores": {
+        "lectures": [40, 35],
+        "courseFile": [16],
+        "quals": [10, 5],
+        "feedback": [9]
+      }
+    },
+    { "reviewer_role": "director", "section_scores": { "lectures": [50, 45], ... } },
+    { "reviewer_role": "dean",     "section_scores": { "lectures": [50, 45], ... } }
+  ]
+}
+```
+
+The frontend's `reviewsFromAppraisalResponse` already reads `data.reviews` and merges them into form rows. No frontend change needed.
+
+For both options, the source of truth is the per-row columns already in the DB:  
+`teaching_process.hod_score`, `course_files.hod_score`, `qualification_enhancement.hod_score`, etc.
+
 ---
 
 ## Review submission (reviewer roles)

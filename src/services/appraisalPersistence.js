@@ -256,23 +256,44 @@ const hasSubmittedFormData = (form = {}) =>
 const firstPresent = (...values) =>
   values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
 
-const reviewArrayFrom = (value) => {
-  if (!value) return [];
-  if (Array.isArray(value)) return value;
-  if (typeof value !== "object") return [];
+const parseMaybeJson = (value) => {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed || !["{", "["].includes(trimmed[0])) return value;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+};
 
-  return Object.entries(value).map(([role, review]) => {
-    if (review && typeof review === "object" && !Array.isArray(review)) {
-      return { reviewer_role: review.reviewer_role || review.reviewerRole || role, ...review };
+const reviewArrayFrom = (value) => {
+  const parsed = parseMaybeJson(value);
+  if (!parsed) return [];
+  if (Array.isArray(parsed)) return parsed.map(parseMaybeJson);
+  if (typeof parsed !== "object") return [];
+
+  return Object.entries(parsed).map(([role, review]) => {
+    const parsedReview = parseMaybeJson(review);
+    if (parsedReview && typeof parsedReview === "object" && !Array.isArray(parsedReview)) {
+      return { reviewer_role: parsedReview.reviewer_role || parsedReview.reviewerRole || role, ...parsedReview };
     }
-    return { reviewer_role: role, section_scores: review };
+    return { reviewer_role: role, section_scores: parsedReview };
   });
 };
 
 const syntheticReviewFromRoleFields = (source = {}) =>
   ["hod", "center_head", "director", "dean", "vc"].flatMap((role) => {
     const camel = role.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    const sectionScores = source[`${role}_section_scores`] || source[`${camel}SectionScores`];
+    const sectionScores = parseMaybeJson(
+      source[`${role}_section_scores`] ||
+      source[`${role}_sectionScores`] ||
+      source[`${role}_scores`] ||
+      source[`${role}_review_scores`] ||
+      source[`${camel}SectionScores`] ||
+      source[`${camel}Scores`] ||
+      source[`${camel}ReviewScores`],
+    );
     if (!sectionScores) return [];
     return [{
       reviewer_role: role,
@@ -283,6 +304,35 @@ const syntheticReviewFromRoleFields = (source = {}) =>
       remarks: source[`${role}_remarks`] || source[`${camel}Remarks`],
     }];
   });
+
+const reviewsFromRoleScoreMap = (source = {}) => {
+  const explicitMap = parseMaybeJson(
+    source.section_scores_by_role ||
+    source.sectionScoresByRole ||
+    source.review_scores_by_role ||
+    source.reviewScoresByRole ||
+    source.reviewer_scores ||
+    source.reviewerScores ||
+    source.role_scores ||
+    source.roleScores,
+  );
+  const directSectionScores = parseMaybeJson(source.section_scores || source.sectionScores);
+  const roleWrappedSectionScores =
+    directSectionScores &&
+    typeof directSectionScores === "object" &&
+    !Array.isArray(directSectionScores) &&
+    ["hod", "center_head", "director", "dean", "vc"].some((role) => directSectionScores[role])
+      ? directSectionScores
+      : null;
+  const scoreMap = explicitMap || roleWrappedSectionScores;
+
+  if (!scoreMap || typeof scoreMap !== "object" || Array.isArray(scoreMap)) return [];
+
+  return Object.entries(scoreMap).map(([role, sectionScores]) => ({
+    reviewer_role: role,
+    section_scores: sectionScores,
+  }));
+};
 
 const reviewsFromAppraisalResponse = (data = {}) => [
   ...reviewArrayFrom(data.reviews),
@@ -295,41 +345,48 @@ const reviewsFromAppraisalResponse = (data = {}) => [
   ...reviewArrayFrom(data.payload?.reviewHistory),
   ...reviewArrayFrom(data.payload?.appraisal_reviews),
   ...reviewArrayFrom(data.payload?.appraisalReviews),
+  ...reviewsFromRoleScoreMap(data),
+  ...reviewsFromRoleScoreMap(data.payload || {}),
   ...syntheticReviewFromRoleFields(data),
   ...syntheticReviewFromRoleFields(data.payload || {}),
 ];
 
 const reviewRowScore = (row, roleField, role) => {
-  if (row === undefined || row === null) return undefined;
-  if (typeof row !== "object" || Array.isArray(row)) return row;
+  const parsedRow = parseMaybeJson(row);
+  if (parsedRow === undefined || parsedRow === null) return undefined;
+  if (typeof parsedRow !== "object" || Array.isArray(parsedRow)) return parsedRow;
   return firstPresent(
-    row[roleField],
-    row[role],
-    row[`${roleField}_score`],
-    row[`${role}_score`],
-    row.reviewScore,
-    row.review_score,
-    row.reviewerScore,
-    row.reviewer_score,
-    row.value,
-    row.total,
+    parsedRow[roleField],
+    parsedRow[role],
+    parsedRow[`${roleField}_score`],
+    parsedRow[`${role}_score`],
+    parsedRow[`${roleField}_marks`],
+    parsedRow[`${role}_marks`],
+    parsedRow.reviewScore,
+    parsedRow.review_score,
+    parsedRow.reviewerScore,
+    parsedRow.reviewer_score,
+    parsedRow.value,
+    parsedRow.total,
   );
 };
 
 const mergeSectionReviewScore = (rows, sectionScore, roleField, role) => {
   const baseRows = Array.isArray(rows) ? rows : [];
 
-  if (Array.isArray(sectionScore)) {
-    const length = Math.max(baseRows.length, sectionScore.length);
+  const parsedSectionScore = parseMaybeJson(sectionScore);
+
+  if (Array.isArray(parsedSectionScore)) {
+    const length = Math.max(baseRows.length, parsedSectionScore.length);
     return Array.from({ length }, (_, index) => {
       const existing = baseRows[index] || {};
-      const reviewValue = reviewRowScore(sectionScore[index], roleField, role);
+      const reviewValue = reviewRowScore(parsedSectionScore[index], roleField, role);
       return reviewValue === undefined ? existing : { ...existing, [roleField]: reviewValue };
     });
   }
 
-  if (sectionScore && typeof sectionScore === "object") {
-    const numericEntries = Object.entries(sectionScore)
+  if (parsedSectionScore && typeof parsedSectionScore === "object") {
+    const numericEntries = Object.entries(parsedSectionScore)
       .filter(([key]) => /^\d+$/.test(key))
       .sort(([a], [b]) => Number(a) - Number(b));
     if (numericEntries.length) {
@@ -337,10 +394,86 @@ const mergeSectionReviewScore = (rows, sectionScore, roleField, role) => {
     }
   }
 
-  const reviewValue = reviewRowScore(sectionScore, roleField, role);
+  const reviewValue = reviewRowScore(parsedSectionScore, roleField, role);
   if (reviewValue === undefined) return rows;
   if (!baseRows.length) return [{ [roleField]: reviewValue }];
   return baseRows.map((row, index) => index === 0 ? { ...row, [roleField]: reviewValue } : row);
+};
+
+const REVIEW_SECTION_KEY_ALIASES = {
+  teaching_process: "lectures",
+  teachingProcess: "lectures",
+  lectures_tutorials_practicals: "lectures",
+  lecturesTutorialsPracticals: "lectures",
+  course_file: "courseFile",
+  courseFiles: "courseFile",
+  course_files: "courseFile",
+  qualification_enhancement: "quals",
+  qualificationEnhancement: "quals",
+  qualifications: "quals",
+  student_feedback: "feedback",
+  studentFeedback: "feedback",
+  departmental_activities: "deptActs",
+  departmentalActivities: "deptActs",
+  department_activities: "deptActs",
+  departmentActivities: "deptActs",
+  dept_acts: "deptActs",
+  university_activities: "uniActs",
+  universityActivities: "uniActs",
+  uni_acts: "uniActs",
+  contribution_to_society: "society",
+  contributionToSociety: "society",
+  industry_connect: "industry",
+  industryConnect: "industry",
+  annual_confidential_report: "acr",
+  annualConfidentialReport: "acr",
+  journal_publications: "journals",
+  journalPublications: "journals",
+  research_papers: "journals",
+  researchPapers: "journals",
+  research_papers_journal_publications: "journals",
+  researchPapersJournalPublications: "journals",
+  book_chapters: "books",
+  bookChapters: "books",
+  books_book_chapters: "books",
+  booksBookChapters: "books",
+  e_content: "ict",
+  eContent: "ict",
+  ict_e_content: "ict",
+  ictEContent: "ict",
+  research_guidance: "research",
+  researchGuidance: "research",
+  internal_projects: "projects2",
+  internalProjects: "projects2",
+  consultancy_internal_projects: "projects2",
+  consultancyInternalProjects: "projects2",
+  external_projects: "externalProjects",
+  external_projects_consultancy: "externalProjects",
+  externalProjectsConsultancy: "externalProjects",
+  invited_lectures: "confs",
+  invitedLectures: "confs",
+  conferences: "confs",
+  research_proposals: "proposals",
+  researchProposals: "proposals",
+  submitted_research_proposals: "proposals",
+  submittedResearchProposals: "proposals",
+  products_developed: "products",
+  productsDeveloped: "products",
+  fdp_workshops: "fdps",
+  fdpWorkshops: "fdps",
+  industrial_training: "training",
+  industrialTraining: "training",
+};
+
+const normalizeReviewSectionScores = (scores = {}) => {
+  const parsedScores = parseMaybeJson(scores);
+  if (!parsedScores || typeof parsedScores !== "object" || Array.isArray(parsedScores)) return parsedScores;
+  const normalized = { ...parsedScores };
+  Object.entries(parsedScores).forEach(([key, value]) => {
+    const target = REVIEW_SECTION_KEY_ALIASES[key];
+    if (target && normalized[target] === undefined) normalized[target] = value;
+  });
+  return normalized;
 };
 
 const applyReviewToForm = (form = {}, review = {}) => {
@@ -348,8 +481,21 @@ const applyReviewToForm = (form = {}, review = {}) => {
   const roleField = REVIEW_FIELD_BY_ROLE[role];
   if (!roleField) return form;
 
-  const rawScores = review.section_scores || review.sectionScores || review.scores || {};
-  const scores = rawScores?.form || rawScores?.payload?.form || rawScores;
+  const rawScores = parseMaybeJson(
+    review.section_scores ||
+    review.sectionScores ||
+    review.review_scores ||
+    review.reviewScores ||
+    review.scores ||
+    review,
+  );
+  const scores = normalizeReviewSectionScores(
+    rawScores?.form ||
+    rawScores?.payload?.form ||
+    rawScores?.section_scores ||
+    rawScores?.sectionScores ||
+    rawScores,
+  );
   if (!scores || typeof scores !== "object") return form;
 
   const next = { ...form };
@@ -385,14 +531,59 @@ const aliasKeys = (rows, mapping) =>
 const REVIEW_SCORE_ALIASES = {
   hod_score: "hod",
   hodScore: "hod",
+  hod_marks: "hod",
+  hodMarks: "hod",
   center_head_score: "hod",
   centerHeadScore: "hod",
+  center_head_marks: "hod",
+  centerHeadMarks: "hod",
   director_score: "director",
   directorScore: "director",
+  director_marks: "director",
+  directorMarks: "director",
   dean_score: "dean",
   deanScore: "dean",
+  dean_marks: "dean",
+  deanMarks: "dean",
   vc_score: "vc",
   vcScore: "vc",
+  vc_marks: "vc",
+  vcMarks: "vc",
+};
+
+const normalizeReviewScoreAliasesOnRows = (normalized) => {
+  FORM_SECTION_KEYS.forEach((key) => {
+    if (Array.isArray(normalized[key])) {
+      normalized[key] = aliasKeys(normalized[key], REVIEW_SCORE_ALIASES);
+    }
+  });
+  return normalized;
+};
+
+const normalizeInnovativeReviewScoreAliases = (normalized) => {
+  const mapping = {
+    innov_hod: "innovHod",
+    innov_hod_score: "innovHod",
+    innovHodScore: "innovHod",
+    innov_center_head: "innovHod",
+    innov_center_head_score: "innovHod",
+    innovCenterHead: "innovHod",
+    innovCenterHeadScore: "innovHod",
+    innov_director: "innovDirector",
+    innov_director_score: "innovDirector",
+    innovDirectorScore: "innovDirector",
+    innov_dean: "innovDean",
+    innov_dean_score: "innovDean",
+    innovDeanScore: "innovDean",
+    innov_vc: "innovVc",
+    innov_vc_score: "innovVc",
+    innovVC: "innovVc",
+    innovVcScore: "innovVc",
+  };
+  Object.entries(mapping).forEach(([from, to]) => {
+    if (normalized[to] == null && normalized[from] != null) normalized[to] = normalized[from];
+  });
+  return normalized;
 };
 
 const normalizeFetchedForm = (form = {}) => {
@@ -502,7 +693,7 @@ const normalizeFetchedForm = (form = {}) => {
   if (normalized.fdps) {
     normalized.fdps = aliasKeys(normalized.fdps, { organization: "org" });
   }
-  return normalized;
+  return normalizeInnovativeReviewScoreAliases(normalizeReviewScoreAliasesOnRows(normalized));
 };
 
 const normalizeFetchedAppraisal = (data = {}) => {
