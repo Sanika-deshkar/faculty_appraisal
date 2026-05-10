@@ -6,7 +6,7 @@ import { SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/f
 
 import { DEAN_TRACKS, UNIVERSITY_SCHOOLS } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
-import { getReviewChain, getSchoolKey, reviewedStatusFor, profileFromsessionStorage } from "../utils/hierarchy";
+import { getSchoolKey, reviewedStatusFor, profileFromsessionStorage, visiblePreviousReviewRoles } from "../utils/hierarchy";
 import { openFullFormReport } from "../utils/fullFormReport";
 import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
@@ -69,6 +69,7 @@ function RoleBadge({ role }) {
     HOD:      { bg: "#312e81", color: "#c7d2fe", icon: "👥" },
     Faculty:  { bg: "#14532d", color: "#86efac", icon: "📋" },
     Dean:     { bg: "#4c1d95", color: "#ddd6fe", icon: "🎓" },
+    "Center Head": { bg: "#134e4a", color: "#99f6e4", icon: "CH" },
   };
   const s = map[role] || map.Faculty;
   return (
@@ -194,7 +195,7 @@ const vcChainProfileFor = (person = {}, personMode = "faculty") => ({
 });
 
 const vcPreviousRolesFor = (person = {}, personMode = "faculty") =>
-  getReviewChain(vcChainProfileFor(person, personMode)).filter((role) => role !== "vc");
+  visiblePreviousReviewRoles("vc", vcChainProfileFor(person, personMode));
 
 const vcRoleMeta = (role) => VC_CHAIN_ROLE_META[role] || {
   label: `${role} Score`,
@@ -664,12 +665,10 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
 
   const scoreCards = [
     { label: personMode === "faculty" ? "Faculty Score" : "Self Score", val: selfTotal, color: "#e2e8f0" },
-    ...previousRoles
-      .map((role) => {
-        const meta = vcRoleMeta(role);
-        return { label: meta.label, val: vcTotalForRole(person, role), color: meta.color };
-      })
-      .filter(({ val }) => val > 0),
+    ...previousRoles.map((role) => {
+      const meta = vcRoleMeta(role);
+      return { label: meta.label, val: vcTotalForRole(person, role), color: meta.color };
+    }),
   ];
 
   return (
@@ -822,23 +821,24 @@ function PersonCard({ person, role, onReview, schoolColor }) {
   const personMode = role === "Director" ? "director" : role === "HOD" ? "hod" : role === "Dean" ? "dean" : role === "Center Head" ? "center_head" : "faculty";
   const previousRoles = vcPreviousRolesFor(person, personMode);
   const vcTotal = n(person.vcTotal);
-  const dirTotal = person.directorTotal || person.directorScore || 0;
-  const hodTotal = person.hodTotal || person.hodScore || 0;
-  const deanTotal = person.deanTotal || 0;
   const scoreTiles = [
     {
       label: personMode === "faculty" ? "Faculty Score" : "Self Score",
       value: vcSelfTotalForPerson(person),
       color: "#0ea5e9",
     },
-    ...previousRoles
-      .map((reviewRole) => {
-        const meta = vcRoleMeta(reviewRole);
-        return { label: meta.shortLabel, value: vcTotalForRole(person, reviewRole), color: meta.color };
-      })
-      .filter((tile) => tile.value > 0),
+    ...previousRoles.map((reviewRole) => {
+      const meta = vcRoleMeta(reviewRole);
+      return { label: meta.shortLabel, value: vcTotalForRole(person, reviewRole), color: meta.color };
+    }),
     { label: "VC Score", value: vcTotal, color: "#7c3aed", isVc: true },
   ];
+  const remarkTiles = previousRoles
+    .map((reviewRole) => {
+      const meta = vcRoleMeta(reviewRole);
+      return { label: meta.shortLabel, value: person[meta.remarksKey], color: meta.remarksColor, bg: meta.remarksBg, border: meta.color };
+    })
+    .filter((item) => item.value);
 
   return (
     <div style={{ background: "#fff", borderRadius: 10, padding: "15px 16px", boxShadow: "0 1px 5px rgba(0,0,0,.06)", display: "flex", flexDirection: "column", gap: 11, borderLeft: `3px solid ${schoolColor || "#7c3aed"}` }}>
@@ -856,54 +856,34 @@ function PersonCard({ person, role, onReview, schoolColor }) {
       </div>
 
       {/* Score grid */}
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${1 + (hodTotal > 0 ? 1 : 0) + (deanTotal > 0 ? 1 : 0) + 1}, 1fr)`, gap: 8, background: "#f8fafc", borderRadius: 7, padding: "10px 12px" }}>
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>
-            {role === "Director" ? "Self Score" : "Dir Score"}
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#0ea5e9" }}>{dirTotal}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div>
-          <ScoreBar score={dirTotal} max={MAX_SCORES.GRAND_TOTAL} color="#0ea5e9" />
-        </div>
-        {hodTotal > 0 && (
-          <div>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>HOD Score</div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#6366f1" }}>{hodTotal}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div>
-            <ScoreBar score={hodTotal} max={MAX_SCORES.GRAND_TOTAL} color="#6366f1" />
-          </div>
-        )}
-        {deanTotal > 0 && (
-          <div>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>Dean Score</div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#10b981" }}>{deanTotal}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div>
-            <ScoreBar score={deanTotal} max={MAX_SCORES.GRAND_TOTAL} color="#10b981" />
-          </div>
-        )}
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>VC Score</div>
-          {vcTotal > 0
-            ? <><div style={{ fontSize: 14, fontWeight: 800, color: "#7c3aed" }}>{typeof vcTotal.toFixed === "function" ? vcTotal.toFixed(1) : vcTotal}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span></div><ScoreBar score={vcTotal} max={MAX_SCORES.GRAND_TOTAL} color="#7c3aed" /></>
-            : <div style={{ fontSize: 14, fontWeight: 800, color: "#7c3aed" }}>—</div>
-          }
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.max(scoreTiles.length, 1)}, minmax(0, 1fr))`, gap: 8, background: "#f8fafc", borderRadius: 7, padding: "10px 12px" }}>
+        {scoreTiles.map((tile) => {
+          const score = n(tile.value);
+          return (
+            <div key={tile.label}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5 }}>{tile.label}</div>
+              {score > 0 || tile.isVc ? (
+                <>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: tile.color }}>
+                    {score > 0 ? score.toFixed(1) : "-"}<span style={{ fontSize: 9, color: "#94a3b8" }}>/{MAX_SCORES.GRAND_TOTAL}</span>
+                  </div>
+                  <ScoreBar score={score} max={MAX_SCORES.GRAND_TOTAL} color={tile.color} />
+                </>
+              ) : (
+                <div style={{ fontSize: 14, fontWeight: 800, color: tile.color }}>-</div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {(person.hodRemarks || person.directorRemarks || person.deanRemarks) && (
+      {remarkTiles.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {person.hodRemarks && (
-            <div style={{ background: "#f0f4ff", borderRadius: 5, padding: "5px 8px", fontSize: 10, color: "#4338ca", borderLeft: "2px solid #818cf8" }}>
-              <span style={{ fontWeight: 700 }}>HOD: </span>{person.hodRemarks.slice(0, 55)}{person.hodRemarks.length > 55 ? "…" : ""}
+          {remarkTiles.map((item) => (
+            <div key={item.label} style={{ background: item.bg, borderRadius: 5, padding: "5px 8px", fontSize: 10, color: item.color, borderLeft: `2px solid ${item.border}` }}>
+              <span style={{ fontWeight: 700 }}>{item.label}: </span>{item.value.slice(0, 55)}{item.value.length > 55 ? "..." : ""}
             </div>
-          )}
-          {person.directorRemarks && (
-            <div style={{ background: "#f0f9ff", borderRadius: 5, padding: "5px 8px", fontSize: 10, color: "#0369a1", borderLeft: "2px solid #38bdf8" }}>
-              <span style={{ fontWeight: 700 }}>Dir: </span>{person.directorRemarks.slice(0, 55)}{person.directorRemarks.length > 55 ? "…" : ""}
-            </div>
-          )}
-          {person.deanRemarks && (
-            <div style={{ background: "#f0fdf4", borderRadius: 5, padding: "5px 8px", fontSize: 10, color: "#065f46", borderLeft: "2px solid #34d399" }}>
-              <span style={{ fontWeight: 700 }}>Dean: </span>{person.deanRemarks.slice(0, 55)}{person.deanRemarks.length > 55 ? "…" : ""}
-            </div>
-          )}
+          ))}
         </div>
       )}
 
@@ -1071,6 +1051,7 @@ const SCHOOL_META = {
   SoEMR:  { color: "#f59e0b", icon: "EM" },
   SoC:    { color: "#14b8a6", icon: "CM" },
   SoMCS:  { color: "#8b5cf6", icon: "MC" },
+  SoD:    { color: "#ec4899", icon: "DS" },
   CioD:   { color: "#ec4899", icon: "DS" },
   SoAA:   { color: "#f97316", icon: "AA" },
   CISR:   { color: "#0f766e", icon: "CI" },

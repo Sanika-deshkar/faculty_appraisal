@@ -90,6 +90,17 @@ export const getReviewChain = (profile = {}) => {
     : ["director", "dean", "vc"];
 };
 
+export const visiblePreviousReviewRoles = (reviewerRole, subjectProfile = {}) => {
+  const role = normalizeRoleForWorkflow(reviewerRole);
+  if (role !== "vc") return [];
+
+  const chain = getReviewChain(subjectProfile);
+  const reviewerIndex = chain.indexOf(role);
+  if (reviewerIndex < 0) return [];
+
+  return chain.slice(0, reviewerIndex);
+};
+
 export const roleLabel = (role) => ({
   hod: "HOD",
   director: "Director",

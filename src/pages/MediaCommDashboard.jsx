@@ -36,7 +36,7 @@ import {
   toggleInnovativeMethod,
   validateCompleteRows,
 } from "../utils/appraisalFormUtils";
-import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel } from "../utils/hierarchy";
+import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles } from "../utils/hierarchy";
 
 const ACCENT = "#b45309";
 const ACCENT2 = "#0f766e";
@@ -723,10 +723,7 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
   const form = mergeForm(emptyMediaForm(), person || {});
   const [docs, setDocs] = useState(form.docs || {});
   const subjectProfile = { school: person?.school, department: person?.department, appraisal_role: person?.appraisalRole };
-  const chain = getReviewChain(subjectProfile);
-  const currentIndex = chain.indexOf(reviewerRole);
-  const previousRoles = currentIndex > 0 ? chain.slice(0, currentIndex) : [];
-  const visiblePreviousRoles = reviewerRole === "vc" ? previousRoles : [];
+  const visiblePreviousRoles = visiblePreviousReviewRoles(reviewerRole, subjectProfile);
 
   const reviewerForm = useMemo(() => {
     const merged = { ...form };

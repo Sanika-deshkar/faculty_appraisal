@@ -67,12 +67,12 @@ export const UNIVERSITY_SCHOOLS = [
     aliases: ["somcs", "media", "communication studies"],
   },
   {
-    code: "CioD",
+    code: "SoD",
     name: "School of Design",
-    label: "CioD — School of Design",
+    label: "SoD — School of Design",
     deanTrack: DEAN_TRACKS.NON_ENGINEERING,
     hodDepartments: [],
-    aliases: ["sod", "ciod", "design", "school of design"],
+    aliases: ["sod", "ciod", "school of design", "design"],
   },
   {
     code: "SoAA",

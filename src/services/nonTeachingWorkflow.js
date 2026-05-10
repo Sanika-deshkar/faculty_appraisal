@@ -305,6 +305,14 @@ export const expectedPendingStatus = (role) => {
   return NON_TEACHING_STATUS.DRAFT;
 };
 
+export const visibleNonTeachingReviewRoles = (role) => {
+  const normalizedRole = normalizeNonTeachingRole(role, role);
+  if (normalizedRole === "vc") return ["self", "ro", "registrar", "vc"];
+  if (normalizedRole === "registrar") return ["self", "registrar"];
+  if (normalizedRole === "reporting_officer") return ["self", "ro"];
+  return ["self"];
+};
+
 export const canReviewNonTeachingItem = (item = {}, reviewerRole) => {
   const role = normalizeNonTeachingRole(reviewerRole, reviewerRole);
   const subjectRole = normalizeNonTeachingRole(

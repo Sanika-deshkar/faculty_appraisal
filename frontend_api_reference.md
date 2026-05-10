@@ -705,7 +705,7 @@ try {
 | `SoEMR`  | School of Engineering Management & Research            | Engineering     | Form A | HOD → Director   |
 | `SoC`    | School of Commerce & Management                        | Non-Engineering | Form A | Director         |
 | `SoMCS`  | School of Media & Communication Studies                | Non-Engineering | Form B | Director         |
-| `CioD`   | School of Design                                       | Non-Engineering | Form C | Director         |
+| `SoD`    | School of Design                                       | Non-Engineering | Form C | Director         |
 | `SoAA`   | School of Applied Arts                                 | Non-Engineering | Form C | Director         |
 | `CISR`   | Center for Interdisciplinary Studies and Research      | Standalone      | Form A | Center Head → VC |
 
@@ -713,12 +713,12 @@ try {
 
 | School                                     | Chain                      |
 | ------------------------------------------ | -------------------------- |
-| SoCSEA, SoBB, SoCE, SoC, SoMCS, CioD, SoAA | Director → Dean → VC       |
+| SoCSEA, SoBB, SoCE, SoC, SoMCS, SoD, SoAA | Director → Dean → VC       |
 | SoEMR                                      | HOD → Director → Dean → VC |
 | CISR                                       | Center Head → VC           |
 
 **Engineering division** (Engineering Dean): `SoCSEA`, `SoBB`, `SoCE`, `SoEMR`  
-**Non-engineering division** (Non-Engineering Dean): `SoC`, `SoMCS`, `CioD`, `SoAA`
+**Non-engineering division** (Non-Engineering Dean): `SoC`, `SoMCS`, `SoD`, `SoAA`
 
 ---
 

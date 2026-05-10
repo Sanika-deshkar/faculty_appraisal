@@ -20,6 +20,7 @@ import {
   submitNonTeachingReview,
   submitNonTeachingSelfAppraisal,
   validateNonTeachingForm,
+  visibleNonTeachingReviewRoles,
 } from "../services/nonTeachingWorkflow";
 import { clampScore, clearDraft, draftKeyFor, loadDraft, saveDraft, scoreRemaining } from "../utils/appraisalFormUtils";
 import { profileFromsessionStorage } from "../utils/hierarchy";
@@ -764,13 +765,6 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
   };
 
   const handleReport = () => {
-    const visibleRoles = role === "vc"
-      ? ["self", "ro", "registrar", "vc"]
-      : role === "registrar"
-        ? ["self", "registrar"]
-        : role === "reporting_officer"
-          ? ["self", "ro"]
-          : ["self"];
     openNonTeachingReport({
       item,
       form: {
@@ -779,7 +773,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
         registrarRemarks: role === "registrar" ? remarks : form.registrarRemarks,
         vcRemarks: role === "vc" ? remarks : form.vcRemarks,
       },
-      visibleRoles,
+      visibleRoles: visibleNonTeachingReviewRoles(role),
     });
   };
 

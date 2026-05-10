@@ -37,7 +37,7 @@ import {
   toggleInnovativeMethod,
   validateCompleteRows,
 } from "../utils/appraisalFormUtils";
-import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel } from "../utils/hierarchy";
+import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles } from "../utils/hierarchy";
 
 const ACCENT = "#9d174d";
 const ACCENT2 = "#4338ca";
@@ -88,7 +88,7 @@ const emptyDesignArtsForm = () => ({
     qual: sessionStorage.getItem("qualification") || "",
     desig: sessionStorage.getItem("designation") || "",
     ay: sessionStorage.getItem("academicYear") || "2025-2026",
-    school: sessionStorage.getItem("school") || "CioD - School of Design",
+    school: sessionStorage.getItem("school") || "SoD - School of Design",
   },
   lectures: [{ sem: "", code: "", planned: "", conducted: "", score: "" }],
   courseFile: [{ course: "", title: "", details: "", score: "" }],
@@ -726,10 +726,7 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
   const form = mergeForm(emptyDesignArtsForm(), person || {});
   const [docs, setDocs] = useState(form.docs || {});
   const subjectProfile = { school: person?.school, department: person?.department, appraisal_role: person?.appraisalRole };
-  const chain = getReviewChain(subjectProfile);
-  const currentIndex = chain.indexOf(reviewerRole);
-  const previousRoles = currentIndex > 0 ? chain.slice(0, currentIndex) : [];
-  const visiblePreviousRoles = reviewerRole === "vc" ? previousRoles : [];
+  const visiblePreviousRoles = visiblePreviousReviewRoles(reviewerRole, subjectProfile);
 
   const reviewerForm = useMemo(() => {
     const merged = { ...form };

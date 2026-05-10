@@ -8,6 +8,7 @@ import {
 import {
   canAuthorityReviewProfile,
   getReviewChain,
+  visiblePreviousReviewRoles,
   workflowValidationError,
 } from "../src/utils/hierarchy.js";
 
@@ -31,7 +32,7 @@ assert.deepEqual(
     "SoEMR — School of Engineering Management & Research",
     "SoC — School of Commerce & Management",
     "SoMCS — School of Media & Communication Studies",
-    "CioD — School of Design",
+    "SoD — School of Design",
     "SoAA — School of Applied Arts",
     "CISR — Center for Interdisciplinary Studies and Research",
   ],
@@ -52,6 +53,11 @@ assert.deepEqual(
   getReviewChain(cisrFaculty),
   ["center_head", "vc"],
   "CISR faculty must route Center Head -> VC"
+);
+assert.deepEqual(
+  visiblePreviousReviewRoles("vc", cisrFaculty),
+  ["center_head"],
+  "VC must see Center Head score for CISR faculty"
 );
 assert.deepEqual(
   getReviewChain(roles.cisrCenterHead),
@@ -95,6 +101,21 @@ for (const department of SOEMR_DEPARTMENTS) {
     ["hod", "director", "dean", "vc"],
     `${department} faculty must route HOD -> Director -> Dean -> VC`
   );
+  assert.deepEqual(
+    visiblePreviousReviewRoles("director", faculty),
+    [],
+    "Director must not see HOD scores while reviewing faculty"
+  );
+  assert.deepEqual(
+    visiblePreviousReviewRoles("dean", faculty),
+    [],
+    "Dean must not see HOD/Director scores while reviewing faculty"
+  );
+  assert.deepEqual(
+    visiblePreviousReviewRoles("vc", faculty),
+    ["hod", "director", "dean"],
+    "VC must see HOD, Director, and Dean scores for SoEMR faculty"
+  );
 
   const matchingHod = { appraisal_role: "hod", school: SOEMR_SCHOOL.label, department };
   assert.equal(canAuthorityReviewProfile(matchingHod, faculty), true, `${department} HOD must see own faculty`);
@@ -114,6 +135,29 @@ const sobbDirector = { appraisal_role: "director", school: "SoBB" };
 const socseaDirector = { appraisal_role: "director", school: "SoCSEA" };
 assert.equal(canAuthorityReviewProfile(socseaDirector, socseaFaculty), true, "Same-school director must review faculty");
 assert.equal(canAuthorityReviewProfile(sobbDirector, socseaFaculty), false, "Other-school director must not review faculty");
+assert.deepEqual(
+  visiblePreviousReviewRoles("dean", socseaFaculty),
+  [],
+  "Dean must not see Director score while reviewing non-SoEMR faculty"
+);
+assert.deepEqual(
+  visiblePreviousReviewRoles("vc", socseaFaculty),
+  ["director", "dean"],
+  "VC must see Director and Dean scores for non-SoEMR faculty"
+);
+
+const soemrHod = { appraisal_role: "hod", school: SOEMR_SCHOOL.label, department: SOEMR_DEPARTMENTS[0] };
+assert.deepEqual(getReviewChain(soemrHod), ["director", "dean", "vc"], "SoEMR HOD self-appraisal must route Director -> Dean -> VC");
+assert.deepEqual(visiblePreviousReviewRoles("dean", soemrHod), [], "Dean must not see Director score while reviewing an HOD");
+assert.deepEqual(visiblePreviousReviewRoles("vc", soemrHod), ["director", "dean"], "VC must see Director and Dean scores for an HOD");
+
+const socseaDirectorSelf = { appraisal_role: "director", school: "SoCSEA", department: "" };
+assert.deepEqual(getReviewChain(socseaDirectorSelf), ["dean", "vc"], "Director self-appraisal must route Dean -> VC");
+assert.deepEqual(visiblePreviousReviewRoles("vc", socseaDirectorSelf), ["dean"], "VC must see Dean score for a Director");
+
+const engineeringDeanSelf = { appraisal_role: "dean", school: "SoCSEA", department: "" };
+assert.deepEqual(getReviewChain(engineeringDeanSelf), ["vc"], "Dean self-appraisal must route directly to VC");
+assert.deepEqual(visiblePreviousReviewRoles("vc", engineeringDeanSelf), [], "Dean self-appraisal has no previous authority score before VC");
 
 for (const school of UNIVERSITY_SCHOOLS) {
   const faculty = { appraisal_role: "faculty", school: school.label, department: school.code === "SoEMR" ? SOEMR_DEPARTMENTS[0] : "" };
