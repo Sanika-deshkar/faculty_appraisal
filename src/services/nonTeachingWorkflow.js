@@ -862,13 +862,19 @@ export const openNonTeachingReport = ({
           .totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
           .total { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
           .score { font-size: 18px; font-weight: 800; color: #1d4ed8; }
+          .report-header { position: relative; }
+          .report-logo { position: absolute; top: 0; right: 0; width: 64px; max-height: 52px; object-fit: contain; }
+          .print-action { position: fixed; top: 12px; left: 12px; padding: 8px 14px; }
           @media print { button { display: none; } body { padding: 10px; } }
         </style>
       </head>
       <body>
-        <button onclick="window.print()" style="float:right;padding:8px 14px;">Print</button>
-        <h1>Non-Teaching Staff Appraisal Report</h1>
-        <div class="muted">${escapeHtml(APP_INFO.UNIVERSITY_NAME)} | Academic Year ${escapeHtml(reportForm.info?.ay || item.academicYear)}</div>
+        <button class="print-action" onclick="window.print()">Print</button>
+        <header class="report-header">
+          <img class="report-logo" src="${window.location.origin}/dypiu.jpeg" alt="DYPIU Logo" />
+          <h1>Non-Teaching Staff Appraisal Report</h1>
+          <div class="muted">${escapeHtml(APP_INFO.UNIVERSITY_NAME)} | Academic Year ${escapeHtml(reportForm.info?.ay || item.academicYear)}</div>
+        </header>
 
         <div class="grid">
           ${[

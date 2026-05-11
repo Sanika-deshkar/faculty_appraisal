@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { HodInput } from "../components/Inputs";
 import { useNavigate } from "react-router-dom";
-import { ACR_DETAIL_POINTS, SOCIETY_LABELS, ACR_LABELS, MAX_SCORES, APP_INFO } from "../constants/formConfig";
+import { ACR_DETAIL_POINTS, SOCIETY_LABELS, MAX_SCORES, APP_INFO, createAcrRows } from "../constants/formConfig";
 
 import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAppraisalDraftSection, submitAppraisal } from "../services/appraisalPersistence";
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
-import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, clearDraft, draftKeyFor, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isValidDDMMYYYY, loadDraft, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, saveDraft, scoreRemaining, societyRowScore, societySelectionForRow, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
+import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, clearDraft, draftKeyFor, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, loadDraft, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, saveDraft, scoreRemaining, societyRowScore, societySelectionForRow, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
 import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError } from "../utils/hierarchy";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -69,12 +69,14 @@ function SC({ title, subtitle, accent = "#0ea5e9", children }) {
 }
 
 // ─── Input & Table Controls (Self-Appraisal Mode) ──────────────────────────────
-function TI({ val, onChange, center, placeholder, readOnly = false, numeric = false, textOnly = false, max }) {
+function TI({ val, onChange, center, placeholder, readOnly = false, numeric = false, integer = false, textOnly = false, max }) {
   const [textErr, setTextErr] = useState(false);
   const handleChange = (e) => {
     if (readOnly) return;
     let v = e.target.value;
-    if (numeric) {
+    if (integer) {
+      v = v.replace(/[^0-9]/g, "");
+    } else if (numeric) {
       v = v.replace(/[^0-9.]/g, "").replace(/^\./, "0.").replace(/(\.\d*)\./g, "$1");
       if (v !== "" && max !== undefined) v = String(clampScore(v, max));
     }
@@ -94,7 +96,7 @@ function TI({ val, onChange, center, placeholder, readOnly = false, numeric = fa
       <input
         value={val ?? ""} disabled={readOnly} onChange={handleChange} onBlur={handleBlur}
         placeholder={placeholder || ""}
-        inputMode={numeric ? "decimal" : undefined}
+        inputMode={integer ? "numeric" : numeric ? "decimal" : undefined}
         style={center
           ? { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none", textAlign: "center" }
           : { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none" }}
@@ -116,6 +118,13 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
     if (readOnly) return;
     const selectedFiles = Array.from(files || []).slice(0, 1);
     if (!selectedFiles.length) return;
+
+    const unsupported = selectedFiles.find((file) => !isAllowedAttachmentFile(file));
+    if (unsupported) {
+      setUploadError("Only image or PDF files are allowed.");
+      if (ref.current) ref.current.value = "";
+      return;
+    }
     const oversized = selectedFiles.find((f) => f.size > 10 * 1024 * 1024);
     if (oversized) {
       setUploadError("File exceeds 10 MB limit.");
@@ -159,7 +168,7 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
       ))}
       <div style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 6px", border: "1px dashed #cbd5e1", borderRadius: 4, background: "#f8fafc" }} onClick={() => !readOnly && ref.current.click()}>
         <span style={{ fontSize: 10, color: "#64748b" }}>📎 Attach</span>
-        <input ref={ref} type="file" style={{ display: "none" }} disabled={readOnly} onChange={(e) => handleFiles(e.target.files)} />
+        <input ref={ref} type="file" accept="image/*,.pdf,application/pdf" style={{ display: "none" }} disabled={readOnly} onChange={(e) => handleFiles(e.target.files)} />
       </div>
     </div>
   );
@@ -1273,9 +1282,7 @@ export default function DirectorDashboard() {
   ]);
   const setInd = (i, k, v) => setIndustry((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
 
-  const [acr, setAcr] = useState([
-    { label: "", hod: "", director: "" },
-  ]);
+  const [acr, setAcr] = useState(createAcrRows);
   const setAcrRow = (i, k, v) => setAcr((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
 
   const [journals, setJournals] = useState([
@@ -1510,7 +1517,8 @@ export default function DirectorDashboard() {
       { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
       { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
     ];
-    const errors = validateCompleteRows(sections);
+    sections.push({ label: "A(iii). Innovative Teaching Methods", rows: [{ details: innovDetails, score: innovScore }], fields: ["details"], docKey: "innov" });
+    const errors = validateCompleteRows(sections, docs);
     [...projects2, ...externalProjects].forEach((row, index) => {
       if (row.date && !isValidDDMMYYYY(row.date)) {
         errors.push(`B4 project row ${index + 1}: date must be DD/MM/YYYY.`);
@@ -1551,7 +1559,8 @@ export default function DirectorDashboard() {
       { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
       { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
     ];
-    const errors = validateCompleteRows(section === "partA" ? partASections : partBSections);
+    if (section === "partA") partASections.push({ label: "A(iii). Innovative Teaching Methods", rows: [{ details: innovDetails, score: innovScore }], fields: ["details"], docKey: "innov" });
+    const errors = validateCompleteRows(section === "partA" ? partASections : partBSections, docs);
     if (section === "partA") {
       if (innovDetails && !innovScore) errors.push("A(iii). Innovative Teaching Methods: score is required.");
       if (innovScore && !innovDetails) errors.push("A(iii). Innovative Teaching Methods: details are required.");
@@ -1600,7 +1609,7 @@ export default function DirectorDashboard() {
     if (Array.isArray(form.uniActs)) setUniActs(form.uniActs);
     if (Array.isArray(form.society)) setSociety(form.society);
     if (Array.isArray(form.industry)) setIndustry(form.industry);
-    if (Array.isArray(form.acr)) setAcr(form.acr);
+    if (Array.isArray(form.acr)) setAcr(createAcrRows(form.acr));
     if (Array.isArray(form.journals)) setJournals(form.journals);
     if (Array.isArray(form.books)) setBooks(form.books);
     if (Array.isArray(form.ict)) setIct(form.ict);
@@ -1729,12 +1738,18 @@ export default function DirectorDashboard() {
         border: none;
         padding: 4px;
       }
+
+      .report-header { position: relative; }
+      .report-logo { position: absolute; top: 0; right: 0; width: 64px; max-height: 52px; object-fit: contain; }
     </style>
   </head>
 
   <body>
 
-    <h1>Faculty Appraisal Report</h1>
+    <header class="report-header">
+      <img class="report-logo" src="${window.location.origin}/dypiu.jpeg" alt="DYPIU Logo" />
+      <h1>Faculty Appraisal Report</h1>
+    </header>
 
     <!-- PERSONAL INFO -->
     <table class="info">
@@ -2153,7 +2168,7 @@ export default function DirectorDashboard() {
                     <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                     <td style={TDC}>{i + 1}</td>
                     <td style={TD}><TI val={r.course} onChange={(v) => setCF(i, "course", v)} /></td>
-                    <td style={TD}><TI val={r.title} onChange={(v) => setCF(i, "title", v)} textOnly /></td>
+                    <td style={TD}><TI val={r.title} onChange={(v) => setCF(i, "title", v)} integer center /></td>
                     <td style={TD}>
                       <select value={r.details} onChange={(e) => setCF(i, "details", e.target.value)} style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "Georgia, serif", fontSize: 11 }}>
                         <option value="">Select</option>
@@ -2477,7 +2492,7 @@ export default function DirectorDashboard() {
                 {/* A11. ACR */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(xi) Annual Confidential Report (ACR) — Max 25 marks</div>
-                  <div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>⚠️ This section is filled by your superior (Dean). Your scores here are read-only.</div>
+                  <div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>Warning: This section is filled by your superior (HOD/Director). Your scores here are read-only.</div>
                   <table style={T}>
                     <thead>
                       <tr>

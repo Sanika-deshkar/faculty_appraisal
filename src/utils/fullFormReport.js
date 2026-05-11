@@ -139,11 +139,16 @@ export const openFullFormReport = ({
     .summary td, .summary th { font-size: 13px; }
     .total { font-weight: 800; background: #f8fafc; }
     .remarks { white-space: pre-wrap; border: 1px solid #94a3b8; padding: 10px; min-height: 50px; }
+    .report-header { position: relative; }
+    .report-logo { position: absolute; top: 0; right: 0; width: 64px; max-height: 52px; object-fit: contain; }
   </style>
 </head>
 <body>
-  <h1>${safeHtml(title)}</h1>
-  ${subtitle ? `<div class="subtitle">${safeHtml(subtitle)}</div>` : ""}
+  <header class="report-header">
+    <img class="report-logo" src="${window.location.origin}/dypiu.jpeg" alt="DYPIU Logo" />
+    <h1>${safeHtml(title)}</h1>
+    ${subtitle ? `<div class="subtitle">${safeHtml(subtitle)}</div>` : ""}
+  </header>
   <table class="meta">
     <tbody>
       <tr><td><strong>Name:</strong></td><td>${displayValue(info.name || form.name)}</td><td><strong>Academic Year:</strong></td><td>${displayValue(info.ay || form.academicYear)}</td></tr>

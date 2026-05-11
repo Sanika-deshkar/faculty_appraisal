@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { APP_INFO } from "../constants/formConfig";
 import { normalizeNonTeachingRole } from "../constants/nonTeachingHierarchy";
 import { api } from "../services/api";
+import { isAllowedAttachmentFile, isFilled } from "../utils/appraisalFormUtils";
 import {
   NON_TEACHING_MAX,
   NON_TEACHING_STATUS,
@@ -173,6 +174,12 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
   const handleFiles = async (selectedFiles) => {
     const fileList = Array.from(selectedFiles || []).slice(0, 1);
     if (!fileList.length) return;
+    const unsupported = fileList.find((file) => !isAllowedAttachmentFile(file));
+    if (unsupported) {
+      alert("Only image or PDF files are allowed.");
+      if (ref.current) ref.current.value = "";
+      return;
+    }
 
     setUploading(true);
     try {
@@ -214,7 +221,7 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
       {!readOnly && (
         <button type="button" onClick={() => ref.current?.click()} disabled={uploading} style={{ border: "1px dashed #cbd5e1", background: "#f8fafc", borderRadius: 5, padding: "5px 8px", color: "#64748b", cursor: uploading ? "wait" : "pointer", fontSize: 10, fontFamily: "Georgia, serif" }}>
           {uploading ? "Uploading..." : "Attach supporting document"}
-          <input ref={ref} type="file" onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
+          <input ref={ref} type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
         </button>
       )}
     </div>
@@ -444,6 +451,19 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
   const handleSubmit = async () => {
     if (!confirmed) {
       alert("Please confirm the accuracy declaration before submitting.");
+      return;
+    }
+    const attachmentErrors = SELF_ITEMS.flatMap((item) => {
+      const row = form[item.key] || {};
+      const rowHasData = isFilled(row.text) || isFilled(row.marks);
+      const files = form.docs?.[item.key] || [];
+      if (!rowHasData) return [];
+      if (!files.length) return [`${item.label}: attach an image or PDF.`];
+      if (files.some((file) => !isAllowedAttachmentFile(file))) return [`${item.label}: attachment must be an image or PDF.`];
+      return [];
+    });
+    if (attachmentErrors.length) {
+      alert(attachmentErrors.join("\n"));
       return;
     }
     try {

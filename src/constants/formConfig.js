@@ -42,6 +42,14 @@ export const ACR_DETAIL_POINTS = {
   ],
 };
 
+export const createAcrRows = (rows = []) => {
+  const sourceRows = Array.isArray(rows) ? rows : [];
+  return ACR_LABELS.map((label, index) => {
+    const savedRow = sourceRows.find((row) => row?.label === label) || sourceRows[index] || {};
+    return { ...savedRow, label };
+  });
+};
+
 export const MAX_SCORES = {
   PART_A: 200,
   PART_B: 420,

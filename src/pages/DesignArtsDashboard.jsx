@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ACR_DETAIL_POINTS, APP_INFO } from "../constants/formConfig";
+import { ACR_DETAIL_POINTS, APP_INFO, createAcrRows } from "../constants/formConfig";
 import { FORM_SCHOOL_CODES, FORM_TYPES } from "../constants/formRouting";
 import { getSchoolKey } from "../constants/universityHierarchy";
 import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisalDraftSection, submitAppraisal } from "../services/appraisalPersistence";
@@ -21,6 +21,7 @@ import {
   feedbackSectionScore,
   innovativeSelectionsFromDetails,
   innovativeTeachingScore,
+  isAllowedAttachmentFile,
   isValidDDMMYYYY,
   loadDraft,
   maskDateDDMMYYYY,
@@ -74,14 +75,6 @@ const SOCIETY_LABELS = [
   "Any other activity",
 ];
 
-const ACR_LABELS = [
-  "Self-motivation and Proactiveness",
-  "Punctuality",
-  "Target based work",
-  "Effectiveness",
-  "Obedience",
-];
-
 const emptyDesignArtsForm = () => ({
   info: {
     name: sessionStorage.getItem("name") || "",
@@ -105,7 +98,7 @@ const emptyDesignArtsForm = () => ({
   uniActs: [{ activity: "", nature: "", score: "" }],
   society: [{ label: "", details: "", participated: "", score: "" }],
   industry: [{ name: "", details: "", score: "" }],
-  acr: [{ label: "", score: "" }],
+  acr: createAcrRows(),
   journals: [{ title: "", journal: "", issn: "", index: "", score: "" }],
   books: [{ title: "", book: "", isbn: "", publisher: "", coAuthors: "", first: "", score: "" }],
   ict: [{ title: "", desc: "", type: "", quad: "", score: "" }],
@@ -127,13 +120,13 @@ const PART_A_SECTIONS = [
   { key: "lectures", title: "A(i). Lectures / Tutorials / Practicals", max: 40, doc: "lec", fields: [["sem", "Semester"], ["code", "Course Code / Name"], ["planned", "Planned"], ["conducted", "Conducted"]] },
   { key: "courseFile", title: "A(ii). Course File", max: 20, doc: "cf", rowMax: SCORE_LIMITS.courseFileRow, fields: [["course", "Course / Paper"], ["title", "Year"], ["details", "Availability as per IQAC format"]] },
   { key: "projects", title: "A(iv). Project Guidance", max: 20, doc: "proj", rowMax: projectGuidanceRowMax, fields: [["label", "Project Category", true]] },
-  { key: "quals", title: "A(v). Qualification Enhancement", max: 10, doc: "qual", rowMax: SCORE_LIMITS.qualificationRow, fields: [["label", "Category", true]] },
+  { key: "quals", title: "A(v). Qualification Enhancement", max: 10, doc: "qual", rowMax: SCORE_LIMITS.qualificationRow, fields: [["label", "Category"]] },
   { key: "feedback", title: "Student Feedback", max: 10, doc: "fb", fields: [["code", "Course Code / Name"], ["fb1", "First Feedback"], ["fb2", "Second Feedback"]] },
   { key: "deptActs", title: "Departmental / School Activities", max: 20, doc: "dept", fields: [["activity", "Activity"], ["nature", "Nature"]] },
   { key: "uniActs", title: "University Level Activities", max: 30, doc: "uni", fields: [["activity", "Activity"], ["nature", "Nature"]] },
   { key: "society", title: "Contribution to Society", max: 10, doc: "soc", rowMax: SCORE_LIMITS.societyRow, fields: [["label", "Activity", true], ["details", "Details"], ["participated", "Participation"]] },
   { key: "industry", title: "Industry Connect", max: 5, doc: "ind", fields: [["name", "Name"], ["details", "Details"]] },
-  { key: "acr", title: "Annual Confidential Report - School Level", max: 25, doc: "acr", fields: [["label", "Parameter", true]], selfReadOnlyScore: true },
+  { key: "acr", title: "(xi) Annual Confidential Report (ACR) - Max 25 marks", max: 25, doc: "acr", fields: [["label", "Attribute", true]], selfReadOnlyScore: true },
 ];
 
 const PART_B_SECTIONS = [
@@ -193,11 +186,12 @@ const mergeForm = (base, incoming = {}) => ({
   ...incoming,
   info: { ...base.info, ...(incoming.info || {}) },
   sectionApplicability: { ...base.sectionApplicability, ...(incoming.sectionApplicability || {}) },
+  acr: createAcrRows(incoming.acr || base.acr),
 });
 
 const normalizeScoresForSubmit = (form) => normalizeAutoScores(form);
 
-const validateDesignArtsBeforeSubmit = (form, sectionView = "all") => {
+const validateDesignArtsBeforeSubmit = (form, docs = {}, sectionView = "all") => {
   const applicability = form.sectionApplicability || {};
   const sectionsToValidate = sectionView === "partA" ? PART_A_SECTIONS : sectionView === "partB" ? PART_B_SECTIONS : [...PART_A_SECTIONS, ...PART_B_SECTIONS];
   const rowSections = sectionsToValidate.map((section) => ({
@@ -209,9 +203,10 @@ const validateDesignArtsBeforeSubmit = (form, sectionView = "all") => {
     ],
     rowMax: section.rowMax,
     maxScore: section.max,
+    docPrefix: section.key !== "courseFile" && section.key !== "acr" ? section.doc : "",
     skip: applicability[section.key] === "notApplicable",
   }));
-  const errors = validateCompleteRows(rowSections);
+  const errors = validateCompleteRows(rowSections, docs);
 
   if (sectionView !== "partA") ["internalProjects", "externalProjects"].forEach((key) => {
     (form[key] || []).forEach((row, index) => {
@@ -250,11 +245,14 @@ function StatusBadge({ status }) {
 
 function TI({ value, onChange, readOnly = false, center = false, type = "text", textOnly = false, max }) {
   const numeric = type === "number";
+  const integer = type === "integer";
   const [textErr, setTextErr] = useState(false);
   const handleChange = (event) => {
     if (readOnly) return;
     let v = event.target.value;
-    if (numeric) {
+    if (integer) {
+      v = v.replace(/[^0-9]/g, "");
+    } else if (numeric) {
       v = v.replace(/[^0-9.]/g, "").replace(/^\./, "0.").replace(/(\.\d*)\./g, "$1");
       if (v !== "" && max !== undefined) v = String(clampScore(v, max));
     }
@@ -270,12 +268,12 @@ function TI({ value, onChange, readOnly = false, center = false, type = "text", 
   return (
     <div style={{ position: "relative", width: "100%" }}>
       <input
-        type={numeric ? "text" : type}
+        type="text"
         value={value ?? ""}
         readOnly={readOnly}
         onChange={handleChange}
         onBlur={handleBlur}
-        inputMode={numeric ? "decimal" : undefined}
+        inputMode={integer ? "numeric" : numeric ? "decimal" : undefined}
         style={{ width: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #cbd5e1", borderRadius: 4, padding: "5px 7px", fontSize: 11, fontFamily: "Georgia, serif", background: readOnly ? "#f8fafc" : "#fff", textAlign: center ? "center" : "left" }}
       />
       {textErr && <span style={{ position: "absolute", left: 0, top: "100%", fontSize: 9, color: "#ef4444", whiteSpace: "nowrap", lineHeight: 1.2 }}>Text expected</span>}
@@ -299,6 +297,12 @@ function DocCell({ id, docs, setDocs, readOnly }) {
   const handleFiles = async (fileList) => {
     const selected = Array.from(fileList || []);
     if (!selected.length) return;
+    const unsupported = selected.find((file) => !isAllowedAttachmentFile(file));
+    if (unsupported) {
+      setUploadError("Only image or PDF files are allowed.");
+      if (ref.current) ref.current.value = "";
+      return;
+    }
     const oversized = selected.find((f) => f.size > 10 * 1024 * 1024);
     if (oversized) {
       setUploadError("File exceeds 10 MB limit.");
@@ -339,7 +343,7 @@ function DocCell({ id, docs, setDocs, readOnly }) {
       {!readOnly && (
         <button type="button" onClick={() => ref.current?.click()} disabled={uploading} style={{ border: "1px dashed #cbd5e1", background: "#f8fafc", color: "#475569", borderRadius: 4, padding: "5px", cursor: "pointer", fontSize: 10 }}>
           {uploading ? "Uploading..." : "Attach"}
-          <input ref={ref} type="file" style={{ display: "none" }} onChange={(event) => handleFiles(event.target.files)} />
+          <input ref={ref} type="file" accept="image/*,.pdf,application/pdf" style={{ display: "none" }} onChange={(event) => handleFiles(event.target.files)} />
         </button>
       )}
       {readOnly && !files.length && <span style={{ color: "#94a3b8", fontSize: 10 }}>No docs</span>}
@@ -347,15 +351,17 @@ function DocCell({ id, docs, setDocs, readOnly }) {
   );
 }
 
-function SectionShell({ title, max, earned = 0, children, accent = ACCENT }) {
+function SectionShell({ title, max, earned = 0, children, accent = ACCENT, showScoreSummary = true }) {
   return (
     <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${accent}`, borderRadius: 8, overflow: "hidden", marginBottom: 14 }}>
       <div style={{ padding: "10px 14px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div style={{ fontWeight: 800, color: accent, fontSize: 13 }}>{title}</div>
-        <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textAlign: "right" }}>
-          <div>Earned Score: {clampScore(earned, max).toFixed(1)} / {max}</div>
-          <div>Remaining Credits: {scoreRemaining(earned, max).toFixed(1)}</div>
-        </div>
+        {showScoreSummary && (
+          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textAlign: "right" }}>
+            <div>Earned Score: {clampScore(earned, max).toFixed(1)} / {max}</div>
+            <div>Remaining Credits: {scoreRemaining(earned, max).toFixed(1)}</div>
+          </div>
+        )}
       </div>
       <div style={{ padding: 12 }}>{children}</div>
     </section>
@@ -373,6 +379,49 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
   const selfLocked = mode === "self" && section.key === "acr";
   const canToggleApplicability = editableSelf && ["projects", "research"].includes(section.key);
   const earned = notApplicable ? 0 : scoreSectionRows(section.key, rows, section.max);
+
+  if (section.key === "acr" && mode === "self") {
+    const acrRows = createAcrRows(rows);
+    const acrTotal = scoreSectionRows(section.key, acrRows, section.max);
+    return (
+      <SectionShell title="(xi) Annual Confidential Report (ACR) - Max 25 marks" max={section.max} earned={acrTotal} accent="#ef4444" showScoreSummary={false}>
+        <div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>
+          Warning: This section is filled by your superior (HOD/Director). Your scores here are read-only.
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+            <thead>
+              <tr>
+                <th style={thStyle}>SN</th>
+                <th style={thStyle}>Attribute</th>
+                <th style={thStyle}>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {acrRows.map((row, index) => (
+                <tr key={`acr-${index}`} style={index % 2 === 1 ? { background: "#f8fafc" } : {}}>
+                  <td style={tdCenter}>{index + 1}</td>
+                  <td style={tdStyle}>
+                    <div style={{ fontWeight: 700 }}>{row.label}</div>
+                    {ACR_DETAIL_POINTS[row.label] && (
+                      <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>
+                        {ACR_DETAIL_POINTS[row.label].map((point) => <li key={point}>{point}</li>)}
+                      </ul>
+                    )}
+                  </td>
+                  <td style={tdCenter}><RO value={row.score || "-"} center /></td>
+                </tr>
+              ))}
+              <tr style={{ background: "#eff6ff" }}>
+                <td style={{ ...tdCenter, fontWeight: "bold" }} colSpan={2}>Total Score (Max 25)</td>
+                <td style={{ ...tdCenter, fontWeight: "bold" }}>{acrTotal.toFixed(1)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </SectionShell>
+    );
+  }
 
   const rowSelfScore = (row) => {
     if (section.key === "feedback") return feedbackRowScore(row, section.max);
@@ -503,7 +552,7 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
                       </select>
                     ) : (
                       <>
-                        <TI value={row[key]} type={NUMERIC_KEYS.has(key) ? "number" : "text"} max={key === "fb1" || key === "fb2" ? SCORE_LIMITS.feedbackAverage : undefined} textOnly={TEXT_ONLY_KEYS.has(key)} readOnly={!editableSelf || readOnlyField || notApplicable || selfLocked || (socRowLocked && key !== "participated")} onChange={(value) => updateRow(index, key, value)} />
+                        <TI value={row[key]} type={NUMERIC_KEYS.has(key) ? "number" : (section.key === "courseFile" && key === "title") ? "integer" : "text"} center={section.key === "courseFile" && key === "title"} max={key === "fb1" || key === "fb2" ? SCORE_LIMITS.feedbackAverage : undefined} textOnly={TEXT_ONLY_KEYS.has(key) && !(section.key === "courseFile" && key === "title")} readOnly={!editableSelf || readOnlyField || notApplicable || selfLocked || (socRowLocked && key !== "participated")} onChange={(value) => updateRow(index, key, value)} />
                         {section.key === "acr" && key === "label" && ACR_DETAIL_POINTS[row[key]] && (
                           <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>
                             {ACR_DETAIL_POINTS[row[key]].map((point) => <li key={point}>{point}</li>)}
@@ -863,7 +912,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
 
   const setters = useMemo(() => Object.fromEntries([
     ["setInfo", (value) => setForm((prev) => ({ ...prev, info: { ...prev.info, ...value } }))],
-    ...ALL_ARRAY_KEYS.map((key) => [`set${titleCase(key)}`, (value) => setForm((prev) => ({ ...prev, [key]: value }))]),
+    ...ALL_ARRAY_KEYS.map((key) => [`set${titleCase(key)}`, (value) => setForm((prev) => ({ ...prev, [key]: key === "acr" ? createAcrRows(value) : value }))]),
     ["setInnovDetails", (value) => setForm((prev) => ({ ...prev, innovDetails: value }))],
     ["setInnovScore", (value) => setForm((prev) => ({ ...prev, innovScore: value }))],
     ["setInnovHod", (value) => setForm((prev) => ({ ...prev, innovHod: value }))],
@@ -934,14 +983,14 @@ export default function DesignArtsDashboard({ fixedRole }) {
 
   const handleSelfSectionChange = (section) => {
     if (selfSectionView === "partA" && section !== "partA") {
-      const validationErrors = validateDesignArtsBeforeSubmit(form, "partA");
+      const validationErrors = validateDesignArtsBeforeSubmit(form, docs, "partA");
       if (validationErrors.length) {
         alert(validationErrors.join("\n"));
         return;
       }
     }
     if (selfSectionView === "partB" && section === "summary") {
-      const validationErrors = validateDesignArtsBeforeSubmit(form, "partB");
+      const validationErrors = validateDesignArtsBeforeSubmit(form, docs, "partB");
       if (validationErrors.length) {
         alert(validationErrors.join("\n"));
         return;
@@ -966,7 +1015,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
       return;
     }
     const normalizedForm = normalizeScoresForSubmit(form);
-    const validationErrors = validateDesignArtsBeforeSubmit(normalizedForm);
+    const validationErrors = validateDesignArtsBeforeSubmit(normalizedForm, docs);
     if (validationErrors.length) {
       alert(validationErrors.join("\n"));
       return;

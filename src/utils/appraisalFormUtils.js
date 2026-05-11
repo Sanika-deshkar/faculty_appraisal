@@ -256,13 +256,55 @@ export const rowHasAnyValue = (row = {}, keys = []) =>
 export const rowMissingFields = (row = {}, keys = []) =>
   keys.filter((key) => !isFilled(row?.[key]));
 
-export const validateCompleteRows = (sections = []) => {
+export const isAllowedAttachmentFile = (file = {}) => {
+  const type = String(file.type || "").toLowerCase();
+  const name = String(file.name || file.url || "").toLowerCase();
+  return type === "application/pdf" ||
+    type.startsWith("image/") ||
+    /\.(pdf|png|jpe?g|webp|gif|bmp)$/i.test(name);
+};
+
+export const docsForRow = (docs = {}, docPrefix = "", index = 0, docKey) => {
+  if (docKey) return docs?.[docKey] || [];
+  if (!docPrefix) return [];
+  return docs?.[`${docPrefix}-${index}`] || [];
+};
+
+const docPrefixForSectionLabel = (label = "") => {
+  const text = normalizedText(label);
+  if (text.includes("lectures")) return "lec";
+  if (text.includes("innovative")) return "innov";
+  if (text.includes("project") && text.includes("external")) return "externalProject";
+  if (text.includes("project") && (text.includes("internal") || text.includes("b4(b)"))) return "project2";
+  if (text.includes("a(iv)") || text.includes("project guidance") || text === "projects") return "proj";
+  if (text.includes("qualification")) return "qual";
+  if (text.includes("department")) return "dept";
+  if (text.includes("university")) return "uni";
+  if (text.includes("society")) return "soc";
+  if (text.includes("industry connect")) return "ind";
+  if (text.includes("journal")) return "jour";
+  if (text.includes("book")) return "book";
+  if (text.includes("ict")) return "ict";
+  if (text.includes("research guidance")) return "res";
+  if (text.includes("patent") || text.includes("ipr")) return "pat";
+  if (text.includes("award")) return "awd";
+  if (text.includes("conference")) return "conf";
+  if (text.includes("proposal")) return "prop";
+  if (text.includes("product")) return "prod";
+  if (text.includes("fdp") || text.includes("workshop")) return "fdp";
+  if (text.includes("industrial training")) return "train";
+  return "";
+};
+
+export const validateCompleteRows = (sections = [], defaultDocs) => {
   const errors = [];
 
-  sections.forEach(({ label, rows = [], fields = [], skip = false, rowMax, maxScore, scoreField = "score" }) => {
+  sections.forEach(({ label, rows = [], fields = [], skip = false, rowMax, maxScore, scoreField = "score", docs = defaultDocs, docPrefix, docKey, requireAttachment }) => {
     if (skip) return;
     const labelText = normalizedText(label);
     const inferredRowMax = rowMax ?? (labelText.includes("fdp") || labelText.includes("industrial training") ? SCORE_LIMITS.fdpRow : undefined);
+    const resolvedDocPrefix = docPrefix ?? (docs ? docPrefixForSectionLabel(label) : "");
+    const shouldRequireAttachment = requireAttachment ?? Boolean(resolvedDocPrefix || docKey);
 
     rows.forEach((row, index) => {
       if (!rowHasAnyValue(row, fields)) return;
@@ -270,6 +312,19 @@ export const validateCompleteRows = (sections = []) => {
       const missing = rowMissingFields(row, fields);
       if (missing.length) {
         errors.push(`${label}, row ${index + 1}: fill all fields or clear the row.`);
+      }
+
+      const requireAttachmentForRow = typeof shouldRequireAttachment === "function"
+        ? shouldRequireAttachment(row, index)
+        : shouldRequireAttachment && !(labelText.includes("society") && normalizedText(societySelectionForRow(row)) !== "yes");
+
+      if (requireAttachmentForRow) {
+        const files = docsForRow(docs, resolvedDocPrefix, index, typeof docKey === "function" ? docKey(row, index) : docKey);
+        if (!files.length) {
+          errors.push(`${label}, row ${index + 1}: attach an image or PDF.`);
+        } else if (files.some((file) => !isAllowedAttachmentFile(file))) {
+          errors.push(`${label}, row ${index + 1}: attachment must be an image or PDF.`);
+        }
       }
 
       const maxForRow = rowMaxValue(inferredRowMax, row, index);

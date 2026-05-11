@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { fetchSavedAppraisal } from "../services/appraisalPersistence";
 import { fetchNonTeachingQueueForRole, expectedPendingStatus, isNonTeachingReviewComplete } from "../services/nonTeachingWorkflow";
-import { MAX_SCORES, APP_INFO } from "../constants/formConfig";
+import { ACR_DETAIL_POINTS, MAX_SCORES, APP_INFO, createAcrRows } from "../constants/formConfig";
 
 import { DEAN_TRACKS, UNIVERSITY_SCHOOLS, normalizeHierarchyText } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
@@ -297,7 +297,7 @@ const VC_REPORT_PART_A_SECTIONS = [
   { key: "uniActs", title: "University Level Activities", max: 30, doc: "uni", fields: [["activity", "Activity"], ["nature", "Nature"]] },
   { key: "society", title: "Contribution to Society", max: 10, doc: "soc", fields: [["label", "Activity"], ["details", "Details"]] },
   { key: "industry", title: "Industry Connect", max: 5, doc: "ind", fields: [["name", "Industry"], ["details", "Details"]] },
-  { key: "acr", title: "Annual Confidential Report - School Level", max: 25, doc: "acr", fields: [["label", "Parameter"]] },
+  { key: "acr", title: "(xi) Annual Confidential Report (ACR) - Max 25 marks", max: 25, doc: "acr", fields: [["label", "Attribute"]] },
 ];
 const VC_REPORT_PART_B_SECTIONS = [
   { key: "journals", title: "B1. Research Papers / Journal Publications", max: 120, doc: "jour", fields: [["title", "Title"], ["journal", "Journal"], ["issn", "ISSN"], ["index", "Indexing"]] },
@@ -567,13 +567,20 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
       {/* G ACR */}
       <SC title="G. Annual Confidential Report (Max 25)" accent="#ef4444">
         <table style={T}><thead><tr>
-          <th style={TH}>SN</th><th style={TH}>Parameter</th>
+          <th style={TH}>SN</th><th style={TH}>Attribute</th>
           {renderScoreHeaders()}
         </tr></thead>
-        <tbody>{rows(person.acr).map((r, i) => (
+        <tbody>{createAcrRows(person.acr).map((r, i) => (
           <tr key={i} style={i % 2 ? { background: "#f8fafc" } : {}}>
             <td style={TDC}>{i + 1}</td>
-            <td style={TD}><RO val={r.label} /></td>
+            <td style={TD}>
+              <div style={{ fontWeight: 700 }}>{r.label}</div>
+              {ACR_DETAIL_POINTS[r.label] && (
+                <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>
+                  {ACR_DETAIL_POINTS[r.label].map((point) => <li key={point}>{point}</li>)}
+                </ul>
+              )}
+            </td>
             {renderScoreCells(r, "acr", i)}
           </tr>
         ))}</tbody></table>
