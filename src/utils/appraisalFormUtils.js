@@ -190,7 +190,10 @@ export const rowMaxForSection = (sectionKey, row = {}, sectionMax = 0) => {
 export const scoreSectionRows = (sectionKey, rows = [], maxScore, scoreKey = "score") => {
   if (sectionKey === "feedback" && scoreKey === "score") return feedbackSectionScore(rows, maxScore);
   if (sectionKey === "courseFile" && scoreKey === "score") return sumCalculatedSectionScore(rows, maxScore, courseFileRowScore);
-  if (sectionKey === "research" && scoreKey === "score") return sumCalculatedSectionScore(rows, maxScore, researchGuidanceScore);
+  if (sectionKey === "research" && scoreKey === "score") return sumCalculatedSectionScore(rows, maxScore, (row) => {
+    const stored = String(row?.score ?? "").trim();
+    return stored !== "" ? clampScore(stored, researchGuidanceRowMax(row)) : researchGuidanceScore(row);
+  });
   if (sectionKey === "society" && scoreKey === "score") return sumCalculatedSectionScore(rows, maxScore, societyRowScore);
   return sumSectionScore(rows, maxScore, scoreKey, (row) => rowMaxForSection(sectionKey, row, maxScore));
 };
@@ -216,10 +219,15 @@ export const normalizeAutoScores = (form = {}) => ({
       score: normalizedText(selection) === "yes" ? String(clampScore(toNumber(row.score), SCORE_LIMITS.societyRow)) : "0",
     };
   }),
-  research: (form.research || []).map((row) => ({
-    ...row,
-    score: researchGuidanceScore(row) ? String(researchGuidanceScore(row)) : "",
-  })),
+  research: (form.research || []).map((row) => {
+    const stored = String(row?.score ?? "").trim();
+    const rowMax = researchGuidanceRowMax(row);
+    const fallback = researchGuidanceScore(row);
+    return {
+      ...row,
+      score: stored !== "" ? String(clampScore(stored, rowMax)) : (fallback ? String(fallback) : ""),
+    };
+  }),
   projects: (form.projects || []).map((row) => ({
     ...row,
     score: String(clampScore(row.score, projectGuidanceRowMax(row)) || ""),
