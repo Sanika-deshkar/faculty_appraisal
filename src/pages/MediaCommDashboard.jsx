@@ -747,13 +747,12 @@ function WorkflowTracker({ declaration, reviews, profile }) {
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${chain.length + 1}, minmax(130px, 1fr))`, gap: 8, overflowX: "auto" }}>
         {[{ label: "Submitted", state: "Done", time: declaration.submitted_at }, ...chain.map((role) => {
           const review = reviewed.get(role);
-          return { label: roleLabel(role), state: review ? "Reviewed" : next === role ? "Pending" : "Waiting", time: review?.reviewed_at, comment: review?.remarks };
+          return { label: roleLabel(role), state: review ? "Reviewed" : next === role ? "Pending" : "Waiting", time: review?.reviewed_at };
         })].map((step) => (
           <div key={step.label} style={{ border: "1px solid #e2e8f0", borderRadius: 7, padding: 9, background: step.state === "Reviewed" || step.state === "Done" ? "#ecfdf5" : step.state === "Pending" ? "#fffbeb" : "#f8fafc" }}>
             <div style={{ fontSize: 10, fontWeight: 900, color: "#64748b", textTransform: "uppercase" }}>{step.state}</div>
             <div style={{ fontSize: 12, fontWeight: 800, marginTop: 4 }}>{step.label}</div>
             <div style={{ fontSize: 10, color: "#64748b", marginTop: 4 }}>{step.time ? new Date(step.time).toLocaleString() : "No timestamp yet"}</div>
-            {step.comment && <div style={{ fontSize: 10, color: "#334155", marginTop: 5 }}>{step.comment}</div>}
           </div>
         ))}
       </div>

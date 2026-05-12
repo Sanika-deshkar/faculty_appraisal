@@ -130,7 +130,6 @@ function WorkflowStatusTracker({ declaration, reviews, profile }) {
     label: "Faculty Submission",
     state: "Submitted",
     timestamp: declaration.submitted_at,
-    comment: status,
   };
 
   const authoritySteps = chain.map((role) => {
@@ -139,7 +138,6 @@ function WorkflowStatusTracker({ declaration, reviews, profile }) {
       label: roleLabel(role),
       state: stepState(role),
       timestamp: review?.reviewed_at,
-      comment: review?.remarks,
     };
   });
 
@@ -165,9 +163,6 @@ function WorkflowStatusTracker({ declaration, reviews, profile }) {
               <div style={{ marginTop: 5, fontSize: 10, color: "#64748b" }}>
                 {step.timestamp ? new Date(step.timestamp).toLocaleString() : "No timestamp yet"}
               </div>
-              {step.comment && (
-                <div style={{ marginTop: 6, fontSize: 10, lineHeight: 1.4, color: "#334155", maxHeight: 42, overflow: "auto" }}>{step.comment}</div>
-              )}
             </div>
           );
         })}
@@ -2019,7 +2014,7 @@ export default function HODDashboard() {
             {appraisalLocked && (
               <div style={{ background: workflowRejected ? "#fef2f2" : "#ecfdf5", border: `1px solid ${workflowRejected ? "#fecaca" : "#bbf7d0"}`, color: workflowRejected ? "#991b1b" : "#166534", borderRadius: 9, padding: "10px 14px", fontSize: 12, fontWeight: 700 }}>
                 {workflowRejected
-                  ? "This appraisal was rejected. Review the authority comments in the tracker above."
+                  ? "This appraisal was rejected. Review the approval status in the tracker above."
                   : "Submitted and locked for review. Your saved data is visible here, but editing is disabled while authorities review it."}
               </div>
             )}
