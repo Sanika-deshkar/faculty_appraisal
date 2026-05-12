@@ -890,7 +890,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData }) {
         </table>
       </SC>
 
-      <SC title="B8(b). Industrial Training (Max 10)" accent="#10b981">
+      <SC title="B8(b). Industrial Training" accent="#10b981">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Company</th><th style={TH}>Duration</th><th style={TH}>Nature</th>
@@ -962,15 +962,15 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
     const conf = (faculty.confs || []).reduce((a, _, i) => a + get("confs", i, "hod"), 0);
     const prop = (faculty.proposals || []).reduce((a, _, i) => a + get("proposals", i, "hod"), 0);
     const prod = (faculty.products || []).reduce((a, _, i) => a + get("products", i, "hod"), 0);
-    const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
-    const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
+    const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 5);
+    const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 5);
     const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train;
 
     return { partA, partB, total: partA + partB };
   };
 
   const { partA, partB, total } = calcHodScore();
-  const g = grade(total, 620);
+  const g = grade(total, 575);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: "100%" }}>
@@ -993,7 +993,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
           </div>
           <div style={{ background: g.bg, border: `2px solid ${g.color}40`, borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
             <div style={{ color: g.color, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 700 }}>HOD Total</div>
-            <div style={{ color: g.color, fontWeight: 800, fontSize: 16 }}>{total.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/620</span></div>
+            <div style={{ color: g.color, fontWeight: 800, fontSize: 16 }}>{total.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/575</span></div>
           </div>
         </div>
       </div>
@@ -1023,7 +1023,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
             <tbody>
               {[
                 ["Part A — Teaching & Activities", 200, faculty.lectures?.reduce((a, r) => a + n(r.score), 0) || 0, partA],
-                ["Part B — Research & Contributions", 420, faculty.journals?.reduce((a, r) => a + n(r.score), 0) || 0, partB],
+                ["Part B — Research & Contributions", 375, faculty.journals?.reduce((a, r) => a + n(r.score), 0) || 0, partB],
               ].map(([label, max, fac, hod]) => (
                 <tr key={label}>
                   <td style={TD}>{label}</td>
@@ -1034,7 +1034,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
               ))}
               <tr style={{ background: "#d1fae5", fontWeight: 700 }}>
                 <td style={TD}>Grand Total</td>
-                <td style={TDC}>620</td>
+                <td style={TDC}>575</td>
                 <td style={TDS}>—</td>
                 <td style={{ ...TDS_HOD, color: "#065f46", fontSize: 14 }}>{total.toFixed(1)}</td>
               </tr>
@@ -1066,7 +1066,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
 const DEAN_REVIEW_PART_A_KEYS = ["lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs", "society", "industry", "acr"];
 const DEAN_REVIEW_PART_B_KEYS = ["journals", "books", "ict", "research", "projects2", "externalProjects", "patents", "awards", "confs", "proposals", "products", "fdps", "training"];
 const DEAN_REVIEW_ARRAY_KEYS = [...DEAN_REVIEW_PART_A_KEYS, ...DEAN_REVIEW_PART_B_KEYS];
-const DEAN_SECTION_MAX = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 10, training: 10 };
+const DEAN_SECTION_MAX = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 5, training: 5 };
 const DEAN_ROW_MAX = { courseFile: () => SCORE_LIMITS.courseFileRow, projects: projectGuidanceRowMax, quals: () => SCORE_LIMITS.qualificationRow, feedback: () => 10, society: () => SCORE_LIMITS.societyRow, research: researchGuidanceRowMax, fdps: () => SCORE_LIMITS.fdpRow, training: () => SCORE_LIMITS.fdpRow };
 
 const deanScorePayload = (approval, deanData) => {
@@ -1100,8 +1100,8 @@ const sumDeanRows = (payload, keys) =>
 const deanScoreTotals = (payload) => {
   const partA = clampScore(sumDeanRows(payload, DEAN_REVIEW_PART_A_KEYS) + clampScore(payload.innovativeTeaching?.dean, 10), 200);
   const partB = sumDeanRows(payload, DEAN_REVIEW_PART_B_KEYS);
-  const cappedPartB = clampScore(partB, 420);
-  return { partA, partB: cappedPartB, total: clampScore(partA + cappedPartB, 620) };
+  const cappedPartB = clampScore(partB, 375);
+  return { partA, partB: cappedPartB, total: clampScore(partA + cappedPartB, 575) };
 };
 
 function DeanScoreCell({ sectionKey, index, row, deanData, setDeanData }) {
@@ -1581,8 +1581,8 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
             <div style={{ fontSize: 11, color: "#6d28d9", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.7 }}>Dean Score Summary</div>
             <div style={{ display: "flex", gap: 18, marginTop: 8, color: "#4c1d95", fontWeight: 900 }}>
               <span>Part A: {deanScores.partA.toFixed(1)} / 200</span>
-              <span>Part B: {deanScores.partB.toFixed(1)} / 420</span>
-              <span>Total: {deanScores.total.toFixed(1)} / 620</span>
+              <span>Part B: {deanScores.partB.toFixed(1)} / 375</span>
+              <span>Total: {deanScores.total.toFixed(1)} / 575</span>
             </div>
           </div>
 
@@ -1895,9 +1895,9 @@ export default function DeanDashboard() {
   const confScore = sumSectionScore(confs, 30);
   const proposalScore = sumSectionScore(proposals, 10);
   const productScore = sumSectionScore(products, 10);
-  const fdpScore = sumSectionScore(fdps, 10, "score", SCORE_LIMITS.fdpRow);
-  const trainScore = sumSectionScore(training, 10, "score", SCORE_LIMITS.fdpRow);
-  const effectivePartBMax = effectiveMaxScore(420, sectionApplicability, [{ key: "research", max: 30 }]);
+  const fdpScore = sumSectionScore(fdps, 5, "score", SCORE_LIMITS.fdpRow);
+  const trainScore = sumSectionScore(training, 5, "score", SCORE_LIMITS.fdpRow);
+  const effectivePartBMax = effectiveMaxScore(375, sectionApplicability, [{ key: "research", max: 30 }]);
   const effectiveGrandMax = effectivePartAMax + effectivePartBMax;
   const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + fdpScore + trainScore, effectivePartBMax);
   const grandTotal = clampScore(partATotal + partBTotal, effectiveGrandMax);
@@ -2273,8 +2273,8 @@ export default function DeanDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
     ];
     sections.push({ label: "A(iii). Innovative Teaching Methods", rows: visibleInnovRows, fields: ["method", "details", "score"], docKey: (_row, index) => index === 0 ? "innov" : `innov-${index}`, rowMax: SCORE_LIMITS.innovativeRow, maxScore: 10 });
     const errors = validateCompleteRows(sections, docs);
@@ -2313,8 +2313,8 @@ export default function DeanDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
     ];
     if (section === "partA") partASections.push({ label: "A(iii). Innovative Teaching Methods", rows: visibleInnovRows, fields: ["method", "details", "score"], docKey: (_row, index) => index === 0 ? "innov" : `innov-${index}`, rowMax: SCORE_LIMITS.innovativeRow, maxScore: 10 });
     const errors = validateCompleteRows(section === "partA" ? partASections : partBSections, docs);
@@ -3012,7 +3012,7 @@ export default function DeanDashboard() {
 
             {/* Part B Tab */}
             {hodAppraisalTab === "partB" && (
-              <SC title="Part B — Research & Academic Contributions (Max 420)" accent="#7c3aed">
+              <SC title="Part B — Research & Academic Contributions (Max 375)" accent="#7c3aed">
                 <div style={{ marginBottom: 14, padding: "8px 12px", background: "#ede9fe", borderRadius: 6, fontSize: 12, color: "#6d28d9", fontWeight: 600 }}>
                   📊 Total Part B Score: {partBTotal.toFixed(1)}/{effectivePartBMax}
                 </div>
@@ -3491,10 +3491,6 @@ export default function DeanDashboard() {
                           <td style={TDS}><TI val={r.score} numeric onChange={(v) => setFdp(i, "score", v)} center max={SCORE_LIMITS.fdpRow} /></td>
                         </tr>
                       ))}
-                      <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total FDP Score (Max 10)</td>
-                        <td style={{ ...TDS, fontWeight: "bold" }}>{fdpScore.toFixed(1)}</td>
-                      </tr>
                     </tbody>
                   </table>
                   <RowBtns onAdd={() => setFdps((p) => [...p, { program: "", duration: "", org: "", score: "" }])} onDel={() => setFdps((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={fdps.length > 1} />
@@ -3502,7 +3498,7 @@ export default function DeanDashboard() {
 
                 {/* B8(b). Industrial Training */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(b). Industrial Training - Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(b). Industrial Training</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3527,13 +3523,17 @@ export default function DeanDashboard() {
                           <td style={TDS}><TI val={r.score} numeric onChange={(v) => setTrain(i, "score", v)} center max={SCORE_LIMITS.fdpRow} /></td>
                         </tr>
                       ))}
-                      <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Training Score (Max 10)</td>
-                        <td style={{ ...TDS, fontWeight: "bold" }}>{trainScore.toFixed(1)}</td>
-                      </tr>
                     </tbody>
                   </table>
                   <RowBtns onAdd={() => setTraining((p) => [...p, { company: "", duration: "", nature: "", score: "" }])} onDel={() => setTraining((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={training.length > 1} />
+                  <table style={{ ...T, marginTop: 8 }}>
+                    <tbody>
+                      <tr style={{ background: "#f3e8ff" }}>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total B8 Score (Max 10)</td>
+                        <td style={{ ...TDS, fontWeight: "bold" }}>{(fdpScore + trainScore).toFixed(1)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </SC>
             )}
@@ -3660,7 +3660,7 @@ export default function DeanDashboard() {
             {/* Faculty Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
               {filtered.map(faculty => {
-                const g = grade(faculty.grandTotal || 350, 620);
+                const g = grade(faculty.grandTotal || 350, 575);
                 const courseFilePartA = Array.isArray(faculty.courseFile)
                   ? (() => {
                       const filled = faculty.courseFile.filter(row => String(row?.score ?? "").trim() !== "");
@@ -3703,7 +3703,7 @@ export default function DeanDashboard() {
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, background: "#f8fafc", borderRadius: 8, padding: "12px 14px" }}>
                       {[
                         { label: "Part A", val: facPartA, max: 200, color: "#6366f1" },
-                        { label: "Part B", val: facPartB, max: 420, color: "#0ea5e9" },
+                        { label: "Part B", val: facPartB, max: 375, color: "#0ea5e9" },
                         { label: "Docs", val: docCount, max: null, color: "#10b981" },
                       ].map(({ label, val, max, color }) => (
                         <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -4012,13 +4012,13 @@ export default function DeanDashboard() {
                   </tr>
                   <tr style={{ background: "#f8fafc" }}>
                     <td style={TDC}>8</td>
-                    <td style={TD}><strong>Self Development (Maxi. marks 10/20)</strong></td>
+                    <td style={TD}><strong>Self Development (Max. marks 10)</strong></td>
                     <td style={TD}>
-                      (a) Attended FDP of one week duration or more (Max 10 marks): 5/FDP<br/>
-                      (b) Industrial training (Maximum marks 10)<br/>
-                      <em>Note: SAA, SoD, SoMCS max 20; Other schools max 10.</em>
+                      (a) Attended FDP of one week duration or more (Max 5 marks): 5/FDP<br/>
+                      (b) Industrial training (Maximum marks 5)<br/>
+                      <em>Total B8 score maximum marks 10.</em>
                     </td>
-                    <td style={TDC}>10 / 20</td>
+                    <td style={TDC}>10</td>
                   </tr>
                 </tbody>
               </table>

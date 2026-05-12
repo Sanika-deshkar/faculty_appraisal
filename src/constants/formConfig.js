@@ -52,8 +52,8 @@ export const createAcrRows = (rows = []) => {
 
 export const MAX_SCORES = {
   PART_A: 200,
-  PART_B: 420,
-  GRAND_TOTAL: 620,
+  PART_B: 375,
+  GRAND_TOTAL: 575,
   TEACHING_PROCESS: 100,
   STUDENT_FEEDBACK: 10,
   DEPT_ACTIVITIES: 20,
@@ -73,7 +73,7 @@ export const MAX_SCORES = {
   CONFERENCES: 30,
   PROPOSALS: 10,
   PRODUCTS: 10,
-  SELF_DEV: 10
+  SELF_DEV: 5
 };
 
 export const TEACHING_SCORE_RULES = [

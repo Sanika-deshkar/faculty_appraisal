@@ -912,7 +912,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, dirData, setDirData }
         </table>
       </SC>
 
-      <SC title="B8(b). Industrial Training (Max 10)" accent="#10b981">
+      <SC title="B8(b). Industrial Training" accent="#10b981">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Company</th><th style={TH}>Duration</th><th style={TH}>Nature</th>
@@ -1000,11 +1000,11 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
     const conf = sumReviewRows("confs", "hod", 30);
     const prop = sumReviewRows("proposals", "hod", 10);
     const prod = sumReviewRows("products", "hod", 10);
-    const fdp = sumReviewRows("fdps", "hod", 10, SCORE_LIMITS.fdpRow);
-    const train = sumReviewRows("training", "hod", 10, SCORE_LIMITS.fdpRow);
-    const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 420);
+    const fdp = sumReviewRows("fdps", "hod", 5, SCORE_LIMITS.fdpRow);
+    const train = sumReviewRows("training", "hod", 5, SCORE_LIMITS.fdpRow);
+    const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 375);
 
-    return { partA, partB, total: clampScore(partA + partB, 620) };
+    return { partA, partB, total: clampScore(partA + partB, 575) };
   };
 
   // Compute Director total from dirData
@@ -1060,16 +1060,16 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
     const conf = sumReviewRows("confs", "dir", 30);
     const prop = sumReviewRows("proposals", "dir", 10);
     const prod = sumReviewRows("products", "dir", 10);
-    const fdp = sumReviewRows("fdps", "dir", 10, SCORE_LIMITS.fdpRow);
-    const train = sumReviewRows("training", "dir", 10, SCORE_LIMITS.fdpRow);
-    const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 420);
+    const fdp = sumReviewRows("fdps", "dir", 5, SCORE_LIMITS.fdpRow);
+    const train = sumReviewRows("training", "dir", 5, SCORE_LIMITS.fdpRow);
+    const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 375);
 
-    return { partA, partB, total: clampScore(partA + partB, 620) };
+    return { partA, partB, total: clampScore(partA + partB, 575) };
   };
 
   const { partA, partB, total } = calcHodScore();
   const { partA: dirPartA, partB: dirPartB, total: dirTotal } = calcDirScore();
-  const g = grade(dirTotal, 620);
+  const g = grade(dirTotal, 575);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: "100%" }}>
@@ -1092,7 +1092,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
           </div>
           <div style={{ background: g.bg, border: `2px solid ${g.color}40`, borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
             <div style={{ color: g.color, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 700 }}>Dir Total</div>
-            <div style={{ color: g.color, fontWeight: 800, fontSize: 16 }}>{dirTotal.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/620</span></div>
+            <div style={{ color: g.color, fontWeight: 800, fontSize: 16 }}>{dirTotal.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/575</span></div>
           </div>
         </div>
       </div>
@@ -1126,7 +1126,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
             <tbody>
               {[
                 ["Part A — Teaching & Activities", 200, faculty.lectures?.reduce((a, r) => a + n(r.score), 0) || 0, partA, dirPartA],
-                ["Part B — Research & Contributions", 420, faculty.journals?.reduce((a, r) => a + n(r.score), 0) || 0, partB, dirPartB],
+                ["Part B — Research & Contributions", 375, faculty.journals?.reduce((a, r) => a + n(r.score), 0) || 0, partB, dirPartB],
               ].map(([label, max, fac, _hod, dir]) => (
                 <tr key={label}>
                   <td style={TD}>{label}</td>
@@ -1137,7 +1137,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
               ))}
               <tr style={{ background: "#d1fae5", fontWeight: 700 }}>
                 <td style={TD}>Grand Total</td>
-                <td style={TDC}>620</td>
+                <td style={TDC}>575</td>
                 <td style={TDS}>—</td>
                 <td style={{ ...TDS_DIR, color: "#065f46", fontSize: 14 }}>{dirTotal.toFixed(1)}</td>
               </tr>
@@ -1453,9 +1453,9 @@ export default function DirectorDashboard() {
   const confScore = sumSectionScore(confs, 30);
   const proposalScore = sumSectionScore(proposals, 10);
   const productScore = sumSectionScore(products, 10);
-  const fdpScore = sumSectionScore(fdps, 10, "score", SCORE_LIMITS.fdpRow);
-  const trainScore = sumSectionScore(training, 10, "score", SCORE_LIMITS.fdpRow);
-  const effectivePartBMax = effectiveMaxScore(420, sectionApplicability, [{ key: "research", max: 30 }]);
+  const fdpScore = sumSectionScore(fdps, 5, "score", SCORE_LIMITS.fdpRow);
+  const trainScore = sumSectionScore(training, 5, "score", SCORE_LIMITS.fdpRow);
+  const effectivePartBMax = effectiveMaxScore(375, sectionApplicability, [{ key: "research", max: 30 }]);
   const effectiveGrandMax = effectivePartAMax + effectivePartBMax;
   const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + fdpScore + trainScore, effectivePartBMax);
   const grandTotal = clampScore(partATotal + partBTotal, effectiveGrandMax);
@@ -1515,8 +1515,8 @@ export default function DirectorDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
     ];
     sections.push({ label: "A(iii). Innovative Teaching Methods", rows: visibleInnovRows, fields: ["method", "details", "score"], docKey: (_row, index) => index === 0 ? "innov" : `innov-${index}`, rowMax: SCORE_LIMITS.innovativeRow, maxScore: 10 });
     const errors = validateCompleteRows(sections, docs);
@@ -1555,8 +1555,8 @@ export default function DirectorDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
     ];
     if (section === "partA") partASections.push({ label: "A(iii). Innovative Teaching Methods", rows: visibleInnovRows, fields: ["method", "details", "score"], docKey: (_row, index) => index === 0 ? "innov" : `innov-${index}`, rowMax: SCORE_LIMITS.innovativeRow, maxScore: 10 });
     const errors = validateCompleteRows(section === "partA" ? partASections : partBSections, docs);
@@ -2507,7 +2507,7 @@ export default function DirectorDashboard() {
 
             {/* Part B Tab */}
             {hodAppraisalTab === "partB" && (
-              <SC title="Part B — Research & Academic Contributions (Max 420)" accent="#7c3aed">
+              <SC title="Part B — Research & Academic Contributions (Max 375)" accent="#7c3aed">
                 <div style={{ marginBottom: 14, padding: "8px 12px", background: "#ede9fe", borderRadius: 6, fontSize: 12, color: "#6d28d9", fontWeight: 600 }}>
                   📊 Total Part B Score: {partBTotal.toFixed(1)}/{effectivePartBMax}
                 </div>
@@ -2986,10 +2986,6 @@ export default function DirectorDashboard() {
                           <td style={TDS}><TI val={r.score} numeric onChange={(v) => setFdp(i, "score", v)} center max={SCORE_LIMITS.fdpRow} /></td>
                         </tr>
                       ))}
-                      <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total FDP Score (Max 10)</td>
-                        <td style={{ ...TDS, fontWeight: "bold" }}>{fdpScore.toFixed(1)}</td>
-                      </tr>
                     </tbody>
                   </table>
                   <RowBtns onAdd={() => setFdps((p) => [...p, { program: "", duration: "", org: "", score: "" }])} onDel={() => setFdps((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={fdps.length > 1} />
@@ -2997,7 +2993,7 @@ export default function DirectorDashboard() {
 
                 {/* B8(b). Industrial Training */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(b). Industrial Training - Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B8(b). Industrial Training</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3022,13 +3018,17 @@ export default function DirectorDashboard() {
                           <td style={TDS}><TI val={r.score} numeric onChange={(v) => setTrain(i, "score", v)} center max={SCORE_LIMITS.fdpRow} /></td>
                         </tr>
                       ))}
-                      <tr style={{ background: "#f3e8ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Training Score (Max 10)</td>
-                        <td style={{ ...TDS, fontWeight: "bold" }}>{trainScore.toFixed(1)}</td>
-                      </tr>
                     </tbody>
                   </table>
                   <RowBtns onAdd={() => setTraining((p) => [...p, { company: "", duration: "", nature: "", score: "" }])} onDel={() => setTraining((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={training.length > 1} />
+                  <table style={{ ...T, marginTop: 8 }}>
+                    <tbody>
+                      <tr style={{ background: "#f3e8ff" }}>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total B8 Score (Max 10)</td>
+                        <td style={{ ...TDS, fontWeight: "bold" }}>{(fdpScore + trainScore).toFixed(1)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </SC>
             )}
@@ -3119,7 +3119,7 @@ export default function DirectorDashboard() {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
               {filtered.map(item => {
-                const g = grade(item.grandTotal || 350, 620);
+                const g = grade(item.grandTotal || 350, 575);
                 const courseFilePartA = Array.isArray(item.courseFile)
                   ? (() => {
                       const filled = item.courseFile.filter(row => String(row?.score ?? "").trim() !== "");
@@ -3162,7 +3162,7 @@ export default function DirectorDashboard() {
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, background: "#f8fafc", borderRadius: 8, padding: "12px 14px" }}>
                       {[
                         { label: "Part A", val: partA, max: 200, color: "#6366f1" },
-                        { label: "Part B", val: partB, max: 420, color: "#0ea5e9" },
+                        { label: "Part B", val: partB, max: 375, color: "#0ea5e9" },
                         { label: "Docs", val: docCount, max: null, color: "#10b981" },
                       ].map(({ label, val, max, color }) => (
                         <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -3479,13 +3479,13 @@ export default function DirectorDashboard() {
                   </tr>
                   <tr style={{ background: "#f8fafc" }}>
                     <td style={TDC}>8</td>
-                    <td style={TD}><strong>Self Development (Maxi. marks 10/20)</strong></td>
+                    <td style={TD}><strong>Self Development (Max. marks 10)</strong></td>
                     <td style={TD}>
-                      (a) Attended FDP of one week duration or more (Max 10 marks): 5/FDP<br/>
-                      (b) Industrial training (Maximum marks 10)<br/>
-                      <em>Note: SAA, SoD, SoMCS max 20; Other schools max 10.</em>
+                      (a) Attended FDP of one week duration or more (Max 5 marks): 5/FDP<br/>
+                      (b) Industrial training (Maximum marks 5)<br/>
+                      <em>Total B8 score maximum marks 10.</em>
                     </td>
-                    <td style={TDC}>10 / 20</td>
+                    <td style={TDC}>10</td>
                   </tr>
                 </tbody>
               </table>

@@ -311,8 +311,8 @@ const VC_REPORT_PART_B_SECTIONS = [
   { key: "confs", title: "B6. Invited Lectures / Resource Person / Paper Presentations", max: 30, doc: "conf", fields: [["title", "Title"], ["type", "Type"], ["org", "Organization"], ["level", "Level"]] },
   { key: "proposals", title: "B7(a). Submitted Research Proposals", max: 10, doc: "prop", fields: [["title", "Title"], ["duration", "Duration"], ["agency", "Funding Agency"], ["amount", "Grant Amount Requested"]] },
   { key: "products", title: "B7(b). Product Developed and Used by Students in Lab / Commercialized", max: 10, doc: "prod", fields: [["details", "Details of Product"], ["usage", "Used by Students in Lab / Commercialized"]] },
-  { key: "fdps", title: "B8(a). FDP / Workshops Attended", max: 10, doc: "fdp", fields: [["program", "Program"], ["duration", "Duration"], ["org", "Organization"]] },
-  { key: "training", title: "B8(b). Industrial Training", max: 10, doc: "train", fields: [["company", "Company"], ["duration", "Duration"], ["nature", "Nature"]] },
+  { key: "fdps", title: "B8(a). FDP / Workshops Attended", max: 5, doc: "fdp", fields: [["program", "Program"], ["duration", "Duration"], ["org", "Organization"]] },
+  { key: "training", title: "B8(b). Industrial Training", max: 5, doc: "train", fields: [["company", "Company"], ["duration", "Duration"], ["nature", "Nature"]] },
 ];
 
 const buildVcSectionScores = (person, vcData) => {
@@ -629,7 +629,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director" }) {
           render: (r) => [r.details, r.usage] },
         { title: "B8(a). FDP / Workshops Attended (Max 10)", key: "fdps", docPfx: "fdp",
           render: (r) => [r.program, r.duration, r.org] },
-        { title: "B8(b). Industrial Training (Max 10)", key: "training", docPfx: "train",
+        { title: "B8(b). Industrial Training", key: "training", docPfx: "train",
           render: (r) => [r.company, r.duration, r.nature] },
       ].filter(({ key }) => key !== "research" || person.sectionApplicability?.research !== "notApplicable").map(({ title, key, docPfx, render }) => (
         <SC key={key} title={title} accent="#7c3aed">
@@ -671,7 +671,7 @@ function calcVCScore(person, vcData) {
     const source = person[section];
     return idx === null ? n(Array.isArray(source) ? source[0]?.[field] : source?.[field]) : n(source?.[idx]?.[field]);
   };
-  const sectionMax = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 10, training: 10 };
+  const sectionMax = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 5, training: 5 };
   const rowMax = { courseFile: () => SCORE_LIMITS.courseFileRow, projects: projectGuidanceRowMax, quals: () => SCORE_LIMITS.qualificationRow, feedback: () => 10, society: () => SCORE_LIMITS.societyRow, research: researchGuidanceRowMax, fdps: () => SCORE_LIMITS.fdpRow, training: () => SCORE_LIMITS.fdpRow };
   const sum = (arr, s, f) => clampScore((arr || []).reduce((a, row, i) => {
     const limit = rowMax[s]?.(row);
@@ -692,8 +692,8 @@ function calcVCScore(person, vcData) {
     sum(person.fdps, "fdps", "vc") + sum(person.training || [], "training", "vc");
 
   const cappedPartA = clampScore(partA, MAX_SCORES.PART_A || 200);
-  const cappedPartB = clampScore(partB, MAX_SCORES.PART_B || 420);
-  return { partA: cappedPartA, partB: cappedPartB, total: clampScore(cappedPartA + cappedPartB, MAX_SCORES.GRAND_TOTAL || 620) };
+  const cappedPartB = clampScore(partB, MAX_SCORES.PART_B || 375);
+  return { partA: cappedPartA, partB: cappedPartB, total: clampScore(cappedPartA + cappedPartB, MAX_SCORES.GRAND_TOTAL || 575) };
 }
 
 // ─── VC Review Panel ──────────────────────────────────────────────────────────
@@ -748,7 +748,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
         partB: n(person.vcPartB ?? partB),
         total: n(person.vcTotal ?? total),
       },
-      maxScores: { partA: 200, partB: 420, grand: MAX_SCORES.GRAND_TOTAL },
+      maxScores: { partA: 200, partB: MAX_SCORES.PART_B, grand: MAX_SCORES.GRAND_TOTAL },
       scoreRoles: ["score", ...previousRoles, "vc"],
       roleLabel: (value) => value === "vc" ? "VC" : vcRoleMeta(value).shortLabel || value,
       status: person.status,
