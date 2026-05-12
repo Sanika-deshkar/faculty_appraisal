@@ -48,7 +48,7 @@ const snapshotFormFromPayload = (payload) => {
 };
 
 const applySnapshotToSetters = (snapshotPayload, setters) => {
-  const snapshotForm = snapshotFormFromPayload(snapshotPayload);
+  const snapshotForm = normalizeFetchedForm(snapshotFormFromPayload(snapshotPayload));
   if (!snapshotForm || !setters) return;
 
   Object.entries(SNAPSHOT_SETTERS).forEach(([formKey, setterKey]) => {
@@ -591,13 +591,32 @@ const normalizeFetchedForm = (form = {}) => {
   const lectures = normalized.lectures || normalized.teaching_process || normalized.teachingProcess;
   if (lectures) {
     normalized.lectures = aliasKeys(lectures, {
+      sem: "sem",
       semester: "sem",
+      semester_name: "sem",
+      semesterName: "sem",
       course_code: "code",
       courseCode: "code",
+      course_name: "code",
+      courseName: "code",
+      course_title: "code",
+      courseTitle: "code",
       planned_classes: "planned",
       plannedClasses: "planned",
+      classes_as_per_course_structure: "planned",
+      classesAsPerCourseStructure: "planned",
+      class_planned: "planned",
+      classPlanned: "planned",
+      total_classes: "planned",
+      totalClasses: "planned",
       conducted_classes: "conducted",
       conductedClasses: "conducted",
+      classes_actually_conducted: "conducted",
+      classesActuallyConducted: "conducted",
+      actual_classes: "conducted",
+      actualClasses: "conducted",
+      class_conducted: "conducted",
+      classConducted: "conducted",
     });
   }
   if (normalized.feedback) {
