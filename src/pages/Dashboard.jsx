@@ -273,7 +273,7 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
         uploadedFiles.push(uploaded);
       }
 
-      setDocs((p) => ({ ...p, [id]: uploadedFiles.slice(0, 1) }));
+      setDocs((p) => ({ ...p, [id]: [...(p[id] ?? []), ...uploadedFiles] }));
     } catch (err) {
       console.error("Upload error:", err);
       setUploadError(err.message);
@@ -1445,6 +1445,7 @@ export default function HODDashboard() {
   const g = gradeFunc();
   const [submitting, setSubmitting] = useState(false);
   const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
+  const [attachmentsConfirmed, setAttachmentsConfirmed] = useState(false);
 
   const validateSelfAppraisalRows = () => {
     const sections = [
@@ -1572,8 +1573,8 @@ export default function HODDashboard() {
       alert("This appraisal has already been submitted and is locked for review.");
       return;
     }
-    if (!accuracyConfirmed) {
-      alert("Please verify and confirm the accuracy declaration before submitting.");
+    if (!accuracyConfirmed || !attachmentsConfirmed) {
+      alert("Please tick both declaration checkboxes before submitting.");
       return;
     }
     if (!validateSelfAppraisalRows()) return;
@@ -1902,6 +1903,44 @@ export default function HODDashboard() {
       <tr class="tr"><td colspan="2" class="c b">Part B Total</td><td class="c b">${effectivePartBMax}</td><td class="c b">${partBTotal.toFixed(1)}</td></tr>
       <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${effectiveGrandMax}</td><td class="c">${grandTotal.toFixed(1)}</td></tr>
     </table>
+
+    <h3 style="text-align:center;font-size:14px;background:#d9d9d9;padding:6px;margin:16px 0 10px">DECLARATION BY FACULTY</h3>
+    <table style="border:none;margin-bottom:14px">
+      <tr>
+        <td style="border:none;vertical-align:top;width:32px;font-size:18px">&#10003;</td>
+        <td style="border:none;line-height:1.7;font-size:11px">
+          I, <strong>${info.name || "________________________"}</strong>, hereby declare that all the information
+          furnished in this Self-Appraisal Report is true, complete, and correct to the best of my knowledge and belief.
+          I understand that in the event of any information being found false or incorrect, I shall be solely responsible
+          for the consequences thereof and shall be liable for any disciplinary action as deemed fit by the University authorities.
+        </td>
+      </tr>
+    </table>
+    <table style="border:none;margin-bottom:20px">
+      <tr>
+        <td style="border:none;width:50%">
+          <div style="border-bottom:1px solid #000;min-height:36px;margin-bottom:4px">&nbsp;</div>
+          <div><strong>Signature of Faculty</strong></div>
+          <div style="margin-top:6px"><strong>Name:</strong> ${info.name || "&nbsp;"}</div>
+          <div style="margin-top:4px"><strong>Date of Submission:</strong> ${workflowDeclaration?.submitted_at ? new Date(workflowDeclaration.submitted_at).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }) : "&nbsp;"}</div>
+        </td>
+        <td style="border:none;width:50%">&nbsp;</td>
+      </tr>
+    </table>
+    ${workflowReviews.length ? `
+    <h3 style="text-align:center;font-size:13px;background:#d9d9d9;padding:4px;margin:0 0 8px">REVIEWERS' ACKNOWLEDGEMENT</h3>
+    <p style="font-size:10px;margin:0 0 10px">The following authorities acknowledge that they have reviewed the details submitted by the faculty and confirm the accuracy of scores assigned.</p>
+    <table>
+      <thead><tr><th style="width:30%">Reviewer Role</th><th style="width:40%">Name &amp; Signature</th><th style="width:15%">Date</th><th style="width:15%">Stamp</th></tr></thead>
+      <tbody>
+        ${workflowReviews.map((rev) => `<tr>
+          <td><strong>${roleLabel(rev.reviewer_role)}</strong></td>
+          <td style="border-bottom:1px solid #000">${rev.reviewer_name || "&nbsp;"}</td>
+          <td style="border-bottom:1px solid #000">${rev.reviewed_at ? new Date(rev.reviewed_at).toLocaleDateString("en-IN") : "&nbsp;"}</td>
+          <td style="border-bottom:1px solid #000">&nbsp;</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>` : ""}
 
   </body>
   </html>`;
@@ -2998,7 +3037,7 @@ export default function HODDashboard() {
                   </tbody>
                 </table>
 
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 10, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
                   <input
                     type="checkbox"
                     checked={accuracyConfirmed}
@@ -3007,6 +3046,20 @@ export default function HODDashboard() {
                     style={{ marginTop: 3 }}
                   />
                   <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+                </label>
+
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={attachmentsConfirmed}
+                    onChange={(e) => setAttachmentsConfirmed(e.target.checked)}
+                    disabled={submitting || appraisalLocked}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span>
+                    I confirm that <strong>all required supporting documents and attachments have been uploaded</strong> against the respective entries.
+                    I understand that any <strong>missing or false attachment is my sole responsibility</strong> and may result in the rejection or revision of my appraisal.
+                  </span>
                 </label>
 
                 <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
@@ -3018,8 +3071,8 @@ export default function HODDashboard() {
                   </button>
                   <button
                     onClick={handleSubmitAppraisal}
-                    disabled={submitting || appraisalLocked || !accuracyConfirmed}
-                    style={{ padding: "10px 28px", background: appraisalLocked || !accuracyConfirmed ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: appraisalLocked || !accuracyConfirmed ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
+                    disabled={submitting || appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed}
+                    style={{ padding: "10px 28px", background: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
                   >
                     {appraisalLocked ? "Submitted & Locked" : submitting ? "Submitting..." : "Submit Appraisal"}
                   </button>

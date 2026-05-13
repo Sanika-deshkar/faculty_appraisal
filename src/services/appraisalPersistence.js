@@ -94,10 +94,10 @@ export const saveAppraisalDraftSection = async ({
     payload: {
       form: { ...form, sectionSaveStatus },
       totals,
-      docs,
       submitterProfile,
       savedAt: new Date().toISOString(),
     },
+    docs,
   });
 };
 
@@ -136,13 +136,13 @@ export const loadAppraisalDocuments = async ({ facultyEmail, academicYear, setDo
     const groupedDocs = {};
     (data || []).forEach((row) => {
       const key = row.doc_key || `${row.section}-${Math.max((row.row_no || 1) - 1, 0)}`;
-      if (groupedDocs[key]?.length) return;
-      groupedDocs[key] = [{
+      if (!groupedDocs[key]) groupedDocs[key] = [];
+      groupedDocs[key].push({
         name: row.file_name,
         type: row.file_type,
         url: row.file_url,
         publicId: row.storage_path,
-      }];
+      });
     });
 
     setDocs(groupedDocs);
