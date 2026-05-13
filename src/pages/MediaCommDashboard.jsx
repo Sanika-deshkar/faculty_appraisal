@@ -41,7 +41,7 @@ const ACCENT = "#b45309";
 const ACCENT2 = "#0f766e";
 const VERIFY_TEXT = "I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.";
 const PART_A_MAX = 200;
-const PART_B_MAX = 355;
+const PART_B_MAX = 375;
 const GRAND_MAX = 555;
 const SECTION_OPTIONS = [
   { value: "partA", label: "Part-A Section" },
@@ -171,7 +171,7 @@ const calculateMediaTotals = (form, scoreKey = "score") => {
     rowSum("deptActs", 20) + rowSum("uniActs", 30) + rowSum("society", 10) + rowSum("acr", 25),
     maxScores.partA,
   );
-  const b8Score = clampScore(rowSum("fdps", 10) + rowSum("training", 10), 10);
+  const b8Score = clampScore(rowSum("fdps", 10) + rowSum("training", 10), 20);
   const partB = clampScore(
     PART_B_SECTIONS
       .filter((section) => section.key !== "fdps" && section.key !== "training")
@@ -645,7 +645,7 @@ function B8SectionTable({ section, form, setForm, docs, setDocs, mode, locked, r
   const reviewRows = reviewData?.[section.key] || [];
   const editableSelf = mode === "self" && !locked;
   const reviewLocked = mode === "review" && locked;
-  const totalB8 = clampScore(scoreSectionRows("fdps", form.fdps || [], 10) + scoreSectionRows("training", form.training || [], 10), 10);
+  const totalB8 = clampScore(scoreSectionRows("fdps", form.fdps || [], 10) + scoreSectionRows("training", form.training || [], 10), 20);
 
   const updateRow = (index, key, value) => {
     setForm((prev) => ({
@@ -718,16 +718,16 @@ function B8SectionTable({ section, form, setForm, docs, setDocs, mode, locked, r
             ))}
             {showTotal && (
               <tr style={{ background: "#f3e8ff" }}>
-                <td style={{ ...tdCenter, fontWeight: 900 }} colSpan={section.fields.length + 2}>Total B8 Score (Max 10)</td>
+                <td style={{ ...tdCenter, fontWeight: 900 }} colSpan={section.fields.length + 2}>Total B8 Score (Max 20)</td>
                 <td style={{ ...tdCenter, fontWeight: 900 }}>{totalB8.toFixed(1)}</td>
                 {mode === "review" && previousRoles.map((role) => (
                   <td key={role} style={{ ...tdCenter, fontWeight: 900 }}>
-                    {clampScore(scoreSectionRows("fdps", form.fdps || [], 10, role) + scoreSectionRows("training", form.training || [], 10, role), 10).toFixed(1)}
+                    {clampScore(scoreSectionRows("fdps", form.fdps || [], 10, role) + scoreSectionRows("training", form.training || [], 10, role), 20).toFixed(1)}
                   </td>
                 ))}
                 {mode === "review" && (
                   <td style={{ ...tdCenter, fontWeight: 900 }}>
-                    {clampScore(scoreSectionRows("fdps", reviewData.fdps || form.fdps || [], 10, reviewerRole) + scoreSectionRows("training", reviewData.training || form.training || [], 10, reviewerRole), 10).toFixed(1)}
+                    {clampScore(scoreSectionRows("fdps", reviewData.fdps || form.fdps || [], 10, reviewerRole) + scoreSectionRows("training", reviewData.training || form.training || [], 10, reviewerRole), 20).toFixed(1)}
                   </td>
                 )}
               </tr>
@@ -1037,7 +1037,7 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
     const b6Score = rowSum("confs", 30);
     const b7aScore = rowSum("proposals", 10);
     const b7bScore = rowSum("products", 20);
-    const b8Score = clampScore(rowSum("fdps", 10) + rowSum("training", 10), 10);
+    const b8Score = clampScore(rowSum("fdps", 10) + rowSum("training", 10), 20);
     const maxScores = getMediaEffectiveMaxScores(reviewerForm);
     const partATotal = n(person?.[`${reviewerRole}PartA`] ?? totals.partA);
     const partBTotal = n(person?.[`${reviewerRole}PartB`] ?? totals.partB);
@@ -1077,7 +1077,7 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
         { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: b6Score },
         { id: "B7(a)", label: "Research Proposals", max: 10, score: b7aScore },
         { id: "B7(b)", label: "Products Developed / Used", max: 20, score: b7bScore },
-        { id: "B8", label: "FDP / Self Development + Industrial Training", max: 10, score: b8Score },
+        { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score },
         { isTotal: true, label: "Part B Total", max: maxScores.partB, score: partBTotal },
         { isGrandTotal: true, label: "Grand Total (Part A + Part B)", max: maxScores.grand, score: grandTotal },
       ],
@@ -1360,7 +1360,7 @@ export default function MediaCommDashboard({ fixedRole }) {
     const b6Score = rowSum("confs", 30);
     const b7aScore = rowSum("proposals", 10);
     const b7bScore = rowSum("products", 20);
-    const b8Score = clampScore(rowSum("fdps", 10) + rowSum("training", 10), 10);
+    const b8Score = clampScore(rowSum("fdps", 10) + rowSum("training", 10), 20);
     const maxScores = getMediaEffectiveMaxScores(form);
     const partATotal = clampScore(lecScore + cfScore + innovScore + projScore + qualScore + fbScore + deptScore + uniScore + socScore + acrScore, maxScores.partA);
     const partBTotal = clampScore(b1iScore + b1iiScore + b2Score + b3Score + b4aScore + b4bScore + b4cScore + b5Score + b6Score + b7aScore + b7bScore + b8Score, maxScores.partB);
@@ -1400,7 +1400,7 @@ export default function MediaCommDashboard({ fixedRole }) {
         { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: b6Score },
         { id: "B7(a)", label: "Research Proposals", max: 10, score: b7aScore },
         { id: "B7(b)", label: "Products Developed / Used", max: 20, score: b7bScore },
-        { id: "B8", label: "FDP / Self Development + Industrial Training", max: 10, score: b8Score },
+        { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score },
         { isTotal: true, label: "Part B Total", max: maxScores.partB, score: partBTotal },
         { isGrandTotal: true, label: "Grand Total (Part A + Part B)", max: maxScores.grand, score: grandTotal },
       ],
