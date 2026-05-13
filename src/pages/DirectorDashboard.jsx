@@ -17,6 +17,14 @@ import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
 const pct = (v, m) => Math.min(100, Math.round((v / m) * 100)) || 0;
+const REVIEW_META_KEYS = new Set(["score", "hod", "director", "dean", "vc", "_id", "id"]);
+const rowHasReviewableData = (row = {}) =>
+  Object.entries(row || {}).some(([key, value]) =>
+    !REVIEW_META_KEYS.has(key) &&
+    value !== undefined &&
+    value !== null &&
+    String(value).trim() !== ""
+  );
 const grade = (score, max) => {
   const p = (score / max) * 100;
   if (p >= 85) return { label: "Outstanding", color: "#059669", bg: "#d1fae5" };
@@ -1014,7 +1022,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
     );
     const avgReviewRows = (section, field, max, rowMax) => {
       const rows = faculty[section] || [];
-      const filled = rows.filter((r) => r?.course || r?.title || r?.details);
+      const filled = rows.filter(rowHasReviewableData);
       if (!filled.length) return 0;
       const sum = rows.reduce((total, row, index) => {
         const limit = typeof rowMax === "function" ? rowMax(row) : rowMax;
@@ -1075,7 +1083,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
     );
     const avgReviewRows = (section, field, max, rowMax) => {
       const rows = faculty[section] || [];
-      const filled = rows.filter((r) => r?.course || r?.title || r?.details);
+      const filled = rows.filter(rowHasReviewableData);
       if (!filled.length) return 0;
       const sum = rows.reduce((total, row, index) => {
         const limit = typeof rowMax === "function" ? rowMax(row) : rowMax;
