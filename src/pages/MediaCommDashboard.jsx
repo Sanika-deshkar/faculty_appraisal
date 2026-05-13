@@ -1158,9 +1158,10 @@ export default function MediaCommDashboard({ fixedRole }) {
   const [loadingQueue, setLoadingQueue] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: false, partB: false });
-  const [savingSection, setSavingSection] = useState(null);
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: true, partB: true });
+  const [savingSection, setSavingSection] = useState(null);
   const [declaration, setDeclaration] = useState(null);
   const [reviews, setReviews] = useState([]);
   const userEmail = sessionStorage.getItem("username") || "";

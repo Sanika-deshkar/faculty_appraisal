@@ -38,12 +38,20 @@ const roleColumnLabel = (role, roleLabel = (value) => value) =>
 const displaySectionScore = (section, row, role) => {
   if (section.key === "research" && role === "score") return researchGuidanceScore(row).toFixed(1);
   if (role === "score") return clampScore(row?.[role], rowMaxForSection(section.key, row, section.max));
-  const value = row?.[role];
-  if (value === undefined || value === null || String(value).trim() === "") return "";
-  return clampScore(value, rowMaxForSection(section.key, row, section.max));
+  return row?.[role];
 };
 
-const renderSection = ({ section, rows = [], docs = {}, scoreRoles = ["score"], roleLabel }) => `
+const sectionTotalScore = (section, rows, role) => {
+  if (!rows.length) return 0;
+  if (section.key === "lectures" || section.key === "courseFile") {
+    const sum = rows.reduce((acc, row) => acc + n(row?.[role] ?? row?.score ?? 0), 0);
+    return clampScore(sum / rows.length, section.max);
+  }
+  const sum = rows.reduce((acc, row) => acc + n(displaySectionScore(section, row, role)), 0);
+  return clampScore(sum, section.max);
+};
+
+const renderSection = ({ section, rows = [], docs = {}, scoreRoles = ["score"], roleLabel, showTotal = false }) => `
   <h3>${safeHtml(section.title)} <span>(Max ${safeHtml(section.max)})</span></h3>
   <table>
     <thead>
@@ -63,6 +71,11 @@ const renderSection = ({ section, rows = [], docs = {}, scoreRoles = ["score"], 
           ${scoreRoles.map((role) => `<td class="center">${displayValue(displaySectionScore(section, row, role))}</td>`).join("")}
         </tr>
       `).join("")}
+      ${showTotal ? `
+      <tr class="tr">
+        <td colspan="${section.fields.length + 2}" class="c b">Total Score (Max ${safeHtml(section.max)})</td>
+        ${scoreRoles.map((role) => `<td class="c b">${sectionTotalScore(section, rows.length ? rows : [{}], role).toFixed(1)}</td>`).join("")}
+      </tr>` : ""}
     </tbody>
   </table>`;
 
@@ -73,7 +86,12 @@ const isSectionReportable = (form, section) => {
   return true;
 };
 
-const renderInnovativeSection = ({ form, docs, scoreRoles, roleLabel }) => `
+const renderInnovativeSection = ({ form, docs, scoreRoles, roleLabel, showTotal = false }) => {
+  const rows = form.innovRows?.length ? form.innovRows : [{ method: form.innovDetails, details: "" }];
+  const innovTotal = (role) => role === "score"
+    ? clampScore(rows.reduce((acc, row) => acc + n(row.score || form.innovScore || 0), 0), 10)
+    : clampScore(n(form[scoreKeyForInnov(role)]), 10);
+  return `
   <h3>A(iii). Innovative Teaching Methods <span>(Max 10)</span></h3>
   <table>
     <thead>
@@ -85,7 +103,7 @@ const renderInnovativeSection = ({ form, docs, scoreRoles, roleLabel }) => `
       </tr>
     </thead>
     <tbody>
-      ${(form.innovRows?.length ? form.innovRows : [{ method: form.innovDetails, details: "" }]).map((row, index) => `
+      ${rows.map((row, index) => `
         <tr>
           <td>${displayValue(row.method || form.innovDetails)}</td>
           <td>${displayValue(row.details)}</td>
@@ -93,10 +111,16 @@ const renderInnovativeSection = ({ form, docs, scoreRoles, roleLabel }) => `
           ${scoreRoles.map((role) => `<td class="center">${displayValue(role === "score" ? (row.score || form.innovScore) : form[scoreKeyForInnov(role)])}</td>`).join("")}
         </tr>
       `).join("")}
+      ${showTotal ? `
+      <tr class="tr">
+        <td colspan="3" class="c b">Total Score (Max 10)</td>
+        ${scoreRoles.map((role) => `<td class="c b">${innovTotal(role).toFixed(1)}</td>`).join("")}
+      </tr>` : ""}
     </tbody>
   </table>`;
+};
 
-export const openFullFormReport = ({
+export const openFullFormReport = async ({
   title,
   subtitle = "",
   form = {},
@@ -111,12 +135,17 @@ export const openFullFormReport = ({
   remarksLabel = "",
   remarks = "",
   generatedBy = "",
+  showTotal = false,
 }) => {
   const win = window.open("", "_blank", "width=1000,height=800");
-  if (!win) {
-    alert("Please allow popups to generate the report.");
-    return;
-  }
+  if (!win) { alert("Please allow popups to generate the report."); return; }
+
+  let logoSrc = `${window.location.origin}/image.png`;
+  try {
+    const res = await fetch(logoSrc);
+    const blob = await res.blob();
+    logoSrc = await new Promise((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.readAsDataURL(blob); });
+  } catch { /* use URL fallback */ }
 
   const info = form.info || {};
   const html = `<!doctype html>
@@ -124,59 +153,62 @@ export const openFullFormReport = ({
 <head>
   <title>${safeHtml(title)}</title>
   <style>
-    @page { size: A4; margin: 16mm; }
-    body { font-family: "Times New Roman", Georgia, serif; font-size: 12px; color: #0f172a; }
-    h1 { text-align: center; margin: 0 0 6px; font-size: 22px; }
-    h2 { margin: 24px 0 10px; border-bottom: 2px solid #0f172a; padding-bottom: 5px; font-size: 16px; }
-    h3 { margin: 15px 0 7px; font-size: 13px; color: #1e293b; }
-    h3 span { color: #64748b; font-size: 11px; font-weight: 400; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; table-layout: fixed; }
-    th, td { border: 1px solid #94a3b8; padding: 6px; vertical-align: top; word-wrap: break-word; }
-    th { background: #e2e8f0; color: #0f172a; text-align: center; font-weight: 700; }
-    a { color: #1d4ed8; }
-    .subtitle { text-align: center; color: #475569; margin-bottom: 14px; }
-    .meta td { border: none; padding: 4px 6px; }
-    .center { text-align: center; }
-    .page-break { page-break-before: always; }
-    .summary td, .summary th { font-size: 13px; }
-    .total { font-weight: 800; background: #f8fafc; }
-    .remarks { white-space: pre-wrap; border: 1px solid #94a3b8; padding: 10px; min-height: 50px; }
-    .report-header { position: relative; }
-    .report-logo { position: absolute; top: 0; right: 0; width: 64px; max-height: 52px; object-fit: contain; }
+    @page{size:A4;margin:15mm}
+    body{font-family:"Times New Roman",serif;font-size:11px;color:#000}
+    h1{text-align:center;font-size:15px;margin:4px 0}
+    h2{text-align:center;font-size:13px;margin:3px 0}
+    h3{font-size:12px;margin:10px 0 4px}
+    h3 span{color:#555;font-size:10px;font-weight:400}
+    table{width:100%;border-collapse:collapse;margin-bottom:10px;table-layout:fixed}
+    th,td{border:1px solid #000;padding:4px 6px;vertical-align:top;word-wrap:break-word}
+    th{background:#d9d9d9;text-align:center;font-weight:700}
+    a{color:#1d4ed8}
+    .c{text-align:center}.b{font-weight:bold}
+    .page-break{page-break-before:always}
+    .tr{background:#f2f2f2;font-weight:bold}
+    .ht{width:100%;border:none;margin-bottom:6px}.ht td{border:none;padding:2px}
+    .logo{width:22mm;height:auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .st th{background:#bfbfbf}
+    .remarks{white-space:pre-wrap;border:1px solid #000;padding:8px;min-height:40px}
   </style>
 </head>
 <body>
-  <header class="report-header">
-    <img class="report-logo" src="${window.location.origin}/dypiu.jpeg" alt="DYPIU Logo" />
-    <h1>${safeHtml(title)}</h1>
-    ${subtitle ? `<div class="subtitle">${safeHtml(subtitle)}</div>` : ""}
-  </header>
-  <table class="meta">
-    <tbody>
-      <tr><td><strong>Name:</strong></td><td>${displayValue(info.name || form.name)}</td><td><strong>Academic Year:</strong></td><td>${displayValue(info.ay || form.academicYear)}</td></tr>
-      <tr><td><strong>Qualification:</strong></td><td>${displayValue(info.qual || form.qualification)}</td><td><strong>Designation / Role:</strong></td><td>${displayValue(info.desig || form.designation || form.appraisalRole)}</td></tr>
-      <tr><td><strong>School:</strong></td><td>${displayValue(info.school || form.schoolName || form.school)}</td><td><strong>Generated On:</strong></td><td>${safeHtml(new Date().toLocaleString())}</td></tr>
-      ${generatedBy ? `<tr><td><strong>Generated By:</strong></td><td colspan="3">${safeHtml(generatedBy)}</td></tr>` : ""}
-    </tbody>
+  <table class="ht"><tr>
+    <td style="width:20%;text-align:left"><img class="logo" src="${logoSrc}" alt="DYPIU"/></td>
+    <td style="text-align:center">
+      <h1>D Y PATIL INTERNATIONAL UNIVERSITY, AKURDI, PUNE</h1>
+      <h2>${safeHtml(title)}</h2>
+      ${subtitle ? `<h2>${safeHtml(subtitle)}</h2>` : ""}
+    </td>
+    <td style="width:20%"></td>
+  </tr></table>
+  <table>
+    <tr><td class="b" style="width:35%">Name of Faculty</td><td>${displayValue(info.name || form.name)}</td></tr>
+    <tr><td class="b">Educational Qualifications</td><td>${displayValue(info.qual || form.qualification)}</td></tr>
+    <tr><td class="b">Present Designation</td><td>${displayValue(info.desig || form.designation || form.appraisalRole)}</td></tr>
+    <tr><td class="b">School / Department</td><td>${displayValue(info.school || form.schoolName || form.school)}</td></tr>
+    <tr><td class="b">Academic Year</td><td>${displayValue(info.ay || form.academicYear)}</td></tr>
+    <tr><td class="b">Generated On</td><td>${safeHtml(new Date().toLocaleString())}</td></tr>
+    ${generatedBy ? `<tr><td class="b">Generated By</td><td>${safeHtml(generatedBy)}</td></tr>` : ""}
   </table>
 
-  <h2>Part A - Teaching Process & Academic Activities</h2>
-  ${partASections.slice(0, 2).filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel })).join("")}
-  ${renderInnovativeSection({ form, docs, scoreRoles, roleLabel })}
-  ${partASections.slice(2).filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel })).join("")}
+  <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART A — Teaching Process &amp; Academic Activities</h3>
+  ${partASections.slice(0, 2).filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel, showTotal })).join("")}
+  ${renderInnovativeSection({ form, docs, scoreRoles, roleLabel, showTotal })}
+  ${partASections.slice(2).filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel, showTotal })).join("")}
 
   <div class="page-break"></div>
-  <h2>Part B - Research and Academic Contributions</h2>
-  ${partBSections.filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel })).join("")}
+  <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART B — Research &amp; Academic Contributions</h3>
+  ${partBSections.filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel, showTotal })).join("")}
 
   <div class="page-break"></div>
-  <h2>Summary</h2>
-  <table class="summary">
+  <h3 style="text-align:center;font-size:13px">SUMMARY</h3>
+  <table class="st">
     <thead><tr><th>Section</th><th>Score</th><th>Maximum</th></tr></thead>
     <tbody>
-      <tr><td>Part A</td><td class="center">${n(totals.partA).toFixed(1)}</td><td class="center">${safeHtml(maxScores.partA)}</td></tr>
-      <tr><td>Part B</td><td class="center">${n(totals.partB).toFixed(1)}</td><td class="center">${safeHtml(maxScores.partB)}</td></tr>
-      <tr class="total"><td>Grand Total</td><td class="center">${n(totals.total).toFixed(1)}</td><td class="center">${safeHtml(maxScores.grand)}</td></tr>
+      <tr><td>Part A</td><td class="c">${n(totals.partA).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partA ?? ""))}</td></tr>
+      <tr><td>Part B</td><td class="c">${n(totals.partB).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partB ?? ""))}</td></tr>
+      <tr class="tr"><td>Grand Total</td><td class="c">${n(totals.total).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.grand ?? ""))}</td></tr>
       ${status ? `<tr><td>Status</td><td colspan="2">${safeHtml(status)}</td></tr>` : ""}
     </tbody>
   </table>
@@ -257,13 +289,13 @@ export const generateMediaCommReport = async ({
   </table>
 
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART A — Teaching Process &amp; Academic Activities</h3>
-  ${partASections.slice(0, 2).filter((s) => isSectionReportable(form, s)).map((s) => renderSection({ section: s, rows: form[s.key], docs, scoreRoles, roleLabel: undefined })).join("")}
-  ${renderInnovativeSection({ form, docs, scoreRoles, roleLabel: undefined })}
-  ${partASections.slice(2).filter((s) => isSectionReportable(form, s)).map((s) => renderSection({ section: s, rows: form[s.key], docs, scoreRoles, roleLabel: undefined })).join("")}
+  ${partASections.slice(0, 2).filter((s) => isSectionReportable(form, s)).map((s) => renderSection({ section: s, rows: form[s.key], docs, scoreRoles, roleLabel: undefined, showTotal: true })).join("")}
+  ${renderInnovativeSection({ form, docs, scoreRoles, roleLabel: undefined, showTotal: true })}
+  ${partASections.slice(2).filter((s) => isSectionReportable(form, s)).map((s) => renderSection({ section: s, rows: form[s.key], docs, scoreRoles, roleLabel: undefined, showTotal: true })).join("")}
 
   <div class="pb"></div>
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART B — Research &amp; Academic Contributions</h3>
-  ${partBSections.filter((s) => isSectionReportable(form, s)).map((s) => renderSection({ section: s, rows: form[s.key], docs, scoreRoles, roleLabel: undefined })).join("")}
+  ${partBSections.filter((s) => isSectionReportable(form, s)).map((s) => renderSection({ section: s, rows: form[s.key], docs, scoreRoles, roleLabel: undefined, showTotal: true })).join("")}
 
   <div class="pb"></div>
   ${detailedSummaryRows ? `
@@ -352,7 +384,7 @@ export const generateStandardReport = async ({
   ${lectures.map((l,i)=>`<tr><td class="c">${i+1}</td><td>${l.sem||'&nbsp;'}</td><td>${l.code||'&nbsp;'}</td><td class="c">${l.planned||'&nbsp;'}</td><td class="c">${l.conducted||'&nbsp;'}</td><td class="c">${l.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="5" class="c b">Average Score (Max 50)</td><td class="c">${totalLecScore.toFixed(1)}</td></tr></table>
   <h3>(ii) Course File (Max 20)</h3>
-  <table><tr><th>SN</th><th>Course/Paper</th><th>Program & Semester</th><th>Details</th><th>API Score</th></tr>
+  <table><tr><th>SN</th><th>Course/Paper</th><th>Title</th><th>Details</th><th>API Score</th></tr>
   ${courseFile.map((c,i)=>`<tr><td class="c">${i+1}</td><td>${c.course||'&nbsp;'}</td><td>${c.title||'&nbsp;'}</td><td>${c.details||'&nbsp;'}</td><td class="c">${c.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="4" class="c b">Average Score (Max 20)</td><td class="c">${courseFileScore.toFixed(1)}</td></tr></table>
   <h3>(iii) Innovative Teaching-Learning Methodologies (Max 10)</h3>
@@ -389,7 +421,7 @@ export const generateStandardReport = async ({
   <tr class="tr"><td colspan="3" class="c b">Total (Max 5)</td><td class="c">${industryScore.toFixed(1)}</td></tr></table>
   <h3>G. Annual Confidential Report (Max 25)</h3>
   <table><tr><th>SN</th><th>Parameter</th><th>API Score</th></tr>
-  ${acr.map((a,i)=>`<tr><td class="c">${i+1}</td><td>${a.label||'&nbsp;'}</td><td class="c">${String(a.score ?? "").trim() ? clampScore(a.score, SCORE_LIMITS.acrRow) : '&nbsp;'}</td></tr>`).join('')}
+  ${acr.map((a,i)=>`<tr><td class="c">${i+1}</td><td>${a.label||'&nbsp;'}</td><td class="c">${a.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="2" class="c b">Total (Max 25)</td><td class="c">${acrScore.toFixed(1)}</td></tr></table>
   <table class="st">
     <tr><th>Part A Summary</th><th>Max</th><th>Faculty Score</th></tr>
