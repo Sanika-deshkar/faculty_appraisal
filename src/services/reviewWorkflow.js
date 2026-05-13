@@ -11,7 +11,7 @@ import {
   roleLabel,
   normalizeRoleForWorkflow,
 } from "../utils/hierarchy";
-import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
+import { standardReviewSummary, standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
 
 const n = (value) => parseFloat(value) || 0;
 const clean = (value) => String(value ?? "").trim();
@@ -153,32 +153,21 @@ const hasSubmittedAppraisal = (item = {}) => {
 };
 
 const hasReviewScore = (item = {}, role) => {
+  const reviewSummary = standardReviewSummary(item, item.payload, item.form);
   if (role === "hod" || role === "center_head") {
-    return numberValue(
-      item.hodTotal,
-      item.hod_total,
-      item.hodScore,
-      item.hod_score,
-      item.centerHeadTotal,
-      item.center_head_total,
-      item.centerHeadScore,
-      item.center_head_score,
-    ) > 0 || Boolean(clean(firstValue(item.hodRemarks, item.hod_remarks, item.centerHeadRemarks, item.center_head_remarks)));
+    return n(reviewSummary.hodTotal) > 0 || Boolean(clean(reviewSummary.hodRemarks));
   }
 
   if (role === "director") {
-    return numberValue(item.directorTotal, item.director_total, item.directorScore, item.director_score) > 0 ||
-      Boolean(clean(firstValue(item.directorRemarks, item.director_remarks)));
+    return n(reviewSummary.directorTotal) > 0 || Boolean(clean(reviewSummary.directorRemarks));
   }
 
   if (role === "dean") {
-    return numberValue(item.deanTotal, item.dean_total, item.deanScore, item.dean_score) > 0 ||
-      Boolean(clean(firstValue(item.deanRemarks, item.dean_remarks)));
+    return n(reviewSummary.deanTotal) > 0 || Boolean(clean(reviewSummary.deanRemarks));
   }
 
   if (role === "vc") {
-    return numberValue(item.vcTotal, item.vc_total, item.vcScore, item.vc_score) > 0 ||
-      Boolean(clean(firstValue(item.vcRemarks, item.vc_remarks)));
+    return n(reviewSummary.vcTotal) > 0 || Boolean(clean(reviewSummary.vcRemarks));
   }
 
   return false;
@@ -248,6 +237,7 @@ const normalizeQueueItem = (item = {}) => {
   const academicYear = firstValue(item.academicYear, item.academic_year, item.info?.ay, APP_INFO.DEFAULT_AY, "2025-2026");
   const school = subjectProfile.school;
   const selfSummary = standardSubmittedScoreSummary(item);
+  const reviewSummary = standardReviewSummary(item, item.payload, item.form);
 
   return {
     ...item,
@@ -276,22 +266,22 @@ const normalizeQueueItem = (item = {}) => {
     effectiveGrandMax: selfSummary.grandMax,
     avatar: initialsFor(firstValue(item.name, item.full_name, email), email),
     avatarColor: roleColor(appraisalRole),
-    hodTotal: numberValue(item.hodTotal, item.hod_total, item.hodScore, item.hod_score, item.centerHeadTotal, item.center_head_total),
-    hodPartA: numberValue(item.hodPartA, item.hod_part_a, item.hodPartAScore, item.hod_part_a_score, item.centerHeadPartA, item.center_head_part_a),
-    hodPartB: numberValue(item.hodPartB, item.hod_part_b, item.hodPartBScore, item.hod_part_b_score, item.centerHeadPartB, item.center_head_part_b),
-    hodRemarks: firstValue(item.hodRemarks, item.hod_remarks, item.centerHeadRemarks, item.center_head_remarks),
-    directorTotal: numberValue(item.directorTotal, item.director_total, item.directorScore, item.director_score),
-    directorPartA: numberValue(item.directorPartA, item.director_part_a, item.directorPartAScore, item.director_part_a_score),
-    directorPartB: numberValue(item.directorPartB, item.director_part_b, item.directorPartBScore, item.director_part_b_score),
-    directorRemarks: firstValue(item.directorRemarks, item.director_remarks),
-    deanTotal: numberValue(item.deanTotal, item.dean_total, item.deanScore, item.dean_score),
-    deanPartA: numberValue(item.deanPartA, item.dean_part_a, item.deanPartAScore, item.dean_part_a_score),
-    deanPartB: numberValue(item.deanPartB, item.dean_part_b, item.deanPartBScore, item.dean_part_b_score),
-    deanRemarks: firstValue(item.deanRemarks, item.dean_remarks),
-    vcTotal: numberValue(item.vcTotal, item.vc_total, item.vcScore, item.vc_score),
-    vcPartA: numberValue(item.vcPartA, item.vc_part_a, item.vcPartAScore, item.vc_part_a_score),
-    vcPartB: numberValue(item.vcPartB, item.vc_part_b, item.vcPartBScore, item.vc_part_b_score),
-    vcRemarks: firstValue(item.vcRemarks, item.vc_remarks),
+    hodTotal: numberValue(reviewSummary.hodTotal),
+    hodPartA: numberValue(reviewSummary.hodPartA),
+    hodPartB: numberValue(reviewSummary.hodPartB),
+    hodRemarks: firstValue(reviewSummary.hodRemarks),
+    directorTotal: numberValue(reviewSummary.directorTotal),
+    directorPartA: numberValue(reviewSummary.directorPartA),
+    directorPartB: numberValue(reviewSummary.directorPartB),
+    directorRemarks: firstValue(reviewSummary.directorRemarks),
+    deanTotal: numberValue(reviewSummary.deanTotal),
+    deanPartA: numberValue(reviewSummary.deanPartA),
+    deanPartB: numberValue(reviewSummary.deanPartB),
+    deanRemarks: firstValue(reviewSummary.deanRemarks),
+    vcTotal: numberValue(reviewSummary.vcTotal),
+    vcPartA: numberValue(reviewSummary.vcPartA),
+    vcPartB: numberValue(reviewSummary.vcPartB),
+    vcRemarks: firstValue(reviewSummary.vcRemarks),
   };
 };
 

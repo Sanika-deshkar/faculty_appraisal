@@ -13,6 +13,7 @@ import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
 import { NonTeachingAuthorityReviewPanel } from "./NonTeachingStaffDashboard";
 import { SCORE_LIMITS, clampScore, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, societyRowLocked, societyRowScore, societySelectionForRow } from "../utils/appraisalFormUtils";
+import { standardReviewSummary } from "../utils/reviewSummaryTotals";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -256,36 +257,7 @@ const vcPartBForRole = (person = {}, role) => {
 const vcSelfTotalForPerson = (person = {}) =>
   n(person.declaration?.grand_total ?? person.grandTotal ?? person.grand_total ?? person.totalScore ?? person.total ?? person.selfTotal);
 
-const firstReviewValue = (...values) =>
-  values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
-
-const vcReviewSummaryFrom = (...sources) => {
-  const summary = {};
-  const assign = (target, keys) => {
-    const value = firstReviewValue(
-      ...sources.flatMap((source = {}) => keys.map((key) => source?.[key])),
-    );
-    if (value !== undefined) summary[target] = value;
-  };
-
-  assign("hodTotal", ["hodTotal", "hod_total", "hodScore", "hod_score", "centerHeadTotal", "center_head_total"]);
-  assign("hodPartA", ["hodPartA", "hod_part_a", "hodPartAScore", "hod_part_a_score", "centerHeadPartA", "center_head_part_a"]);
-  assign("hodPartB", ["hodPartB", "hod_part_b", "hodPartBScore", "hod_part_b_score", "centerHeadPartB", "center_head_part_b"]);
-  assign("hodRemarks", ["hodRemarks", "hod_remarks", "centerHeadRemarks", "center_head_remarks"]);
-  assign("directorTotal", ["directorTotal", "director_total", "directorScore", "director_score"]);
-  assign("directorPartA", ["directorPartA", "director_part_a", "directorPartAScore", "director_part_a_score"]);
-  assign("directorPartB", ["directorPartB", "director_part_b", "directorPartBScore", "director_part_b_score"]);
-  assign("directorRemarks", ["directorRemarks", "director_remarks"]);
-  assign("deanTotal", ["deanTotal", "dean_total", "deanScore", "dean_score"]);
-  assign("deanPartA", ["deanPartA", "dean_part_a", "deanPartAScore", "dean_part_a_score"]);
-  assign("deanPartB", ["deanPartB", "dean_part_b", "deanPartBScore", "dean_part_b_score"]);
-  assign("deanRemarks", ["deanRemarks", "dean_remarks"]);
-  assign("vcTotal", ["vcTotal", "vc_total", "vcScore", "vc_score"]);
-  assign("vcPartA", ["vcPartA", "vc_part_a", "vcPartAScore", "vc_part_a_score"]);
-  assign("vcPartB", ["vcPartB", "vc_part_b", "vcPartBScore", "vc_part_b_score"]);
-  assign("vcRemarks", ["vcRemarks", "vc_remarks"]);
-  return summary;
-};
+const vcReviewSummaryFrom = standardReviewSummary;
 
 const VC_REVIEW_ARRAY_KEYS = ["lectures", "courseFile", "projects", "quals", "feedback", "deptActs", "uniActs", "society", "industry", "acr", "journals", "books", "ict", "research", "projects2", "externalProjects", "patents", "awards", "confs", "proposals", "products", "fdps", "training"];
 const REVIEW_SCORE_FIELDS = ["hod", "director", "dean", "vc"];
