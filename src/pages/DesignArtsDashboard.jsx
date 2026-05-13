@@ -1745,7 +1745,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
                         <th style={thStyle}>Criteria</th>
                         <th style={thStyle}>SAA and SoD (Max Score)</th>
                         <th style={thStyle}>SoMCS (Max Score)</th>
-                        <th style={thStyle}>SoEMR, SCoE, SCM, SoCSEA (Max Score)</th>
+                        <th style={thStyle}>SoEMR, SCoE, SCM, SoCSEA, SoBB (Max Score)</th>
                       </tr>
                     </thead>
                     <tbody>

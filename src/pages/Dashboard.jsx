@@ -3295,7 +3295,7 @@ export default function HODDashboard() {
                     <th style={TH}>Criteria</th>
                     <th style={TH}>SAA and SoD (Max Score)</th>
                     <th style={TH}>SoMCS (Max Score)</th>
-                    <th style={TH}>SoEMR, SCoE, SCM, SoCSEA (Max Score)</th>
+                    <th style={TH}>SoEMR, SCoE, SCM, SoCSEA, SoBB (Max Score)</th>
                   </tr>
                 </thead>
                 <tbody>
