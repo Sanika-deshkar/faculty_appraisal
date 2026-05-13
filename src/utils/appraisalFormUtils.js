@@ -19,7 +19,7 @@ export const SCORE_LIMITS = {
   acrRow: 5,
   feedbackAverage: 100,
   societyRow: 5,
-  fdpRow: 5,
+  fdpRow: 10,
   projectGuidanceDefaultRow: 5,
   researchPhd: 20,
   researchPg: 10,

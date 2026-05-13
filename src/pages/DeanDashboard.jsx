@@ -211,7 +211,9 @@ function ViewCell({ id, docs }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {files.map((f, idx) => (
         <a key={idx} href={f.url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#3b82f6", fontSize: 10, textDecoration: "none", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap" }} title={f.name}>
+
           ?? {f.name.length > 12 ? f.name.slice(0, 12) + "" : f.name}
+
         </a>
       ))}
     </div>
@@ -253,7 +255,9 @@ function ViewDocsCell({ docKey, docs }) {
         <a key={i} href={f.url} target="_blank" rel="noreferrer"
           style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#0ea5e9", fontSize: 10, textDecoration: "none", background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap" }}
           title={f.name}>
+
           ?? {f.name.length > 16 ? f.name.slice(0, 16) + "" : f.name}
+
         </a>
       ))}
     </div>
@@ -318,7 +322,9 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
       <div style={{ background: "linear-gradient(90deg,#312e81,#4338ca)", color: "#e0e7ff", borderRadius: 8, padding: "10px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
         <span style={{ fontSize: 18 }}>??</span>
         <div>
+
           <strong>HOD Review Mode</strong>  Faculty data is read-only. Only <span style={{ color: "#c7d2fe", fontWeight: 700 }}>HOD Score</span> columns are editable. Click <span style={{ color: "#c7d2fe" }}>?? View Doc</span> links to open uploaded files.
+
         </div>
       </div>
 
@@ -978,8 +984,8 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
     const conf = (faculty.confs || []).reduce((a, _, i) => a + get("confs", i, "hod"), 0);
     const prop = (faculty.proposals || []).reduce((a, _, i) => a + get("proposals", i, "hod"), 0);
     const prod = (faculty.products || []).reduce((a, _, i) => a + get("products", i, "hod"), 0);
-    const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 5);
-    const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 5);
+    const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
+    const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
     const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train;
 
     return { partA, partB, total: partA + partB };
@@ -1048,8 +1054,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
               <th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
             </tr></thead>
             <tbody>
-              {[
-                ["Part A  Teaching & Activities", facultySummary.partAMax, facultySummary.partA, partA],
+              {[                ["Part A  Teaching & Activities", facultySummary.partAMax, facultySummary.partA, partA],
                 ["Part B  Research & Contributions", facultySummary.partBMax, facultySummary.partB, partB],
               ].map(([label, max, fac, hod]) => (
                 <tr key={label}>
@@ -1109,7 +1114,7 @@ const preserveSavedReviewScores = (form = {}, source = {}) => {
   });
   return merged;
 };
-const DEAN_SECTION_MAX = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 5, training: 5 };
+const DEAN_SECTION_MAX = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 10, training: 10 };
 const DEAN_ROW_MAX = { courseFile: () => SCORE_LIMITS.courseFileRow, projects: projectGuidanceRowMax, quals: () => SCORE_LIMITS.qualificationRow, feedback: () => 10, society: () => SCORE_LIMITS.societyRow, acr: () => SCORE_LIMITS.acrRow, research: researchGuidanceRowMax, fdps: () => SCORE_LIMITS.fdpRow, training: () => SCORE_LIMITS.fdpRow };
 
 const deanScorePayload = (approval, deanData) => {
@@ -3842,7 +3847,7 @@ export default function DeanDashboard() {
                     <td style={TDC}>8</td>
                     <td style={TD}><strong>Self Development (Max. marks 10)</strong></td>
                     <td style={TD}>
-                      (a) Attended FDP of one week duration or more (Max 5 marks): 5/FDP<br/>
+                      (a) Attended FDP of one week duration or more (Max 10 marks): 5/FDP<br/>
                       (b) Industrial training (Maximum marks 5)<br/>
                       <em>Total B8 score maximum marks 10.</em>
                     </td>

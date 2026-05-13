@@ -552,14 +552,14 @@ export const generateStandardReport = async ({
   <table><tr><th>SN</th><th>Details of Product</th><th>Used / Commercialized</th><th>API Score</th></tr>
   ${products.map((p,i)=>`<tr><td class="c">${i+1}</td><td>${p.details||'&nbsp;'}</td><td>${p.usage||'&nbsp;'}</td><td class="c">${p.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="3" class="c b">Total (Max 10)</td><td class="c">${productScore.toFixed(1)}</td></tr></table>
-  <h3>8a) Attended FDP / Workshops (Max 5)</h3>
+  <h3>8a) Attended FDP / Workshops (Max 10)</h3>
   <table><tr><th>SN</th><th>Program</th><th>Duration</th><th>Organized By</th><th>API Score</th></tr>
   ${fdps.map((f,i)=>`<tr><td class="c">${i+1}</td><td>${f.program||'&nbsp;'}</td><td class="c">${f.duration||'&nbsp;'}</td><td>${f.org||'&nbsp;'}</td><td class="c">${clampScore(f.score, SCORE_LIMITS.fdpRow)||'&nbsp;'}</td></tr>`).join('')}
-  <tr class="tr"><td colspan="4" class="c b">Total (Max 5)</td><td class="c">${fdpScore.toFixed(1)}</td></tr></table>
-  <h3>8b) Industrial Training (Max 5)</h3>
+  <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${fdpScore.toFixed(1)}</td></tr></table>
+  <h3>8b) Industrial Training (Max 10)</h3>
   <table><tr><th>SN</th><th>Company / Industry</th><th>Duration</th><th>Nature of Training</th><th>API Score</th></tr>
   ${training.map((t,i)=>`<tr><td class="c">${i+1}</td><td>${t.company||'&nbsp;'}</td><td class="c">${t.duration||'&nbsp;'}</td><td>${t.nature||'&nbsp;'}</td><td class="c">${clampScore(t.score, SCORE_LIMITS.fdpRow)||'&nbsp;'}</td></tr>`).join('')}
-  <tr class="tr"><td colspan="4" class="c b">Total (Max 5)</td><td class="c">${trainScore.toFixed(1)}</td></tr></table>
+  <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${trainScore.toFixed(1)}</td></tr></table>
   <div class="pb"></div>
   <h3 style="text-align:center;font-size:13px">SUMMARY OF API SCORES — AY ${info.ay||''}</h3>
   <table class="st">
