@@ -1449,8 +1449,23 @@ export default function DesignArtsDashboard({ fixedRole }) {
                   <StatusBadge status={item.status} />
                 </div>
                 {(() => {
-                  const itemTotals = calculateDesignArtsTotals(mergeForm(emptyDesignArtsForm(), item), "score");
-                  return <SummaryBox totals={itemTotals} maxScores={itemTotals.maxScores} roleScoreLabel={`Submitted on ${item.submittedOn || "record"}`} />;
+                  const mergedItem = mergeForm(emptyDesignArtsForm(), item);
+                  const facultyTotals = calculateDesignArtsTotals(mergedItem, "score");
+                  const reviewerTotals = calculateDesignArtsTotals(mergedItem, role);
+                  const hasReviewerScores = reviewerTotals.partA > 0 || reviewerTotals.partB > 0 || reviewerTotals.total > 0;
+                  const reviewComplete = isReviewerReviewComplete(item, role) || hasReviewerScores;
+                  const savedReviewerTotals = {
+                    partA: n(item?.[`${role}PartA`]),
+                    partB: n(item?.[`${role}PartB`]),
+                    total: n(item?.[`${role}Total`]),
+                  };
+                  const itemTotals = reviewComplete
+                    ? (hasReviewerScores ? reviewerTotals : { ...reviewerTotals, ...savedReviewerTotals })
+                    : facultyTotals;
+                  const label = reviewComplete
+                    ? `${roleLabel(role)} score for ${item.submittedOn || "record"}`
+                    : `Submitted on ${item.submittedOn || "record"}`;
+                  return <SummaryBox totals={itemTotals} maxScores={itemTotals.maxScores} roleScoreLabel={label} />;
                 })()}
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <button
