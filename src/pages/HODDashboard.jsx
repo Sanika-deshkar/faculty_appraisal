@@ -566,12 +566,12 @@ function FacultyReviewForm({ faculty, hodData, setHodData, reviewerLabel = "HOD"
         <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 12, fontWeight: 800, color: "#334155" }}>
           {["applicable", "notApplicable"].map((v) => (
             <label key={v} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <input type="checkbox" checked={(sectionApplicability.society || "applicable") === v} onChange={() => setSectionApplicability((p) => ({ ...p, society: v }))} />
+              <input type="checkbox" checked={(faculty.sectionApplicability?.society || "applicable") === v} readOnly disabled />
               {v === "applicable" ? "Applicable" : "Not Applicable"}
             </label>
           ))}
         </div>
-        {sectionApplicability.society !== "notApplicable" && <table style={T}>
+        {faculty.sectionApplicability?.society !== "notApplicable" && <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Yes/No</th><th style={TH}>Details</th>
             <th style={TH}>View Docs</th><th style={TH}>Faculty Score (Max 5)</th><th style={TH_HOD}>{reviewerScoreLabel}</th>
