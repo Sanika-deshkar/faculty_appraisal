@@ -1728,7 +1728,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
                         <td style={tdCenter}>8</td>
                         <td style={tdStyle}><strong>Self Development (Max. marks 10)</strong></td>
                         <td style={tdStyle}>
-                          (a) Attended FDP of one week duration or more (Max 5 marks): 5/FDP<br/>
+                          (a) Attended FDP of one week duration or more (Max 10 marks): 5/FDP<br/>
                           (b) Industrial training (Maximum marks 5)<br/>
                           <em>Total B8 score maximum marks 10.</em>
                         </td>

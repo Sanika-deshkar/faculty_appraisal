@@ -1044,8 +1044,8 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
     const conf = sumReviewRows("confs", "hod", 30);
     const prop = sumReviewRows("proposals", "hod", 10);
     const prod = sumReviewRows("products", "hod", 10);
-    const fdp = sumReviewRows("fdps", "hod", 5, SCORE_LIMITS.fdpRow);
-    const train = sumReviewRows("training", "hod", 5, SCORE_LIMITS.fdpRow);
+    const fdp = sumReviewRows("fdps", "hod", 10, SCORE_LIMITS.fdpRow);
+    const train = sumReviewRows("training", "hod", 10, SCORE_LIMITS.fdpRow);
     const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 375);
 
     return { partA, partB, total: clampScore(partA + partB, 575) };
@@ -1105,8 +1105,8 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
     const conf = sumReviewRows("confs", "dir", 30);
     const prop = sumReviewRows("proposals", "dir", 10);
     const prod = sumReviewRows("products", "dir", 10);
-    const fdp = sumReviewRows("fdps", "dir", 5, SCORE_LIMITS.fdpRow);
-    const train = sumReviewRows("training", "dir", 5, SCORE_LIMITS.fdpRow);
+    const fdp = sumReviewRows("fdps", "dir", 10, SCORE_LIMITS.fdpRow);
+    const train = sumReviewRows("training", "dir", 10, SCORE_LIMITS.fdpRow);
     const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 375);
 
     return { partA, partB, total: clampScore(partA + partB, 575) };
@@ -3285,7 +3285,7 @@ export default function DirectorDashboard() {
                     <td style={TDC}>8</td>
                     <td style={TD}><strong>Self Development (Max. marks 10)</strong></td>
                     <td style={TD}>
-                      (a) Attended FDP of one week duration or more (Max 5 marks): 5/FDP<br/>
+                      (a) Attended FDP of one week duration or more (Max 10 marks): 5/FDP<br/>
                       (b) Industrial training (Maximum marks 5)<br/>
                       <em>Total B8 score maximum marks 10.</em>
                     </td>

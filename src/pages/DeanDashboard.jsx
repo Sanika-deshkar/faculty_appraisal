@@ -78,7 +78,7 @@ function StatusBadge({ status }) {
   );
 }
 function RO({ val, center }) {
-  return <span style={{ fontSize: 11, fontFamily: "Georgia, serif", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{val || <span style={{ color: "#cbd5e1" }}>—</span>}</span>;
+  return <span style={{ fontSize: 11, fontFamily: "Georgia, serif", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{val || <span style={{ color: "#cbd5e1" }}>ï¿½</span>}</span>;
 }
 function DeanInput({ val, onChange, max, disabled = false }) {
   return (
@@ -211,7 +211,7 @@ function ViewCell({ id, docs }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {files.map((f, idx) => (
         <a key={idx} href={f.url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#3b82f6", fontSize: 10, textDecoration: "none", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap" }} title={f.name}>
-          ?? {f.name.length > 12 ? f.name.slice(0, 12) + "…" : f.name}
+          ?? {f.name.length > 12 ? f.name.slice(0, 12) + "ï¿½" : f.name}
         </a>
       ))}
     </div>
@@ -253,7 +253,7 @@ function ViewDocsCell({ docKey, docs }) {
         <a key={i} href={f.url} target="_blank" rel="noreferrer"
           style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#0ea5e9", fontSize: 10, textDecoration: "none", background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap" }}
           title={f.name}>
-          ?? {f.name.length > 16 ? f.name.slice(0, 16) + "…" : f.name}
+          ?? {f.name.length > 16 ? f.name.slice(0, 16) + "ï¿½" : f.name}
         </a>
       ))}
     </div>
@@ -318,7 +318,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
       <div style={{ background: "linear-gradient(90deg,#312e81,#4338ca)", color: "#e0e7ff", borderRadius: 8, padding: "10px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
         <span style={{ fontSize: 18 }}>??</span>
         <div>
-          <strong>HOD Review Mode</strong> — Faculty data is read-only. Only <span style={{ color: "#c7d2fe", fontWeight: 700 }}>HOD Score</span> columns are editable. Click <span style={{ color: "#c7d2fe" }}>?? View Doc</span> links to open uploaded files.
+          <strong>HOD Review Mode</strong> ï¿½ Faculty data is read-only. Only <span style={{ color: "#c7d2fe", fontWeight: 700 }}>HOD Score</span> columns are editable. Click <span style={{ color: "#c7d2fe" }}>?? View Doc</span> links to open uploaded files.
         </div>
       </div>
 
@@ -338,7 +338,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
 
       {sectionView === "partA" && (<>
       {/* -- PART A -- */}
-      <div style={{ fontWeight: 800, fontSize: 13, color: "#1e293b", background: "#dbeafe", padding: "8px 14px", borderRadius: 6, marginBottom: 10, letterSpacing: 0.3 }}>PART A — Teaching & Academic Activities</div>
+      <div style={{ fontWeight: 800, fontSize: 13, color: "#1e293b", background: "#dbeafe", padding: "8px 14px", borderRadius: 6, marginBottom: 10, letterSpacing: 0.3 }}>PART A ï¿½ Teaching & Academic Activities</div>
 
       {/* A1: Lectures */}
       <SC title="A1. Lectures / Tutorials / Practicals (Max 50)" accent="#6366f1">
@@ -465,7 +465,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
                 <td style={TDC}><RO val={r.fb1} center /></td>
                 <td style={TDC}><RO val={r.fb2} center /></td>
                 <td style={{ ...TDC, fontWeight: 700, color: "#6366f1" }}>
-                  {r.fb1 && r.fb2 ? ((n(r.fb1) + n(r.fb2)) / 2).toFixed(2) : "—"}
+                  {r.fb1 && r.fb2 ? ((n(r.fb1) + n(r.fb2)) / 2).toFixed(2) : "ï¿½"}
                 </td>
                 <td style={TDS}><RO val={r.score} center /></td>
                 <td style={TDS_HOD}><HodInput val={get("feedback", i, "hod")} onChange={v => set("feedback", i, "hod", v)} /></td>
@@ -574,7 +574,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
 
       {/* G: ACR */}
       <SC title="G. Annual Confidential Report (Max 25)" accent="#ef4444">
-        <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>?? ACR is assessed by HOD only — faculty does not fill scores.</div>
+        <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>?? ACR is assessed by HOD only ï¿½ faculty does not fill scores.</div>
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Parameter</th><th style={TH_HOD}>HOD Score</th>
@@ -595,7 +595,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
 
       {sectionView === "partB" && (<>
       {/* -- PART B -- */}
-      <div style={{ fontWeight: 800, fontSize: 13, color: "#1e293b", background: "#ede9fe", padding: "8px 14px", borderRadius: 6, marginBottom: 10, letterSpacing: 0.3 }}>PART B — Research & Academic Contributions</div>
+      <div style={{ fontWeight: 800, fontSize: 13, color: "#1e293b", background: "#ede9fe", padding: "8px 14px", borderRadius: 6, marginBottom: 10, letterSpacing: 0.3 }}>PART B ï¿½ Research & Academic Contributions</div>
 
       {/* B1: Journals */}
       <SC title="B1. Research Papers / Journal Publications (Max 120)" accent="#7c3aed">
@@ -677,7 +677,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
       </SC>
 
       {/* B4: Research Guidance */}
-      {faculty.sectionApplicability?.research !== "notApplicable" && <SC title="B4(a). Research Guidance — PhD / PG (Max 30)" accent="#059669">
+      {faculty.sectionApplicability?.research !== "notApplicable" && <SC title="B4(a). Research Guidance ï¿½ PhD / PG (Max 30)" accent="#059669">
         <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Degree</th><th style={TH}>Student Name</th><th style={TH}>Status</th>
@@ -978,8 +978,8 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
     const conf = (faculty.confs || []).reduce((a, _, i) => a + get("confs", i, "hod"), 0);
     const prop = (faculty.proposals || []).reduce((a, _, i) => a + get("proposals", i, "hod"), 0);
     const prod = (faculty.products || []).reduce((a, _, i) => a + get("products", i, "hod"), 0);
-    const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 5);
-    const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 5);
+    const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
+    const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
     const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train;
 
     return { partA, partB, total: partA + partB };
@@ -1000,7 +1000,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
         <Avatar initials={faculty.avatar} color={faculty.avatarColor} size={40} />
         <div style={{ flex: 1 }}>
           <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 15 }}>{faculty.name}</div>
-          <div style={{ color: "#64748b", fontSize: 11 }}>{faculty.designation} · {faculty.employeeId}</div>
+          <div style={{ color: "#64748b", fontSize: 11 }}>{faculty.designation} ï¿½ {faculty.employeeId}</div>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ background: "#1e293b", borderRadius: 8, padding: "8px 14px", textAlign: "center" }}>
@@ -1049,8 +1049,8 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
             </tr></thead>
             <tbody>
               {[
-                ["Part A — Teaching & Activities", facultySummary.partAMax, facultySummary.partA, partA],
-                ["Part B — Research & Contributions", facultySummary.partBMax, facultySummary.partB, partB],
+                ["Part A ï¿½ Teaching & Activities", facultySummary.partAMax, facultySummary.partA, partA],
+                ["Part B ï¿½ Research & Contributions", facultySummary.partBMax, facultySummary.partB, partB],
               ].map(([label, max, fac, hod]) => (
                 <tr key={label}>
                   <td style={TD}>{label}</td>
@@ -1109,7 +1109,7 @@ const preserveSavedReviewScores = (form = {}, source = {}) => {
   });
   return merged;
 };
-const DEAN_SECTION_MAX = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 5, training: 5 };
+const DEAN_SECTION_MAX = { lectures: 50, courseFile: 20, projects: 10, quals: 10, feedback: 10, deptActs: 20, uniActs: 30, society: 10, industry: 5, acr: 25, journals: 120, books: 50, ict: 20, research: 30, projects2: SCORE_LIMITS.researchInternalProjects, externalProjects: SCORE_LIMITS.researchExternalProjects, patents: 40, awards: 10, confs: 30, proposals: 10, products: 10, fdps: 10, training: 10 };
 const DEAN_ROW_MAX = { courseFile: () => SCORE_LIMITS.courseFileRow, projects: projectGuidanceRowMax, quals: () => SCORE_LIMITS.qualificationRow, feedback: () => 10, society: () => SCORE_LIMITS.societyRow, acr: () => SCORE_LIMITS.acrRow, research: researchGuidanceRowMax, fdps: () => SCORE_LIMITS.fdpRow, training: () => SCORE_LIMITS.fdpRow };
 
 const deanScorePayload = (approval, deanData) => {
@@ -1604,7 +1604,7 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
         <button onClick={onBack} style={{ border: "none", background: "#e2e8f0", color: "#0f172a", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>? Back</button>
         <div>
           <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{titleMap[approvalType]}</div>
-          <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{approval.name} · {approval.designation}</div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{approval.name} ï¿½ {approval.designation}</div>
         </div>
       </div>
 
@@ -1652,8 +1652,8 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
               <thead><tr><th style={TH}>Section</th><th style={TH}>Max</th><th style={TH}>Faculty Score</th><th style={TH}>Dean Score</th></tr></thead>
               <tbody>
                 {[
-                  ["Part A — Teaching & Activities", selfSummary.partAMax, selfSummary.partA, displayedDeanScores.partA],
-                  ["Part B — Research & Contributions", selfSummary.partBMax, selfSummary.partB, displayedDeanScores.partB],
+                  ["Part A ï¿½ Teaching & Activities", selfSummary.partAMax, selfSummary.partA, displayedDeanScores.partA],
+                  ["Part B ï¿½ Research & Contributions", selfSummary.partBMax, selfSummary.partB, displayedDeanScores.partB],
                   ["Grand Total", selfSummary.grandMax, selfSummary.total, displayedDeanScores.total],
                 ].map(([label, max, selfScore, deanScore]) => (
                   <tr key={label}>
@@ -2338,7 +2338,7 @@ export default function DeanDashboard() {
             return (
               <div key={school.code} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: "#cbd5e1" }}>
                 <span style={{ width: 9, height: 9, borderRadius: 2, background: visual.color || "#64748b", display: "inline-block" }} />
-                <span style={{ color: visual.color || "#cbd5e1", fontWeight: 800 }}>{visual.icon || "•"}</span>
+                <span style={{ color: visual.color || "#cbd5e1", fontWeight: 800 }}>{visual.icon || "ï¿½"}</span>
                 <span>{school.code}</span>
               </div>
             );
@@ -2382,7 +2382,7 @@ export default function DeanDashboard() {
           <Avatar initials={(sessionStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
           <div style={{ flex: 1 }}>
             <div style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 700 }}>{(sessionStorage.getItem("name") || "User").split(" ").slice(0, 2).join(" ")}</div>
-            <div style={{ color: "#475569", fontSize: 9 }}>Dean · {sessionStorage.getItem("department")?.split(" ")[0] || ""}</div>
+            <div style={{ color: "#475569", fontSize: 9 }}>Dean ï¿½ {sessionStorage.getItem("department")?.split(" ")[0] || ""}</div>
           </div>
         </button>
         <button
@@ -2404,7 +2404,7 @@ export default function DeanDashboard() {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ background: "#fff", borderRadius: 9, padding: "16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 4 }}>
               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>My Appraisal Form</h2>
-              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b" }}>{info.name || "HOD"} · {info.ay}</p>
+              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b" }}>{info.name || "HOD"} ï¿½ {info.ay}</p>
             </div>
 
             {appraisalLocked && (
@@ -2418,14 +2418,14 @@ export default function DeanDashboard() {
 
             {/* Part A Tab */}
             {hodAppraisalTab === "partA" && (
-              <SC title="Part A — Teaching & Academic Activities (Max 200)" accent="#6366f1">
+              <SC title="Part A ï¿½ Teaching & Academic Activities (Max 200)" accent="#6366f1">
                 <div style={{ marginBottom: 14, padding: "8px 12px", background: "#f0f4ff", borderRadius: 6, fontSize: 12, color: "#312e81", fontWeight: 600 }}>
                   ?? Total Part A Score: {partATotal.toFixed(1)}/{effectivePartAMax}
                 </div>
                 <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>Fill in your teaching and academic activities for the appraisal period. Enter scores for each item.</div>
 {/* A1. Teaching Process */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(i) Lectures, Tutorials, Practicals, Projects — Max 50 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(i) Lectures, Tutorials, Practicals, Projects ï¿½ Max 50 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2463,7 +2463,7 @@ export default function DeanDashboard() {
 
                 {/* A2. Course File */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(ii) Course File — Max 20 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(ii) Course File ï¿½ Max 20 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2536,7 +2536,7 @@ export default function DeanDashboard() {
 
                 {/* A4. Projects */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(iv) Projects — Max 10 marks</div>                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10, fontSize: 12, fontWeight: 700, color: "#334155" }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(iv) Projects ï¿½ Max 10 marks</div>                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 10, fontSize: 12, fontWeight: 700, color: "#334155" }}>
                     {["applicable", "notApplicable"].map((value) => (
                       <label key={value} style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
                         <input type="checkbox" checked={sectionApplicability.projects === value} onChange={() => { setSectionApplicability((current) => ({ ...current, projects: value })); if (value === "notApplicable") setProjects((rows) => rows.map((row) => ({ ...row, label: "", score: "" }))); }} />
@@ -2577,7 +2577,7 @@ export default function DeanDashboard() {
 
                 {/* A5. Qualifications */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(v) Qualifications — Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(v) Qualifications ï¿½ Max 10 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2609,7 +2609,7 @@ export default function DeanDashboard() {
 
                 {/* A6. Student Feedback */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(vi) Student Feedback — Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(vi) Student Feedback ï¿½ Max 10 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2643,7 +2643,7 @@ export default function DeanDashboard() {
 
                 {/* A7. Department Activities */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(vii) Department Activities — Max 20 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(vii) Department Activities ï¿½ Max 20 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2677,7 +2677,7 @@ export default function DeanDashboard() {
 
                 {/* A8. University Activities */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(viii) University Activities — Max 30 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(viii) University Activities ï¿½ Max 30 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2764,7 +2764,7 @@ export default function DeanDashboard() {
 
                 {/* A10. Industry Connect */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(x) Industry Connect — Max 5 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(x) Industry Connect ï¿½ Max 5 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2798,7 +2798,7 @@ export default function DeanDashboard() {
 
                 {/* A11. ACR */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(xi) Annual Confidential Report (ACR) — Max 25 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(xi) Annual Confidential Report (ACR) ï¿½ Max 25 marks</div>
                   <div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>Warning: This section is filled by your superior (HOD/Director). Your scores here are read-only.</div>
                   <table style={T}>
                     <thead>
@@ -2829,7 +2829,7 @@ export default function DeanDashboard() {
 
             {/* Part B Tab */}
             {hodAppraisalTab === "partB" && (
-              <SC title="Part B — Research & Academic Contributions (Max 375)" accent="#7c3aed">
+              <SC title="Part B ï¿½ Research & Academic Contributions (Max 375)" accent="#7c3aed">
                 <div style={{ marginBottom: 14, padding: "8px 12px", background: "#ede9fe", borderRadius: 6, fontSize: 12, color: "#6d28d9", fontWeight: 600 }}>
                   ?? Total Part B Score: {partBTotal.toFixed(1)}/{effectivePartBMax}
                 </div>
@@ -2837,7 +2837,7 @@ export default function DeanDashboard() {
 
                 {/* B1. Research Papers / Journals */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B1. Research Papers / Journals — Max 120 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B1. Research Papers / Journals ï¿½ Max 120 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2875,7 +2875,7 @@ export default function DeanDashboard() {
 
                 {/* B2. Books / Chapters */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B2. Books / Chapters — Max 50 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B2. Books / Chapters ï¿½ Max 50 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -2917,7 +2917,7 @@ export default function DeanDashboard() {
 
                 {/* B3. ICT Pedagogy */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B3. ICT Pedagogy — Max 20 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B3. ICT Pedagogy ï¿½ Max 20 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3095,7 +3095,7 @@ export default function DeanDashboard() {
 
                 {/* B5(a). Patents (IPR) */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5(a). Patents (IPR) — Max 40 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5(a). Patents (IPR) ï¿½ Max 40 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3135,7 +3135,7 @@ export default function DeanDashboard() {
 
                 {/* B5(b). Awards */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5(b). Awards — Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B5(b). Awards ï¿½ Max 10 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3173,7 +3173,7 @@ export default function DeanDashboard() {
 
                 {/* B6. Invited Lectures / Resource Person / Paper Presentations */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B6. Invited Lectures / Resource Person / Paper Presentations — Max 30 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B6. Invited Lectures / Resource Person / Paper Presentations ï¿½ Max 30 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3211,7 +3211,7 @@ export default function DeanDashboard() {
 
                 {/* B7(a). Submitted Research Proposals */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B7(a). Submitted Research Proposals — Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B7(a). Submitted Research Proposals ï¿½ Max 10 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3249,7 +3249,7 @@ export default function DeanDashboard() {
 
                 {/* B7(b). Product Developed */}
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B7(b). Product Developed and Used by Students in Lab / Commercialized — Max 10 marks</div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>B7(b). Product Developed and Used by Students in Lab / Commercialized ï¿½ Max 10 marks</div>
                   <table style={T}>
                     <thead>
                       <tr>
@@ -3371,8 +3371,8 @@ export default function DeanDashboard() {
                 <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
                   <tbody>
                     {[
-                      ["Part A — Teaching & Activities", partATotal, effectivePartAMax, "#6366f1"],
-                      ["Part B — Research & Contributions", partBTotal, effectivePartBMax, "#7c3aed"],
+                      ["Part A ï¿½ Teaching & Activities", partATotal, effectivePartAMax, "#6366f1"],
+                      ["Part B ï¿½ Research & Contributions", partBTotal, effectivePartBMax, "#7c3aed"],
                       ["Grand Total", grandTotal, effectiveGrandMax, g.color],
                     ].map(([label, score, max, color]) => (
                       <tr key={label}>
@@ -3426,7 +3426,7 @@ export default function DeanDashboard() {
                 <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, color: "#0f172a", letterSpacing: -0.5 }}>
                   {activeMainTab === "hodApprovals" ? "HOD's Appraisal" : activeMainTab === "directorApprovals" ? "Director's Appraisal" : "Faculty's Appraisal"}
                 </h1>
-                <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>{ENGINEERING_SCHOOLS.length} Engineering Schools · {APP_INFO.UNIVERSITY_NAME} · AY {info.ay}</p>
+                <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>{ENGINEERING_SCHOOLS.length} Engineering Schools ï¿½ {APP_INFO.UNIVERSITY_NAME} ï¿½ AY {info.ay}</p>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <div style={{ fontSize: 12, fontWeight: 800, padding: "8px 18px", borderRadius: 20, background: "#fef3c7", color: "#92400e" }}>{pendingCount} Pending</div>
@@ -3601,7 +3601,7 @@ export default function DeanDashboard() {
             <div style={{ background: "#fff", borderRadius: 9, padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 16 }}>
               <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800, color: "#0f172a" }}>D Y PATIL INTERNATIONAL UNIVERSITY</h2>
               <div style={{ color: "#64748b", fontSize: 13 }}>Akurdi, Pune</div>
-              <h3 style={{ margin: "12px 0 0", fontSize: 15, color: "#1e293b" }}>{guidelinesTab === "form" ? "Guidelines for Faculty Appraisal Form — A.Y. 2025-2026" : "Grading Scheme for Faculty Appraisal"}</h3>
+              <h3 style={{ margin: "12px 0 0", fontSize: 15, color: "#1e293b" }}>{guidelinesTab === "form" ? "Guidelines for Faculty Appraisal Form ï¿½ A.Y. 2025-2026" : "Grading Scheme for Faculty Appraisal"}</h3>
             </div>
             {guidelinesTab === "form" && (<>
             <SC title="General Notes" accent="#0f172a">
@@ -3623,7 +3623,7 @@ export default function DeanDashboard() {
                 <li>e. Out-reach activity / Contribution to Society (Maximum Point 10)</li>
               </ul>
             </SC>
-            <SC title="PART A — Teaching & Academic Activities (Maximum Marks 200)" accent="#6366f1">
+            <SC title="PART A ï¿½ Teaching & Academic Activities (Maximum Marks 200)" accent="#6366f1">
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr>
@@ -3636,19 +3636,19 @@ export default function DeanDashboard() {
                   <tr>
                     <td style={TDC}>(i)</td>
                     <td style={TD}>
-                      <strong>Lectures, seminars, tutorials, practical, contact classes</strong> — based on verifiable records (JUNO record).<br/>
+                      <strong>Lectures, seminars, tutorials, practical, contact classes</strong> ï¿½ based on verifiable records (JUNO record).<br/>
                       No score should be assigned if a teacher has taken less than 70% of the assigned classes.<br/>
                       Score will be 50 if teacher has taken 100% assigned classes to particular subject as specified by University.<br/>
                       If a teacher has taken classes less than the allotted hours but above 80% limit of total, then 2 points will be deducted from 50 for each less hour of classes.<br/>
-                      <em>Maximum score of 50 if there is 100% performance | 91–99: 95% of 50 | 81–89: 85% | 70–79: 75%</em><br/>
-                      <em>Note: For School of Applied Arts and Crafts, School of Design — 40 Marks can be claimed.</em>
+                      <em>Maximum score of 50 if there is 100% performance | 91ï¿½99: 95% of 50 | 81ï¿½89: 85% | 70ï¿½79: 75%</em><br/>
+                      <em>Note: For School of Applied Arts and Crafts, School of Design ï¿½ 40 Marks can be claimed.</em>
                     </td>
                     <td style={TDC}>50</td>
                   </tr>
                   <tr style={{ background: "#f8fafc" }}>
                     <td style={TDC}>(ii)</td>
                     <td style={TD}>
-                      <strong>Course file of subject</strong> — All points covered as per IQAC index, full marks. Proportionate marking to percentage completion applicable up to 60% completion.<br/>
+                      <strong>Course file of subject</strong> ï¿½ All points covered as per IQAC index, full marks. Proportionate marking to percentage completion applicable up to 60% completion.<br/>
                       <table style={{ marginTop: 6, borderCollapse: "collapse", fontSize: 11 }}>
                         <thead><tr><th style={TH}>Sr No</th><th style={TH}>% Completion</th><th style={TH}>Score</th></tr></thead>
                         <tbody>
@@ -3657,7 +3657,7 @@ export default function DeanDashboard() {
                           ))}
                         </tbody>
                       </table>
-                      <em>Less than 60% — no score claimed.</em>
+                      <em>Less than 60% ï¿½ no score claimed.</em>
                     </td>
                     <td style={TDC}>20</td>
                   </tr>
@@ -3683,7 +3683,7 @@ export default function DeanDashboard() {
                     <td style={TD}>
                       <strong>Guided Students Project</strong> (New schools or if there is no project batch allotted can mention as NA)<br/>
                       Project guided: 3/group | Industrial collaboration/Sponsorship (Max 5 marks) | Project outcome: events/competitions (Max 5 marks)<br/>
-                      <em>Note: For School of Applied Arts and Crafts, School of Design — 20 Marks can be claimed.</em><br/>
+                      <em>Note: For School of Applied Arts and Crafts, School of Design ï¿½ 20 Marks can be claimed.</em><br/>
                       Guided students project other than curriculum: Project apart from curriculum: 5 | Industrial collaboration/Sponsorship: 5 | Any Award for project (Max 5 marks): 5
                     </td>
                     <td style={TDC}>10</td>
@@ -3706,7 +3706,7 @@ export default function DeanDashboard() {
                     <td style={TDC}>C &amp; D</td>
                     <td style={TD}>
                       <strong>Department / School / University Activities (Max 20 / 30)</strong><br/>
-                      <em>Department/School Level (Max 20):</em> Short-term one-time activity: 3 marks | Semester/Term-based (3–6 months): 5 marks | Academic Year activity (&gt;6 months): 10 marks<br/>
+                      <em>Department/School Level (Max 20):</em> Short-term one-time activity: 3 marks | Semester/Term-based (3ï¿½6 months): 5 marks | Academic Year activity (&gt;6 months): 10 marks<br/>
                       <em>University Level (Max 30):</em> Short-term one-time activity: 10 marks | Semester/Term-based: 20 marks | Academic Year activity: 30 marks
                     </td>
                     <td style={TDC}>20 / 30</td>
@@ -3737,8 +3737,8 @@ export default function DeanDashboard() {
                       <strong>Annual Confidential Report (Maximum Point 25)</strong><br/>
                       1. Self-motivation (5): List activities/initiatives other than regular load/duties.<br/>
                       2. Punctuality (5): Number of late marks, punctuality in lecture/practical, timely completion of daily report, absentee without intimation.<br/>
-                      3. Target based work (5): List tasks allotted, timely completion of allotted work — observed by HOD.<br/>
-                      4. Effectiveness (5): Work done without errors &amp; least follow-up — observed by HOD.<br/>
+                      3. Target based work (5): List tasks allotted, timely completion of allotted work ï¿½ observed by HOD.<br/>
+                      4. Effectiveness (5): Work done without errors &amp; least follow-up ï¿½ observed by HOD.<br/>
                       5. Obedience (5): To be observed by HOD and Director.
                     </td>
                     <td style={TDC}>25</td>
@@ -3746,7 +3746,7 @@ export default function DeanDashboard() {
                 </tbody>
               </table>
             </SC>
-            <SC title="PART B — Research & Academic Contributions (Maximum Marks 375)" accent="#7c3aed">
+            <SC title="PART B ï¿½ Research & Academic Contributions (Maximum Marks 375)" accent="#7c3aed">
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr>
@@ -3761,11 +3761,11 @@ export default function DeanDashboard() {
                     <td style={TDC}>1</td>
                     <td style={TD}><strong>Research Papers (Published in Journals)</strong><br/><em>(With institute affiliation, Maxi. 4 papers can be claimed)</em></td>
                     <td style={TD}>
-                      Refereed Journals — SCI/SCIE/WoS Q1 &amp; Q2: 30/publication + Impact factor score<br/>
-                      Refereed Journals — Scopus Q3, Q4: 15/publication + Impact factor score<br/>
+                      Refereed Journals ï¿½ SCI/SCIE/WoS Q1 &amp; Q2: 30/publication + Impact factor score<br/>
+                      Refereed Journals ï¿½ Scopus Q3, Q4: 15/publication + Impact factor score<br/>
                       UGC care listed: 10/publication<br/>
-                      Submitted and under review: 5/publication | Submitted and rejected after 1–2 reviews: 10/publication (max 2 in this category)<br/>
-                      <strong>Instructions:</strong> Multiple DYPIU authors: 70% first author, 30% each co-author. Additional marks for Impact Factor: up to 5 ? 3 marks; 5–10 ? 5 marks; above 10 ? 10 marks. Joint/collaborative publication: full marks.
+                      Submitted and under review: 5/publication | Submitted and rejected after 1ï¿½2 reviews: 10/publication (max 2 in this category)<br/>
+                      <strong>Instructions:</strong> Multiple DYPIU authors: 70% first author, 30% each co-author. Additional marks for Impact Factor: up to 5 ? 3 marks; 5ï¿½10 ? 5 marks; above 10 ? 10 marks. Joint/collaborative publication: full marks.
                     </td>
                     <td style={TDC}>80 / 120</td>
                   </tr>
@@ -3786,7 +3786,7 @@ export default function DeanDashboard() {
                     <td style={TD}>
                       (a) Development of Innovative pedagogy which does not exist globally: 5<br/>
                       (b) MOOCs / Course Builder / Coursera Course: 5/course<br/>
-                      (c) E-Content (available online publicly) — video lecture, blog, website etc.: 5<br/>
+                      (c) E-Content (available online publicly) ï¿½ video lecture, blog, website etc.: 5<br/>
                       <em>Note: SoMCS max 30; SoD &amp; SAA max 50; Other schools max 20.</em>
                     </td>
                     <td style={TDC}>20 / 30 / 50</td>
@@ -3795,10 +3795,10 @@ export default function DeanDashboard() {
                     <td style={TDC}>4</td>
                     <td style={TD}><strong>Research Guidance (Maxi. marks 75)</strong></td>
                     <td style={TD}>
-                      (a) Research Guidance (Max 30, if applicable): PhD — 20 for degree awarded, 10 for thesis submitted; PG degree awarded to batch candidate. Joint supervision: 70% supervisor, 30% co-supervisor (7 marks each).<br/>
-                      (b) Research Projects Completed (Maxi. 15): Internal Project — Grant received 100% marks.<br/>
+                      (a) Research Guidance (Max 30, if applicable): PhD ï¿½ 20 for degree awarded, 10 for thesis submitted; PG degree awarded to batch candidate. Joint supervision: 70% supervisor, 30% co-supervisor (7 marks each).<br/>
+                      (b) Research Projects Completed (Maxi. 15): Internal Project ï¿½ Grant received 100% marks.<br/>
                       (c) Research Projects Ongoing (Maxi. 30): &gt;10 lakhs ? 15 marks; &lt;10 lakhs ? 10 marks.<br/>
-                      Consultancy/Testing/Training: up to ?50k ? 3; ?51k–2L ? 5; ?2L–5L ? 10; ?5L–10L ? 15; above ?10L ? 15+3/per 5L.<br/>
+                      Consultancy/Testing/Training: up to ?50k ? 3; ?51kï¿½2L ? 5; ?2Lï¿½5L ? 10; ?5Lï¿½10L ? 15; above ?10L ? 15+3/per 5L.<br/>
                       <em>Note: If no PG/PhD students enrolled, max marks deducted from denominator.</em>
                     </td>
                     <td style={TDC}>75</td>
@@ -3842,7 +3842,7 @@ export default function DeanDashboard() {
                     <td style={TDC}>8</td>
                     <td style={TD}><strong>Self Development (Max. marks 10)</strong></td>
                     <td style={TD}>
-                      (a) Attended FDP of one week duration or more (Max 5 marks): 5/FDP<br/>
+                      (a) Attended FDP of one week duration or more (Max 10 marks): 5/FDP<br/>
                       (b) Industrial training (Maximum marks 5)<br/>
                       <em>Total B8 score maximum marks 10.</em>
                     </td>
@@ -3864,7 +3864,7 @@ export default function DeanDashboard() {
                 </thead>
                 <tbody>
                   {[
-                    ["","Part A — 360 Degree Feedback","","",""],
+                    ["","Part A ï¿½ 360 Degree Feedback","","",""],
                     ["A","Teaching Process (i+ii+iii+iv+v)","100","100","100"],
                     ["B","Students' Feedback","10","10","10"],
                     ["C","Departmental Activities","20","20","20"],
@@ -3873,7 +3873,7 @@ export default function DeanDashboard() {
                     ["F","Industry Connect","5","5","5"],
                     ["G","Annual Confidential Report","25","25","25"],
                     ["","Marks obtained in Part A","200","200","200"],
-                    ["","Part B — Research and Academic Contribution","","",""],
+                    ["","Part B ï¿½ Research and Academic Contribution","","",""],
                     ["1","Research papers / journal publication","80","120","120"],
                     ["2","Books authored / edited / book chapter","60","60","50"],
                     ["3","ICT, Teaching learning Pedagogy","50","30","20"],

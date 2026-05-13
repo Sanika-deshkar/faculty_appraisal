@@ -1030,8 +1030,8 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false, reviewerLabe
     const conf = sumReviewRows("confs", "hod", 30);
     const prop = sumReviewRows("proposals", "hod", 10);
     const prod = sumReviewRows("products", "hod", 10);
-    const fdp = sumReviewRows("fdps", "hod", 5, SCORE_LIMITS.fdpRow);
-    const train = sumReviewRows("training", "hod", 5, SCORE_LIMITS.fdpRow);
+    const fdp = sumReviewRows("fdps", "hod", 10, SCORE_LIMITS.fdpRow);
+    const train = sumReviewRows("training", "hod", 10, SCORE_LIMITS.fdpRow);
     const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 375);
 
     return { partA, partB, total: clampScore(partA + partB, 575) };
@@ -1884,18 +1884,18 @@ export default function HODDashboard({
       <tr class="tr"><td colspan="3" class="c b">Total (Max 10)</td><td class="c">${productScore.toFixed(1)}</td></tr>
     </table>
 
-    <h3>8a) Attended FDP / Workshops &nbsp;(Max 5)</h3>
+    <h3>8a) Attended FDP / Workshops &nbsp;(Max 10)</h3>
     <table>
       <tr><th>SN</th><th>Program</th><th>Duration</th><th>Organized By</th><th>API Score</th></tr>
       ${fdps.map((f,i) => `<tr><td class="c">${i+1}</td><td>${f.program||'&nbsp;'}</td><td class="c">${f.duration||'&nbsp;'}</td><td>${f.org||'&nbsp;'}</td><td class="c">${clampScore(f.score, SCORE_LIMITS.fdpRow)||'&nbsp;'}</td></tr>`).join('')}
-      <tr class="tr"><td colspan="4" class="c b">Total (Max 5)</td><td class="c">${fdpScore.toFixed(1)}</td></tr>
+      <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${fdpScore.toFixed(1)}</td></tr>
     </table>
 
-    <h3>8b) Industrial Training &nbsp;(Max 5)</h3>
+    <h3>8b) Industrial Training &nbsp;(Max 10)</h3>
     <table>
       <tr><th>SN</th><th>Company / Industry</th><th>Duration</th><th>Nature of Training</th><th>API Score</th></tr>
       ${training.map((t,i) => `<tr><td class="c">${i+1}</td><td>${t.company||'&nbsp;'}</td><td class="c">${t.duration||'&nbsp;'}</td><td>${t.nature||'&nbsp;'}</td><td class="c">${clampScore(t.score, SCORE_LIMITS.fdpRow)||'&nbsp;'}</td></tr>`).join('')}
-      <tr class="tr"><td colspan="4" class="c b">Total (Max 5)</td><td class="c">${trainScore.toFixed(1)}</td></tr>
+      <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${trainScore.toFixed(1)}</td></tr>
     </table>
 
     <div class="pb"></div>
@@ -3443,7 +3443,7 @@ export default function HODDashboard({
                     <td style={TDC}>8</td>
                     <td style={TD}><strong>Self Development (Max. marks 10)</strong></td>
                     <td style={TD}>
-                      (a) Attended FDP of one week duration or more (Max 5 marks): 5/FDP<br/>
+                      (a) Attended FDP of one week duration or more (Max 10 marks): 5/FDP<br/>
                       (b) Industrial training (Maximum marks 5)<br/>
                       <em>Total B8 score maximum marks 10.</em>
                     </td>

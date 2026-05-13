@@ -1095,8 +1095,8 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
     const conf = (faculty.confs || []).reduce((a, _, i) => a + get("confs", i, "hod"), 0);
     const prop = (faculty.proposals || []).reduce((a, _, i) => a + get("proposals", i, "hod"), 0);
     const prod = (faculty.products || []).reduce((a, _, i) => a + get("products", i, "hod"), 0);
-    const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 5);
-    const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 5);
+    const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
+    const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
     const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train;
 
     return { partA, partB, total: partA + partB };
@@ -1469,8 +1469,8 @@ export default function HODDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
     ];
     const errors = validateCompleteRows(sections, docs);
     [...projects2, ...externalProjects].forEach((row, index) => {
@@ -1505,8 +1505,8 @@ export default function HODDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
     ];
     const errors = validateCompleteRows(section === "partA" ? partASections : partBSections, docs);
     if (section !== "partA") {
@@ -1863,18 +1863,18 @@ export default function HODDashboard() {
       <tr class="tr"><td colspan="3" class="c b">Total (Max 10)</td><td class="c">${productScore.toFixed(1)}</td></tr>
     </table>
 
-    <h3>8a) Attended FDP / Workshops &nbsp;(Max 5)</h3>
+    <h3>8a) Attended FDP / Workshops &nbsp;(Max 10)</h3>
     <table>
       <tr><th>SN</th><th>Program</th><th>Duration</th><th>Organized By</th><th>API Score</th></tr>
       ${fdps.map((f,i) => `<tr><td class="c">${i+1}</td><td>${f.program||'&nbsp;'}</td><td class="c">${f.duration||'&nbsp;'}</td><td>${f.org||'&nbsp;'}</td><td class="c">${clampScore(f.score, SCORE_LIMITS.fdpRow)||'&nbsp;'}</td></tr>`).join('')}
-      <tr class="tr"><td colspan="4" class="c b">Total (Max 5)</td><td class="c">${fdpScore.toFixed(1)}</td></tr>
+      <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${fdpScore.toFixed(1)}</td></tr>
     </table>
 
-    <h3>8b) Industrial Training &nbsp;(Max 5)</h3>
+    <h3>8b) Industrial Training &nbsp;(Max 10)</h3>
     <table>
       <tr><th>SN</th><th>Company / Industry</th><th>Duration</th><th>Nature of Training</th><th>API Score</th></tr>
       ${training.map((t,i) => `<tr><td class="c">${i+1}</td><td>${t.company||'&nbsp;'}</td><td class="c">${t.duration||'&nbsp;'}</td><td>${t.nature||'&nbsp;'}</td><td class="c">${clampScore(t.score, SCORE_LIMITS.fdpRow)||'&nbsp;'}</td></tr>`).join('')}
-      <tr class="tr"><td colspan="4" class="c b">Total (Max 5)</td><td class="c">${trainScore.toFixed(1)}</td></tr>
+      <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${trainScore.toFixed(1)}</td></tr>
     </table>
 
     <div class="pb"></div>
@@ -3278,7 +3278,7 @@ export default function HODDashboard() {
                     <td style={TDC}>8</td>
                     <td style={TD}><strong>Self Development (Max. marks 10)</strong></td>
                     <td style={TD}>
-                      (a) Attended FDP of one week duration or more (Max 5 marks): 5/FDP<br/>
+                      (a) Attended FDP of one week duration or more (Max 10 marks): 5/FDP<br/>
                       (b) Industrial training (Maximum marks 5)<br/>
                       <em>Total B8 score maximum marks 10.</em>
                     </td>
