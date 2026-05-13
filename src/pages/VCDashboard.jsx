@@ -321,7 +321,7 @@ const VC_REPORT_PART_A_SECTIONS = [
   { key: "acr", title: "(xi) Annual Confidential Report (ACR) - Max 25 marks", max: 25, doc: "acr", fields: [["label", "Attribute"]] },
 ];
 const VC_REPORT_PART_B_SECTIONS = [
-  { key: "journals", title: "B1. Research Papers / Journal Publications", max: 120, doc: "jour", fields: [["title", "Title"], ["journal", "Journal"], ["issn", "ISSN"], ["index", "Indexing"]] },
+  { key: "journals", title: "B1. Research Papers / Journal Publications", max: 120, doc: "jour", fields: [["title", "Title"], ["journal", "Journal"], ["issn", "ISSN"], ["index", "General Indexing"]] },
   { key: "books", title: "B2. Books / Book Chapters", max: 50, doc: "book", fields: [["title", "Title with Page Nos."], ["book", "Book Title, Editor & Publisher"], ["issn", "ISSN / ISBN No."], ["pub", "Type of Publisher"], ["coauth", "Co-authors (from DYPIU)"], ["first", "First Author"]] },
   { key: "ict", title: "B3. ICT / E-Content", max: 20, doc: "ict", fields: [["title", "Title"], ["desc", "Description"], ["type", "Type"], ["quad", "Quadrants"]] },
   { key: "research", title: "B4(a). Research Guidance", max: 30, doc: "res", fields: [["degree", "Degree"], ["name", "Student Name"], ["thesis", "Thesis / Status"]] },
@@ -621,7 +621,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director", sect
       <SC title="B1. Research Papers / Journal Publications (Max 120)" accent="#7c3aed">
         <div style={{ overflowX: "auto" }}><table style={T}><thead><tr>
           <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>Journal</th>
-          <th style={TH}>ISSN</th><th style={TH}>Index</th><th style={TH}>Docs</th>
+          <th style={TH}>ISSN</th><th style={TH}>General Indexing</th><th style={TH}>Docs</th>
           {renderScoreHeaders()}
         </tr></thead>
         <tbody>{rows(person.journals).map((r, i) => (

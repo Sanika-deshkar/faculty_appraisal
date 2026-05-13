@@ -639,7 +639,15 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
 
       {/* E: Society */}
       <SC title="E. Contribution to Society (Max 10, Max 5 per row)" accent="#10b981">
-        <table style={T}>
+        <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 12, fontWeight: 800, color: "#334155" }}>
+          {["applicable", "notApplicable"].map((v) => (
+            <label key={v} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <input type="checkbox" checked={(sectionApplicability.society || "applicable") === v} onChange={() => setSectionApplicability((p) => ({ ...p, society: v }))} />
+              {v === "applicable" ? "Applicable" : "Not Applicable"}
+            </label>
+          ))}
+        </div>
+        {sectionApplicability.society !== "notApplicable" && <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Yes/No</th><th style={TH}>Details</th>
             <th style={TH}>View Docs</th><th style={TH}>Faculty Score (Max 5)</th><th style={TH_HOD}>HOD Score</th>
@@ -657,7 +665,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
               </tr>
             ))}
           </tbody>
-        </table>
+        </table>}
       </SC>
 
       {/* F: Industry */}
@@ -713,7 +721,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
           <table style={T}>
             <thead><tr>
               <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>Journal</th>
-              <th style={TH}>ISSN</th><th style={TH}>Indexing</th>
+              <th style={TH}>ISSN</th><th style={TH}>General Indexing</th>
               <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_HOD}>HOD Score</th>
             </tr></thead>
             <tbody>
@@ -1071,7 +1079,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
     const fb = (faculty.feedback || []).reduce((a, _, i) => a + get("feedback", i, "hod"), 0);
     const dept = (faculty.deptActs || []).reduce((a, _, i) => a + get("deptActs", i, "hod"), 0);
     const uni = (faculty.uniActs || []).reduce((a, _, i) => a + get("uniActs", i, "hod"), 0);
-    const soc = (faculty.society || []).reduce((a, row, i) => a + (societyRowLocked(row) ? 0 : get("society", i, "hod")), 0);
+    const soc = faculty.sectionApplicability?.society === "notApplicable" ? 0 : (faculty.society || []).reduce((a, row, i) => a + (societyRowLocked(row) ? 0 : get("society", i, "hod")), 0);
     const ind = (faculty.industry || []).reduce((a, _, i) => a + get("industry", i, "hod"), 0);
     const acrT = (faculty.acr || []).reduce((a, _, i) => a + clampScore(get("acr", i, "hod"), SCORE_LIMITS.acrRow), 0);
     const partA = lec + cf + innov + proj + qual + fb + dept + uni + soc + ind + acrT;
@@ -1345,7 +1353,7 @@ export default function HODDashboard() {
   const setTrain = (i, k, v) => setTraining((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
 
   const [docs, setDocs] = useState({});
-  const [sectionApplicability, setSectionApplicability] = useState({ projects: "applicable", research: "applicable" });
+  const [sectionApplicability, setSectionApplicability] = useState({ projects: "applicable", research: "applicable", society: "applicable" });
   const [appraisalLocked, setAppraisalLocked] = useState(false);
   const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: false, partB: false });
   const [savingSection, setSavingSection] = useState(null);
@@ -1401,10 +1409,10 @@ export default function HODDashboard() {
   const stuFeedbackScore = feedbackSectionScore(feedback, 10);
   const deptScore = sumSectionScore(deptActs, 20);
   const uniScore = sumSectionScore(uniActs, 30);
-  const societyScore = clampScore(society.reduce((total, row) => total + societyRowScore(row), 0), 10);
+  const societyScore = sectionApplicability.society === "notApplicable" ? 0 : clampScore(society.reduce((total, row) => total + societyRowScore(row), 0), 10);
   const industryScore = sumSectionScore(industry, 5);
   const acrScore = sumSectionScore(acr, 25, "score", SCORE_LIMITS.acrRow);
-  const effectivePartAMax = effectiveMaxScore(200, sectionApplicability, [{ key: "projects", max: 10 }]);
+  const effectivePartAMax = effectiveMaxScore(200, sectionApplicability, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]);
   const partATotal = clampScore(teachingRaw + stuFeedbackScore + deptScore + uniScore + societyScore + industryScore + acrScore, effectivePartAMax);
 
   const journalScore = sumSectionScore(journals, 120);
@@ -1418,11 +1426,12 @@ export default function HODDashboard() {
   const confScore = sumSectionScore(confs, 30);
   const proposalScore = sumSectionScore(proposals, 10);
   const productScore = sumSectionScore(products, 10);
-  const fdpScore = sumSectionScore(fdps, 5, "score", SCORE_LIMITS.fdpRow);
-  const trainScore = sumSectionScore(training, 5, "score", SCORE_LIMITS.fdpRow);
+  const fdpScore = fdps.reduce((s, r) => s + clampScore(parseFloat(r.score) || 0, SCORE_LIMITS.fdpRow), 0);
+  const trainScore = training.reduce((s, r) => s + clampScore(parseFloat(r.score) || 0, SCORE_LIMITS.fdpRow), 0);
+  const b8Score = clampScore(fdpScore + trainScore, 10);
   const effectivePartBMax = effectiveMaxScore(375, sectionApplicability, [{ key: "research", max: 30 }]);
   const effectiveGrandMax = effectivePartAMax + effectivePartBMax;
-  const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + fdpScore + trainScore, effectivePartBMax);
+  const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + b8Score, effectivePartBMax);
   const grandTotal = clampScore(partATotal + partBTotal, effectiveGrandMax);
 
   const gradeFunc = () => {
@@ -1741,11 +1750,11 @@ export default function HODDashboard() {
     </table>
 
     <h3>E. Contribution to Society &nbsp;(Max 10)</h3>
-    <table>
+    ${sectionApplicability.society === "notApplicable" ? "<p><em>Not Applicable</em></p>" : `<table>
       <tr><th>SN</th><th>Activity</th><th>Participated</th><th>Details</th><th>API Score</th></tr>
       ${society.map((s,i) => `<tr><td class="c">${i+1}</td><td>${s.label||'&nbsp;'}</td><td class="c">${societySelectionForRow(s)||'&nbsp;'}</td><td>${s.details||'&nbsp;'}</td><td class="c">${societyRowScore(s)}</td></tr>`).join('')}
       <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${societyScore.toFixed(1)}</td></tr>
-    </table>
+    </table>`}
 
     <h3>F. Industry Connect Activity &nbsp;(Max 5)</h3>
     <table>
@@ -1767,7 +1776,7 @@ export default function HODDashboard() {
       <tr><td>Students' Feedback</td><td class="c">10</td><td class="c">${stuFeedbackScore.toFixed(1)}</td></tr>
       <tr><td>Departmental Activities</td><td class="c">20</td><td class="c">${deptScore.toFixed(1)}</td></tr>
       <tr><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
-      <tr><td>Contribution to Society</td><td class="c">10</td><td class="c">${societyScore.toFixed(1)}</td></tr>
+      <tr><td>Contribution to Society</td><td class="c">${sectionApplicability.society === "notApplicable" ? "N/A" : "10"}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
       <tr><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
       <tr><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
       <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
@@ -1778,7 +1787,7 @@ export default function HODDashboard() {
 
     <h3>1) Published Papers in Journals &nbsp;(Max 120)</h3>
     <table>
-      <tr><th>SN</th><th>Title with Page Nos.</th><th>Journal Details</th><th>ISSN/ISBN No.</th><th>Indexing</th><th>API Score</th></tr>
+      <tr><th>SN</th><th>Title with Page Nos.</th><th>Journal Details</th><th>ISSN/ISBN No.</th><th>General Indexing</th><th>API Score</th></tr>
       ${journals.map((j,i) => `<tr><td class="c">${i+1}</td><td>${j.title||'&nbsp;'}</td><td>${j.journal||'&nbsp;'}</td><td class="c">${j.issn||'&nbsp;'}</td><td class="c">${j.index||'&nbsp;'}</td><td class="c">${j.score||'&nbsp;'}</td></tr>`).join('')}
       <tr class="tr"><td colspan="5" class="c b">Total (Max 120)</td><td class="c">${journalScore.toFixed(1)}</td></tr>
     </table>
@@ -1877,7 +1886,7 @@ export default function HODDashboard() {
       <tr><td class="c">B</td><td>Students' Feedback</td><td class="c">10</td><td class="c">${stuFeedbackScore.toFixed(1)}</td></tr>
       <tr><td class="c">C</td><td>Departmental Activities</td><td class="c">20</td><td class="c">${deptScore.toFixed(1)}</td></tr>
       <tr><td class="c">D</td><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
-      <tr><td class="c">E</td><td>Contribution to Society</td><td class="c">10</td><td class="c">${societyScore.toFixed(1)}</td></tr>
+      <tr><td class="c">E</td><td>Contribution to Society</td><td class="c">${sectionApplicability.society === "notApplicable" ? "N/A" : "10"}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
       <tr><td class="c">F</td><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
       <tr><td class="c">G</td><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
       <tr class="tr"><td colspan="2" class="c b">Part A Total</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
@@ -1889,7 +1898,7 @@ export default function HODDashboard() {
       <tr><td class="c">5</td><td>Patents, Awards, Fellowship</td><td class="c">50</td><td class="c">${(patentScore+awardScore).toFixed(1)}</td></tr>
       <tr><td class="c">6</td><td>Conferences / paper presentations</td><td class="c">30</td><td class="c">${confScore.toFixed(1)}</td></tr>
       <tr><td class="c">7</td><td>Research proposals / product development</td><td class="c">20</td><td class="c">${(proposalScore+productScore).toFixed(1)}</td></tr>
-      <tr><td class="c">8</td><td>Self Development (FDP / Industrial Training)</td><td class="c">10</td><td class="c">${(fdpScore+trainScore).toFixed(1)}</td></tr>
+      <tr><td class="c">8</td><td>Self Development (FDP / Industrial Training)</td><td class="c">10</td><td class="c">${b8Score.toFixed(1)}</td></tr>
       <tr class="tr"><td colspan="2" class="c b">Part B Total</td><td class="c b">${effectivePartBMax}</td><td class="c b">${partBTotal.toFixed(1)}</td></tr>
       <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${effectiveGrandMax}</td><td class="c">${grandTotal.toFixed(1)}</td></tr>
     </table>
@@ -2317,7 +2326,15 @@ export default function HODDashboard() {
                 {/* A9. Contribution to Society */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(ix) Contribution to Society - Max 10 marks (Max 5 per row)</div>
-                  <table style={T}>
+                  <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 12, fontWeight: 800, color: "#334155" }}>
+                    {["applicable", "notApplicable"].map((v) => (
+                      <label key={v} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                        <input type="checkbox" checked={(sectionApplicability.society || "applicable") === v} onChange={() => setSectionApplicability((p) => ({ ...p, society: v }))} />
+                        {v === "applicable" ? "Applicable" : "Not Applicable"}
+                      </label>
+                    ))}
+                  </div>
+                  {sectionApplicability.society !== "notApplicable" && <><table style={T}>
                     <thead>
                       <tr>
                         <th style={{ ...TH, width: 30 }}>SN</th>
@@ -2356,6 +2373,7 @@ export default function HODDashboard() {
                     </tbody>
                   </table>
                   <RowBtns onAdd={() => setSociety((p) => [...p, { label: "", details: "", participated: "", score: "" }])} onDel={() => setSociety((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={society.length > 1} />
+                  </>}
                 </div>
 
                 {/* A10. Industry Connect */}
@@ -2440,7 +2458,7 @@ export default function HODDashboard() {
                         <th style={TH}>Title</th>
                         <th style={TH}>Journal</th>
                         <th style={TH}>ISSN</th>
-                        <th style={TH}>Index</th>
+                        <th style={TH}>General Indexing</th>
                         <th style={TH}>Attachment</th>
                         <th style={TH}>View Docs</th>
                         <th style={TH}>Score</th>
@@ -2942,7 +2960,7 @@ export default function HODDashboard() {
                     <tbody>
                       <tr style={{ background: "#f3e8ff" }}>
                         <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total B8 Score (Max 10)</td>
-                        <td style={{ ...TDS, fontWeight: "bold" }}>{(fdpScore + trainScore).toFixed(1)}</td>
+                        <td style={{ ...TDS, fontWeight: "bold" }}>{b8Score.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>

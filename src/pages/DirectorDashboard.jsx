@@ -576,7 +576,15 @@ function FacultyReviewForm({ faculty, hodData, setHodData, dirData, setDirData, 
 
       {/* E: Society */}
       <SC title="E. Contribution to Society (Max 10, Max 5 per row)" accent="#10b981">
-        <table style={T}>
+        <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 12, fontWeight: 800, color: "#334155" }}>
+          {["applicable", "notApplicable"].map((v) => (
+            <label key={v} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <input type="checkbox" checked={(sectionApplicability.society || "applicable") === v} onChange={() => setSectionApplicability((p) => ({ ...p, society: v }))} />
+              {v === "applicable" ? "Applicable" : "Not Applicable"}
+            </label>
+          ))}
+        </div>
+        {sectionApplicability.society !== "notApplicable" && <table style={T}>
           <thead><tr>
             <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Yes/No</th><th style={TH}>Details</th>
             <th style={TH}>View Docs</th><th style={TH}>Faculty Score (Max 5)</th><th style={TH_DIR}>Director Score</th>
@@ -594,7 +602,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, dirData, setDirData, 
               </tr>
             ))}
           </tbody>
-        </table>
+        </table>}
       </SC>
 
       {/* F: Industry */}
@@ -649,7 +657,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, dirData, setDirData, 
           <table style={T}>
             <thead><tr>
               <th style={TH}>SN</th><th style={TH}>Title</th><th style={TH}>Journal</th>
-              <th style={TH}>ISSN</th><th style={TH}>Indexing</th>
+              <th style={TH}>ISSN</th><th style={TH}>General Indexing</th>
               <th style={TH}>View Docs</th><th style={TH}>Faculty Score</th><th style={TH_DIR}>Director Score</th>
             </tr></thead>
             <tbody>
@@ -1408,7 +1416,7 @@ export default function DirectorDashboard() {
   const setTrain = (i, k, v) => setTraining((p) => p.map((r, j) => j === i ? { ...r, [k]: v } : r));
 
   const [docs, setDocs] = useState({});
-  const [sectionApplicability, setSectionApplicability] = useState({ projects: "applicable", research: "applicable" });
+  const [sectionApplicability, setSectionApplicability] = useState({ projects: "applicable", research: "applicable", society: "applicable" });
   const [appraisalLocked, setAppraisalLocked] = useState(false);
   const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: false, partB: false });
   const [savingSection, setSavingSection] = useState(null);
@@ -1489,10 +1497,10 @@ export default function DirectorDashboard() {
   const stuFeedbackScore = feedbackSectionScore(feedback, 10);
   const deptScore = sumSectionScore(deptActs, 20);
   const uniScore = sumSectionScore(uniActs, 30);
-  const societyScore = clampScore(society.reduce((total, row) => total + societyRowScore(row), 0), 10);
+  const societyScore = sectionApplicability.society === "notApplicable" ? 0 : clampScore(society.reduce((total, row) => total + societyRowScore(row), 0), 10);
   const industryScore = sumSectionScore(industry, 5);
   const acrScore = sumSectionScore(acr, 25, "score", SCORE_LIMITS.acrRow);
-  const effectivePartAMax = effectiveMaxScore(200, sectionApplicability, [{ key: "projects", max: 10 }]);
+  const effectivePartAMax = effectiveMaxScore(200, sectionApplicability, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]);
   const partATotal = clampScore(teachingRaw + stuFeedbackScore + deptScore + uniScore + societyScore + industryScore + acrScore, effectivePartAMax);
 
   const journalScore = sumSectionScore(journals, 120);
@@ -1506,11 +1514,12 @@ export default function DirectorDashboard() {
   const confScore = sumSectionScore(confs, 30);
   const proposalScore = sumSectionScore(proposals, 10);
   const productScore = sumSectionScore(products, 10);
-  const fdpScore = sumSectionScore(fdps, 5, "score", SCORE_LIMITS.fdpRow);
-  const trainScore = sumSectionScore(training, 5, "score", SCORE_LIMITS.fdpRow);
+  const fdpScore = fdps.reduce((s, r) => s + clampScore(parseFloat(r.score) || 0, SCORE_LIMITS.fdpRow), 0);
+  const trainScore = training.reduce((s, r) => s + clampScore(parseFloat(r.score) || 0, SCORE_LIMITS.fdpRow), 0);
+  const b8Score = clampScore(fdpScore + trainScore, 10);
   const effectivePartBMax = effectiveMaxScore(375, sectionApplicability, [{ key: "research", max: 30 }]);
   const effectiveGrandMax = effectivePartAMax + effectivePartBMax;
-  const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + fdpScore + trainScore, effectivePartBMax);
+  const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + b8Score, effectivePartBMax);
   const grandTotal = clampScore(partATotal + partBTotal, effectiveGrandMax);
 
   const gradeFunc = () => {
@@ -2174,7 +2183,15 @@ export default function DirectorDashboard() {
                 {/* A9. Contribution to Society */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(ix) Contribution to Society - Max 10 marks (Max 5 per row)</div>
-                  <table style={T}>
+                  <div style={{ display: "flex", gap: 14, marginBottom: 10, fontSize: 12, fontWeight: 800, color: "#334155" }}>
+                    {["applicable", "notApplicable"].map((v) => (
+                      <label key={v} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                        <input type="checkbox" checked={(sectionApplicability.society || "applicable") === v} onChange={() => setSectionApplicability((p) => ({ ...p, society: v }))} />
+                        {v === "applicable" ? "Applicable" : "Not Applicable"}
+                      </label>
+                    ))}
+                  </div>
+                  {sectionApplicability.society !== "notApplicable" && <><table style={T}>
                     <thead>
                       <tr>
                         <th style={{ ...TH, width: 30 }}>SN</th>
@@ -2213,6 +2230,7 @@ export default function DirectorDashboard() {
                     </tbody>
                   </table>
                   <RowBtns onAdd={() => setSociety((p) => [...p, { label: "", details: "", participated: "", score: "" }])} onDel={() => setSociety((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={society.length > 1} />
+                  </>}
                 </div>
 
                 {/* A10. Industry Connect */}
@@ -2298,7 +2316,7 @@ export default function DirectorDashboard() {
                         <th style={TH}>Title</th>
                         <th style={TH}>Journal</th>
                         <th style={TH}>ISSN</th>
-                        <th style={TH}>Index</th>
+                        <th style={TH}>General Indexing</th>
                         <th style={TH}>Attachment</th>
                         <th style={TH}>View Docs</th>
                         <th style={TH}>Score</th>
@@ -2800,7 +2818,7 @@ export default function DirectorDashboard() {
                     <tbody>
                       <tr style={{ background: "#f3e8ff" }}>
                         <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total B8 Score (Max 10)</td>
-                        <td style={{ ...TDS, fontWeight: "bold" }}>{(fdpScore + trainScore).toFixed(1)}</td>
+                        <td style={{ ...TDS, fontWeight: "bold" }}>{b8Score.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>

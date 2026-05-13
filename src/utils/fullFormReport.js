@@ -412,9 +412,9 @@ export const generateStandardReport = async ({
   ${uniActs.map((u,i)=>`<tr><td class="c">${i+1}</td><td>${u.activity||'&nbsp;'}</td><td>${u.nature||'&nbsp;'}</td><td class="c">${u.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="3" class="c b">Total (Max 30)</td><td class="c">${uniScore.toFixed(1)}</td></tr></table>
   <h3>E. Contribution to Society (Max 10)</h3>
-  <table><tr><th>SN</th><th>Activity</th><th>Participated</th><th>Details</th><th>API Score</th></tr>
+  ${sectionApplicability.society==='notApplicable'?'<p><em>Not Applicable</em></p>':`<table><tr><th>SN</th><th>Activity</th><th>Participated</th><th>Details</th><th>API Score</th></tr>
   ${society.map((s,i)=>`<tr><td class="c">${i+1}</td><td>${s.label||'&nbsp;'}</td><td class="c">${societySelectionForRow(s)||'&nbsp;'}</td><td>${s.details||'&nbsp;'}</td><td class="c">${societyRowScore(s)}</td></tr>`).join('')}
-  <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${societyScore.toFixed(1)}</td></tr></table>
+  <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${societyScore.toFixed(1)}</td></tr></table>`}
   <h3>F. Industry Connect Activity (Max 5)</h3>
   <table><tr><th>SN</th><th>Name of Industry</th><th>Details of Activity</th><th>API Score</th></tr>
   ${industry.map((ind,i)=>`<tr><td class="c">${i+1}</td><td>${ind.name||'&nbsp;'}</td><td>${ind.details||'&nbsp;'}</td><td class="c">${ind.score||'&nbsp;'}</td></tr>`).join('')}
@@ -429,7 +429,7 @@ export const generateStandardReport = async ({
     <tr><td>Students' Feedback</td><td class="c">10</td><td class="c">${stuFeedbackScore.toFixed(1)}</td></tr>
     <tr><td>Departmental Activities</td><td class="c">20</td><td class="c">${deptScore.toFixed(1)}</td></tr>
     <tr><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
-    <tr><td>Contribution to Society</td><td class="c">10</td><td class="c">${societyScore.toFixed(1)}</td></tr>
+    <tr><td>Contribution to Society</td><td class="c">${sectionApplicability.society==='notApplicable'?'N/A':'10'}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
     <tr><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
     <tr><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
     <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
@@ -437,7 +437,7 @@ export const generateStandardReport = async ({
   <div class="pb"></div>
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART B — Research &amp; Academic Contributions</h3>
   <h3>1) Published Papers in Journals (Max 120)</h3>
-  <table><tr><th>SN</th><th>Title with Page Nos.</th><th>Journal Details</th><th>ISSN/ISBN No.</th><th>Indexing</th><th>API Score</th></tr>
+  <table><tr><th>SN</th><th>Title with Page Nos.</th><th>Journal Details</th><th>ISSN/ISBN No.</th><th>General Indexing</th><th>API Score</th></tr>
   ${journals.map((j,i)=>`<tr><td class="c">${i+1}</td><td>${j.title||'&nbsp;'}</td><td>${j.journal||'&nbsp;'}</td><td class="c">${j.issn||'&nbsp;'}</td><td class="c">${j.index||'&nbsp;'}</td><td class="c">${j.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="5" class="c b">Total (Max 120)</td><td class="c">${journalScore.toFixed(1)}</td></tr></table>
   <h3>2) Articles / Chapters in Books (Max 50)</h3>
