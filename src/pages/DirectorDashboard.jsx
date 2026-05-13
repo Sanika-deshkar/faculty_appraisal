@@ -7,9 +7,12 @@ import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAp
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, scoreRemaining, societyRowLocked, societyRowScore, societySelectionForRow, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
-import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel } from "../utils/hierarchy";
+import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel, getSchoolKey } from "../utils/hierarchy";
 import { generateStandardReport } from "../utils/fullFormReport";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
+import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
+import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
+import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -3047,12 +3050,30 @@ export default function DirectorDashboard() {
 
         {/* REVIEW PANEL */}
         {activeMainTab === "facultyApprovals" && reviewingFaculty && (
-          <ReviewPanel
-            faculty={reviewingFaculty}
-            onBack={() => setReviewingFaculty(null)}
-            onSubmit={(id, total, remarks, sectionScores, reviewConfirmed) => handleSubmitReview("faculty", id, total, remarks, sectionScores, reviewConfirmed)}
-            readOnly={isDirectorReviewed(reviewingFaculty)}
-          />
+          formTypeForSchool(getSchoolKey(reviewingFaculty.school)) === FORM_TYPES.MEDIA_COMM ? (
+            <MediaCommAuthorityReviewPanel
+              person={reviewingFaculty}
+              reviewerRole="director"
+              onBack={() => setReviewingFaculty(null)}
+              onSubmit={(id, scores, remarks, sectionScores, reviewConfirmed) => handleSubmitReview("faculty", id, scores, remarks, sectionScores, reviewConfirmed)}
+              readOnly={isDirectorReviewed(reviewingFaculty)}
+            />
+          ) : formTypeForSchool(getSchoolKey(reviewingFaculty.school)) === FORM_TYPES.DESIGN_ARTS ? (
+            <DesignArtsAuthorityReviewPanel
+              person={reviewingFaculty}
+              reviewerRole="director"
+              onBack={() => setReviewingFaculty(null)}
+              onSubmit={(id, scores, remarks, sectionScores, reviewConfirmed) => handleSubmitReview("faculty", id, scores, remarks, sectionScores, reviewConfirmed)}
+              readOnly={isDirectorReviewed(reviewingFaculty)}
+            />
+          ) : (
+            <ReviewPanel
+              faculty={reviewingFaculty}
+              onBack={() => setReviewingFaculty(null)}
+              onSubmit={(id, total, remarks, sectionScores, reviewConfirmed) => handleSubmitReview("faculty", id, total, remarks, sectionScores, reviewConfirmed)}
+              readOnly={isDirectorReviewed(reviewingFaculty)}
+            />
+          )
         )}
         {activeMainTab === "hodApprovals" && reviewingHod && (
           <ReviewPanel
