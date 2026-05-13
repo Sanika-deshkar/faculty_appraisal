@@ -1950,7 +1950,7 @@ export default function HODDashboard() {
   win.print();
 };
   const navItems = [
-    { id: "myAppraisal", icon: "Form", label: "My Appraisal", sub: "View your self-appraisal form" },
+    { id: "myAppraisal", icon: "👤", label: "My Appraisal", sub: "View your self-appraisal form" },
     { id: "guidelines", icon: "📋", label: "Guidelines", sub: "Faculty appraisal guidelines AY 2025-26" },
   ];
   const workflowRejected = isRejectedStatus(workflowDeclaration?.status) ||

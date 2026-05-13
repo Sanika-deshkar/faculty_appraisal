@@ -7,7 +7,7 @@ import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAp
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, scoreRemaining, societyRowLocked, societyRowScore, societySelectionForRow, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
-import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError } from "../utils/hierarchy";
+import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel } from "../utils/hierarchy";
 import { generateStandardReport } from "../utils/fullFormReport";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
 
@@ -1429,6 +1429,8 @@ export default function DirectorDashboard() {
       try {
         const statusData = await api.get("/appraisal/status", { params: { academic_year: info.ay } }).catch(() => null);
         const declarationRow = statusData?.declaration || null;
+        setOwnDeclaration(declarationRow);
+        setOwnReviews(statusData?.reviews || []);
 
         await Promise.all([
           loadSavedAppraisal({
@@ -1554,6 +1556,9 @@ export default function DirectorDashboard() {
   ];
   const [submitting, setSubmitting] = useState(false);
   const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
+  const [attachmentsConfirmed, setAttachmentsConfirmed] = useState(false);
+  const [ownDeclaration, setOwnDeclaration] = useState(null);
+  const [ownReviews, setOwnReviews] = useState([]);
 
   const validateSelfAppraisalRows = () => {
     const sections = [
@@ -1686,8 +1691,8 @@ export default function DirectorDashboard() {
       alert("This appraisal has already been submitted and locked.");
       return;
     }
-    if (!accuracyConfirmed) {
-      alert("Please verify and confirm the accuracy declaration before submitting.");
+    if (!accuracyConfirmed || !attachmentsConfirmed) {
+      alert("Please tick both declaration checkboxes before submitting.");
       return;
     }
     if (!validateSelfAppraisalRows()) return;
@@ -1750,6 +1755,12 @@ export default function DirectorDashboard() {
     proposalScore, productScore, fdpScore, trainScore,
     partBTotal, effectivePartBMax, grandTotal, effectiveGrandMax,
     researchGuidanceScore,
+    declaration: ownDeclaration,
+    reviewChain: ownReviews.map((rev) => ({
+      label: roleLabel(rev.reviewer_role),
+      name: rev.reviewer_name || "",
+      date: rev.reviewed_at ? new Date(rev.reviewed_at).toLocaleDateString("en-IN") : "",
+    })),
   });
 
   const handleSubmitReview = async (type, id, scores, remarks, sectionScores, reviewConfirmed = false) => {
@@ -2856,7 +2867,7 @@ export default function DirectorDashboard() {
                   </tbody>
                 </table>
 
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 10, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
                   <input
                     type="checkbox"
                     checked={accuracyConfirmed}
@@ -2865,6 +2876,20 @@ export default function DirectorDashboard() {
                     style={{ marginTop: 3 }}
                   />
                   <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+                </label>
+
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={attachmentsConfirmed}
+                    onChange={(e) => setAttachmentsConfirmed(e.target.checked)}
+                    disabled={submitting || appraisalLocked}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span>
+                    I confirm that <strong>all required supporting documents and attachments have been uploaded</strong> against the respective entries.
+                    I understand that any <strong>missing or false attachment is my sole responsibility</strong> and may result in the rejection or revision of my appraisal.
+                  </span>
                 </label>
 
                 <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
@@ -2876,8 +2901,8 @@ export default function DirectorDashboard() {
                   </button>
                   <button
                     onClick={handleSubmitAppraisal}
-                    disabled={submitting || appraisalLocked || !accuracyConfirmed}
-                    style={{ padding: "10px 28px", background: appraisalLocked || !accuracyConfirmed ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: appraisalLocked || !accuracyConfirmed ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
+                    disabled={submitting || appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed}
+                    style={{ padding: "10px 28px", background: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
                   >
                     {appraisalLocked ? "Submitted & Locked" : submitting ? "Submitting..." : "✔ Submit Appraisal"}
                   </button>

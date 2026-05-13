@@ -1451,8 +1451,8 @@ export default function VCDashboard() {
           <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>University Overview</div>
           <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 3 }}>🔧 4 Engineering Schools</div>
           <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 3 }}>🎓 4 Non-Engineering Schools</div>
-          <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 3 }}>CISR Center</div>
-          <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 6 }}>Non-Teaching Branch</div>
+          <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 3 }}>🔬 CISR Center</div>
+          <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 6 }}>🏛️ Non-Teaching Branch</div>
           <div style={{ display: "flex", gap: 6 }}>
             <div style={{ flex: 1, background: "#fef3c7", borderRadius: 5, padding: "4px 6px", textAlign: "center" }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#92400e" }}>{totalPending}</div>

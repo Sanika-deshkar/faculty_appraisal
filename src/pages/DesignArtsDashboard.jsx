@@ -1064,6 +1064,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
   const [reviewLoading, setReviewLoading] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [attachmentsConfirmed, setAttachmentsConfirmed] = useState(false);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: true, partB: true });
@@ -1182,8 +1183,8 @@ export default function DesignArtsDashboard({ fixedRole }) {
   };
 
   const handleSubmitAppraisal = async () => {
-    if (!confirmed) {
-      alert("Please verify and confirm the accuracy declaration before submitting.");
+    if (!confirmed || !attachmentsConfirmed) {
+      alert("Please tick both declaration checkboxes before submitting.");
       return;
     }
     if (!userEmail) {
@@ -1273,6 +1274,12 @@ export default function DesignArtsDashboard({ fixedRole }) {
       totals: { partA: partATotal, partB: partBTotal, total: grandTotal },
       maxScores,
       generatedBy: sessionStorage.getItem("name") || roleLabel(role),
+      declaration,
+      reviewChain: reviews.map((rev) => ({
+        label: roleLabel(rev.reviewer_role),
+        name: rev.reviewer_name || "",
+        date: rev.reviewed_at ? new Date(rev.reviewed_at).toLocaleDateString("en-IN") : "",
+      })),
       detailedSummaryRows: [
         { isHeader: true, label: "Part A — Teaching Process & Academic Activities" },
         { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 40, score: lecScore },
@@ -1316,7 +1323,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
         </div>
         {canSelfSubmit && (
           <>
-            <button onClick={() => { setActiveTab("my"); setReviewing(null); }} style={navButton(activeTab === "my")}>My Appraisal</button>
+            <button onClick={() => { setActiveTab("my"); setReviewing(null); }} style={navButton(activeTab === "my")}>👤 My Appraisal</button>
             {activeTab === "my" && (
               <label style={{ display: "grid", gap: 6, padding: "0 10px 4px 16px", fontSize: 10, color: "#94a3b8", fontWeight: 800 }}>
                 Appraisal Section
@@ -1331,7 +1338,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
             )}
           </>
         )}
-        {role !== "faculty" && <button onClick={() => { setActiveTab("approvals"); setReviewing(null); }} style={navButton(activeTab === "approvals")}>Approvals ({pendingCount})</button>}
+        {role !== "faculty" && <button onClick={() => { setActiveTab("approvals"); setReviewing(null); }} style={navButton(activeTab === "approvals")}>🎓 Approvals ({pendingCount})</button>}
         <button onClick={() => { setActiveTab("guidelines"); setReviewing(null); }} style={navButton(activeTab === "guidelines")}>📋 Guidelines</button>
         {activeTab === "guidelines" && (
           <div style={{ background: "#1e293b", borderRadius: 8, padding: "9px 10px" }}>
@@ -1405,12 +1412,20 @@ export default function DesignArtsDashboard({ fixedRole }) {
               <div style={{ display: "grid", gap: 16 }}>
                 <SummaryBox totals={totals} maxScores={totals.maxScores} roleScoreLabel={`Faculty/self appraisal score from the ${schoolDisplayName} form.`} />
                 <div style={{ display: "grid", gap: 12, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 16 }}>
-                  {locked ? <StatusBadge status={declaration?.status || "Submitted"} /> : <AccuracyCheckbox checked={confirmed} onChange={setConfirmed} />}
+                  {locked ? <StatusBadge status={declaration?.status || "Submitted"} /> : (
+                    <>
+                      <AccuracyCheckbox checked={confirmed} onChange={setConfirmed} />
+                      <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12, color: "#334155", lineHeight: 1.5, padding: "12px 14px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, cursor: "pointer" }}>
+                        <input type="checkbox" checked={attachmentsConfirmed} onChange={(e) => setAttachmentsConfirmed(e.target.checked)} style={{ marginTop: 3 }} />
+                        <span>I confirm that <strong>all required supporting documents and attachments have been uploaded</strong> against the respective entries. I understand that any <strong>missing or false attachment is my sole responsibility</strong> and may result in the rejection or revision of my appraisal.</span>
+                      </label>
+                    </>
+                  )}
                   <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                     <button onClick={generateSelfReport} style={smallButton("#4c1d95")}>
                       Generate Report
                     </button>
-                    <button onClick={handleSubmitAppraisal} disabled={submitting || locked || !confirmed} style={smallButton(locked || !confirmed ? "#94a3b8" : "#059669")}>
+                    <button onClick={handleSubmitAppraisal} disabled={submitting || locked || !confirmed || !attachmentsConfirmed} style={smallButton((locked || !confirmed || !attachmentsConfirmed) ? "#94a3b8" : "#059669")}>
                       {locked ? "Appraisal Locked" : submitting ? "Submitting..." : "Submit Appraisal"}
                     </button>
                   </div>

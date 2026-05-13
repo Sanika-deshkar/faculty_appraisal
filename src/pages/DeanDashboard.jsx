@@ -7,7 +7,7 @@ import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, scoreRemaining, societyRowLocked, societyRowScore, societySelectionForRow, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
 import { DEAN_TRACKS, getSchoolKey, getSchoolsByDeanTrack } from "../constants/universityHierarchy";
-import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError } from "../utils/hierarchy";
+import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel } from "../utils/hierarchy";
 import { generateStandardReport } from "../utils/fullFormReport";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
 
@@ -198,7 +198,7 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
         </div>
       ))}
       <div style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 6px", border: "1px dashed #cbd5e1", borderRadius: 4, background: "#f8fafc" }} onClick={() => !readOnly && ref.current.click()}>
-        <span style={{ fontSize: 10, color: "#64748b" }}>?? Attach</span>
+        <span style={{ fontSize: 10, color: "#64748b" }}>📎 Attach</span>
         <input ref={ref} type="file" accept="image/*,.pdf,application/pdf" style={{ display: "none" }} disabled={readOnly} onChange={(e) => handleFiles(e.target.files)} />
       </div>
     </div>
@@ -1899,6 +1899,8 @@ export default function DeanDashboard() {
       try {
         const statusData = await api.get("/appraisal/status", { params: { academic_year: info.ay } }).catch(() => null);
         const declarationRow = statusData?.declaration || null;
+        setOwnDeclaration(declarationRow);
+        setOwnReviews(statusData?.reviews || []);
 
         await Promise.all([
           loadSavedAppraisal({
@@ -2054,11 +2056,11 @@ export default function DeanDashboard() {
   ];
 
   const navItems = [
-    { id: "myAppraisal", icon: "??", label: "My Appraisal", sub: "View your self-appraisal form" },
-    { id: "hodApprovals", icon: "??", label: "HOD's Appraisal", sub: `${hodPendingCount} awaiting review`, badge: hodPendingCount },
-    { id: "directorApprovals", icon: "??", label: "Director's Appraisal", sub: `${directorPendingCount} awaiting review`, badge: directorPendingCount },
-    { id: "facultyApprovals", icon: "?????", label: "Faculty's Appraisal", sub: `${facultyPendingCount} awaiting review`, badge: facultyPendingCount },
-    { id: "guidelines", icon: "??", label: "Guidelines", sub: "Faculty appraisal guidelines AY 2025-26" },
+    { id: "myAppraisal", icon: "👤", label: "My Appraisal", sub: "View your self-appraisal form" },
+    { id: "hodApprovals", icon: "👥", label: "HOD's Appraisal", sub: `${hodPendingCount} awaiting review`, badge: hodPendingCount },
+    { id: "directorApprovals", icon: "🏢", label: "Director's Appraisal", sub: `${directorPendingCount} awaiting review`, badge: directorPendingCount },
+    { id: "facultyApprovals", icon: "🎓", label: "Faculty's Appraisal", sub: `${facultyPendingCount} awaiting review`, badge: facultyPendingCount },
+    { id: "guidelines", icon: "📋", label: "Guidelines", sub: "Faculty appraisal guidelines AY 2025-26" },
   ];
   const generateReport = () => generateStandardReport({
     info, lectures, courseFile, innovRows, innovTotal, projects, quals,
@@ -2074,10 +2076,19 @@ export default function DeanDashboard() {
     proposalScore, productScore, fdpScore, trainScore,
     partBTotal, effectivePartBMax, grandTotal, effectiveGrandMax,
     researchGuidanceScore,
+    declaration: ownDeclaration,
+    reviewChain: ownReviews.map((rev) => ({
+      label: roleLabel(rev.reviewer_role),
+      name: rev.reviewer_name || "",
+      date: rev.reviewed_at ? new Date(rev.reviewed_at).toLocaleDateString("en-IN") : "",
+    })),
   });
 
   const [submitting, setSubmitting] = useState(false);
   const [accuracyConfirmed, setAccuracyConfirmed] = useState(false);
+  const [attachmentsConfirmed, setAttachmentsConfirmed] = useState(false);
+  const [ownDeclaration, setOwnDeclaration] = useState(null);
+  const [ownReviews, setOwnReviews] = useState([]);
 
   const validateSelfAppraisalRows = () => {
     const sections = [
@@ -2210,8 +2221,8 @@ export default function DeanDashboard() {
       alert("This appraisal has already been submitted and is locked for review.");
       return;
     }
-    if (!accuracyConfirmed) {
-      alert("Please verify and confirm the accuracy declaration before submitting.");
+    if (!accuracyConfirmed || !attachmentsConfirmed) {
+      alert("Please tick both declaration checkboxes before submitting.");
       return;
     }
     if (!validateSelfAppraisalRows()) return;
@@ -3390,7 +3401,7 @@ export default function DeanDashboard() {
                   </tbody>
                 </table>
 
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 10, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
                   <input
                     type="checkbox"
                     checked={accuracyConfirmed}
@@ -3399,6 +3410,20 @@ export default function DeanDashboard() {
                     style={{ marginTop: 3 }}
                   />
                   <span>I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.</span>
+                </label>
+
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={attachmentsConfirmed}
+                    onChange={(e) => setAttachmentsConfirmed(e.target.checked)}
+                    disabled={submitting || appraisalLocked}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span>
+                    I confirm that <strong>all required supporting documents and attachments have been uploaded</strong> against the respective entries.
+                    I understand that any <strong>missing or false attachment is my sole responsibility</strong> and may result in the rejection or revision of my appraisal.
+                  </span>
                 </label>
 
                 <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
@@ -3410,10 +3435,10 @@ export default function DeanDashboard() {
                   </button>
                   <button
                     onClick={handleSubmitAppraisal}
-                    disabled={submitting || appraisalLocked || !accuracyConfirmed}
-                    style={{ padding: "10px 28px", background: appraisalLocked || !accuracyConfirmed ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: appraisalLocked || !accuracyConfirmed ? "not-allowed" : submitting ? "wait" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
+                    disabled={submitting || appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed}
+                    style={{ padding: "10px 28px", background: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "not-allowed" : submitting ? "wait" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
                   >
-                    {submitting ? "Submitting..." : "? Submit Appraisal"}
+                    {appraisalLocked ? "Submitted & Locked" : submitting ? "Submitting..." : "✔ Submit Appraisal"}
                   </button>
                 </div>
               </SC>
