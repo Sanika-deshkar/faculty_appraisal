@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ACR_DETAIL_POINTS, APP_INFO, createAcrRows } from "../constants/formConfig";
 import { FORM_SCHOOL_CODES, FORM_TYPES } from "../constants/formRouting";
 import { getSchoolKey } from "../constants/universityHierarchy";
-import { loadAppraisalDocuments, loadSavedAppraisal, saveAppraisalDraftSection, submitAppraisal } from "../services/appraisalPersistence";
+import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAppraisalDraftSection, submitAppraisal } from "../services/appraisalPersistence";
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { generateMediaCommReport } from "../utils/fullFormReport";
@@ -151,6 +151,31 @@ const PART_B_SECTIONS = [
 ];
 
 const ALL_ARRAY_KEYS = [...PART_A_SECTIONS, ...PART_B_SECTIONS].map((section) => section.key);
+const REVIEW_SCORE_FIELDS = ["hod", "director", "dean", "vc"];
+
+const preserveSavedReviewScores = (form = {}, source = {}) => {
+  const merged = { ...form };
+  ALL_ARRAY_KEYS.forEach((key) => {
+    if (!Array.isArray(form[key])) return;
+    const sourceRows = Array.isArray(source[key]) ? source[key] : [];
+    merged[key] = form[key].map((row, index) => {
+      const sourceRow = sourceRows[index] || {};
+      const next = { ...row };
+      REVIEW_SCORE_FIELDS.forEach((field) => {
+        if (String(next[field] ?? "").trim() === "" && String(sourceRow[field] ?? "").trim() !== "") {
+          next[field] = sourceRow[field];
+        }
+      });
+      return next;
+    });
+  });
+  ["innovHod", "innovDirector", "innovDean", "innovVc"].forEach((field) => {
+    if (String(merged[field] ?? "").trim() === "" && String(source[field] ?? "").trim() !== "") {
+      merged[field] = source[field];
+    }
+  });
+  return merged;
+};
 
 const scoreKeyForInnov = (role) => ({
   hod: "innovHod",
@@ -1156,6 +1181,7 @@ export default function MediaCommDashboard({ fixedRole }) {
   const [docs, setDocs] = useState({});
   const [queue, setQueue] = useState([]);
   const [reviewing, setReviewing] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(null);
   const [loadingQueue, setLoadingQueue] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -1330,6 +1356,24 @@ export default function MediaCommDashboard({ fixedRole }) {
       alert(`${roleLabel(role)} review submitted successfully.`);
     } catch (err) {
       alert(`Unable to submit review.\n\n${err.message}`);
+    }
+  };
+
+  const openSubmittedReview = async (item) => {
+    setReviewLoading(item.id);
+    try {
+      const data = await fetchSavedAppraisal({
+        facultyEmail: item.email,
+        academicYear: item.academic_year || item.academicYear || item.info?.ay || APP_INFO.DEFAULT_AY || "2025-2026",
+      });
+      const submittedForm = data?.payload?.form || data?.form || {};
+      const submittedDocs = data?.payload?.docs || data?.docs || {};
+      const mergedForm = preserveSavedReviewScores(submittedForm, item);
+      setReviewing({ ...item, ...mergedForm, docs: submittedDocs });
+    } catch (err) {
+      alert(`Unable to open submitted form.\n\n${err.message}`);
+    } finally {
+      setReviewLoading(null);
     }
   };
 
@@ -1552,12 +1596,29 @@ export default function MediaCommDashboard({ fixedRole }) {
                   <StatusBadge status={item.status} />
                 </div>
                 {(() => {
-                  const itemTotals = calculateMediaTotals(mergeForm(emptyMediaForm(), item), "score");
-                  return <SummaryBox totals={itemTotals} maxScores={itemTotals.maxScores} roleScoreLabel={`Submitted on ${item.submittedOn || "record"}`} />;
+                  const maxScores = {
+                    partA: n(item.effectivePartAMax) || PART_A_MAX,
+                    partB: n(item.effectivePartBMax) || PART_B_MAX,
+                    grand: n(item.effectiveGrandMax) || (n(item.effectivePartAMax) || PART_A_MAX) + (n(item.effectivePartBMax) || PART_B_MAX),
+                  };
+                  const itemTotals = {
+                    partA: n(item.selfPartA ?? item.partATotal),
+                    partB: n(item.selfPartB ?? item.partBTotal),
+                    total: n(item.selfTotal ?? item.grandTotal),
+                  };
+                  return <SummaryBox totals={itemTotals} maxScores={maxScores} roleScoreLabel={`Submitted on ${item.submittedOn || "record"}`} />;
                 })()}
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => setReviewing(item)} style={smallButton(item.status === "Reviewed" ? "#1e293b" : ACCENT2)}>
-                    {item.status === "Reviewed" ? "View Review" : "Review Form"}
+                  <button
+                    disabled={reviewLoading === item.id}
+                    onClick={() => openSubmittedReview(item)}
+                    style={{
+                      ...smallButton(item.status === "Reviewed" ? "#1e293b" : ACCENT2),
+                      cursor: reviewLoading === item.id ? "wait" : "pointer",
+                      opacity: reviewLoading === item.id ? 0.7 : 1,
+                    }}
+                  >
+                    {reviewLoading === item.id ? "Loading..." : item.status === "Reviewed" ? "View Review" : "Review Form"}
                   </button>
                 </div>
               </div>

@@ -2990,22 +2990,42 @@ export default function DirectorDashboard() {
                       <StatusBadge status={item.status} />
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, background: "#f8fafc", borderRadius: 8, padding: "12px 14px" }}>
-                      {[
-                        { label: "Part A", val: itemSummary.partA, max: itemSummary.partAMax, color: "#6366f1" },
-                        { label: "Part B", val: itemSummary.partB, max: itemSummary.partBMax, color: "#0ea5e9" },
-                        { label: "Docs", val: docCount, max: null, color: "#10b981" },
-                      ].map(({ label, val, max, color }) => (
-                        <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</div>
-                          <div style={{ fontSize: 15, fontWeight: 800, color, lineHeight: 1 }}>
-                            {val.toFixed ? val.toFixed(1) : val}{max && <span style={{ fontSize: 9, color: "#94a3b8" }}>/{max}</span>}
+                    {(() => {
+                      const reviewed = isDirectorReviewed(item);
+                      const dirA = n(item.directorPartA);
+                      const dirB = n(item.directorPartB);
+                      const selfA = itemSummary.partA;
+                      const selfB = itemSummary.partB;
+                      const showDirScores = reviewed && (dirA > 0 || dirB > 0);
+                      const noScoresAvailable = reviewed && dirA === 0 && dirB === 0 && selfA === 0 && selfB === 0;
+                      if (noScoresAvailable) {
+                        return (
+                          <div style={{ background: "#f0fdf4", borderRadius: 8, padding: "14px", textAlign: "center" }}>
+                            <div style={{ fontSize: 18, color: "#10b981" }}>✓</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: "#059669", marginTop: 2 }}>Director Reviewed</div>
+                            <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>Click "View Review" to see scores</div>
                           </div>
-                          {max && <ScoreBar score={val} max={max} color={color} />}
-                          {!max && <div style={{ fontSize: 9, color: "#94a3b8" }}>files uploaded</div>}
+                        );
+                      }
+                      return (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, background: "#f8fafc", borderRadius: 8, padding: "12px 14px" }}>
+                          {[
+                            { label: showDirScores ? "Dir Part A" : "Part A", val: showDirScores ? dirA : selfA, max: itemSummary.partAMax, color: "#6366f1" },
+                            { label: showDirScores ? "Dir Part B" : "Part B", val: showDirScores ? dirB : selfB, max: itemSummary.partBMax, color: "#0ea5e9" },
+                            { label: "Docs", val: docCount, max: null, color: "#10b981" },
+                          ].map(({ label, val, max, color }) => (
+                            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</div>
+                              <div style={{ fontSize: 15, fontWeight: 800, color, lineHeight: 1 }}>
+                                {val.toFixed ? val.toFixed(1) : val}{max && <span style={{ fontSize: 9, color: "#94a3b8" }}>/{max}</span>}
+                              </div>
+                              {max && <ScoreBar score={val} max={max} color={color} />}
+                              {!max && <div style={{ fontSize: 9, color: "#94a3b8" }}>files uploaded</div>}
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })()}
 
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 12 }}>
                       <div style={{ fontSize: 10, color: "#94a3b8" }}>Submitted: {item.submittedOn}</div>
