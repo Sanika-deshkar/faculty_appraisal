@@ -40,8 +40,8 @@ const ACCENT = "#9d174d";
 const ACCENT2 = "#4338ca";
 const VERIFY_TEXT = "I have verified all the details and confirm that the information provided is correct. I am responsible for the accuracy of this data.";
 const PART_A_MAX = 200;
-const PART_B_MAX = 365;
-const GRAND_MAX = 565;
+const PART_B_MAX = 375;
+const GRAND_MAX = 575;
 const SECTION_OPTIONS = [
   { value: "partA", label: "Part-A Section" },
   { value: "partB", label: "Part-B Section" },
@@ -161,8 +161,8 @@ const PART_B_SECTIONS = [
   { key: "awards", title: "B5(b). Research Awards", max: 10, doc: "awd", fields: [["title", "Title"], ["date", "Date"], ["agency", "Agency"], ["level", "Level"]] },
   { key: "confs", title: "B6. Conferences / Seminars / Workshops", max: 30, doc: "conf", fields: [["title", "Title"], ["type", "Type"], ["org", "Organization"], ["level", "Level"]] },
   { key: "proposals", title: "B7. Research Proposals", max: 10, doc: "prop", fields: [["title", "Title"], ["duration", "Duration"], ["agency", "Agency"], ["amount", "Amount"]] },
-  { key: "fdps", title: "B8(a). FDP / Self Development", max: 5, doc: "fdp", rowMax: SCORE_LIMITS.fdpRow, fields: [["program", "Program"], ["duration", "Duration"], ["org", "Organization"]] },
-  { key: "training", title: "B8(b). Industrial Training", max: 5, doc: "train", rowMax: SCORE_LIMITS.fdpRow, fields: [["company", "Company"], ["duration", "Duration"], ["nature", "Nature"]] },
+  { key: "fdps", title: "B8(a). FDP / Self Development", max: 10, doc: "fdp", rowMax: SCORE_LIMITS.fdpRow, fields: [["program", "Program"], ["duration", "Duration"], ["org", "Organization"]] },
+  { key: "training", title: "B8(b). Industrial Training", max: 10, doc: "train", rowMax: SCORE_LIMITS.fdpRow, fields: [["company", "Company"], ["duration", "Duration"], ["nature", "Nature"]] },
 ];
 
 const ALL_ARRAY_KEYS = [...PART_A_SECTIONS, ...PART_B_SECTIONS].map((section) => section.key);
@@ -677,8 +677,8 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginTop: 8 }}>
           <tbody>
             <tr style={{ background: "#f3e8ff" }}>
-              <td style={{ ...tdCenter, fontWeight: "bold" }} colSpan={6}>Total B8 Score (Max 10)</td>
-              <td style={{ ...tdCenter, fontWeight: "bold" }}>{(scoreSectionRows("fdps", form.fdps || [], 5) + scoreSectionRows("training", form.training || [], 5)).toFixed(1)}</td>
+              <td style={{ ...tdCenter, fontWeight: "bold" }} colSpan={6}>Total B8 Score (Max 20)</td>
+              <td style={{ ...tdCenter, fontWeight: "bold" }}>{Math.min(scoreSectionRows("fdps", form.fdps || [], 10) + scoreSectionRows("training", form.training || [], 10), 20).toFixed(1)}</td>
             </tr>
           </tbody>
         </table>
