@@ -79,6 +79,62 @@ const renderSection = ({ section, rows = [], docs = {}, scoreRoles = ["score"], 
     </tbody>
   </table>`;
 
+const buildSignaturePage = ({ facultyName = "", submittedAt = "", reviewChain = [] }) => {
+  const submissionDate = submittedAt
+    ? safeHtml(new Date(submittedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }))
+    : "&nbsp;";
+  const reviewerRows = reviewChain.length
+    ? reviewChain.map((r) => `
+        <tr>
+          <td style="width:30%"><strong>${safeHtml(r.label || r.role)}</strong></td>
+          <td style="width:40%;border-bottom:1px solid #000">${r.name ? safeHtml(r.name) : "&nbsp;"}</td>
+          <td style="width:15%;border-bottom:1px solid #000">${r.date ? safeHtml(r.date) : "&nbsp;"}</td>
+          <td style="width:15%;border-bottom:1px solid #000">&nbsp;</td>
+        </tr>`).join("")
+    : "";
+  return `
+  <h3 style="text-align:center;font-size:14px;background:#d9d9d9;padding:6px;margin-top:16px">DECLARATION BY FACULTY</h3>
+  <table style="border:none;margin-bottom:14px">
+    <tr>
+      <td style="border:none;vertical-align:top;width:32px;font-size:18px">&#10003;</td>
+      <td style="border:none;line-height:1.7;font-size:11px">
+        I, <strong>${safeHtml(facultyName) || "________________________"}</strong>, hereby declare that all the
+        information furnished in this Self-Appraisal Report is true, complete, and correct to the best of my
+        knowledge and belief. I understand that in the event of any information being found false or incorrect,
+        I shall be solely responsible for the consequences thereof and shall be liable for any disciplinary
+        action as deemed fit by the University authorities.
+      </td>
+    </tr>
+  </table>
+  <table style="border:none;margin-bottom:20px">
+    <tr>
+      <td style="border:none;width:50%">
+        <div style="border-bottom:1px solid #000;min-height:36px;margin-bottom:4px">&nbsp;</div>
+        <div><strong>Signature of Faculty</strong></div>
+        <div style="margin-top:6px"><strong>Name:</strong> ${safeHtml(facultyName) || "&nbsp;"}</div>
+        <div style="margin-top:4px"><strong>Date of Submission:</strong> ${submissionDate}</div>
+      </td>
+      <td style="border:none;width:50%">&nbsp;</td>
+    </tr>
+  </table>
+  ${reviewChain.length ? `
+  <h3 style="text-align:center;font-size:13px;background:#d9d9d9;padding:4px">REVIEWERS' ACKNOWLEDGEMENT</h3>
+  <p style="font-size:10px;margin:4px 0 10px">The following authorities acknowledge that they have reviewed the details submitted by the faculty and confirm the accuracy of scores assigned.</p>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30%">Reviewer Role</th>
+        <th style="width:40%">Name &amp; Signature</th>
+        <th style="width:15%">Date</th>
+        <th style="width:15%">Stamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${reviewerRows}
+    </tbody>
+  </table>` : ""}`;
+};
+
 const isSectionReportable = (form, section) => {
   const applicability = form?.sectionApplicability || {};
   if (applicability[section.key] === "notApplicable") return false;
@@ -136,6 +192,8 @@ export const openFullFormReport = async ({
   remarks = "",
   generatedBy = "",
   showTotal = false,
+  declaration = null,
+  reviewChain = [],
 }) => {
   const win = window.open("", "_blank", "width=1000,height=800");
   if (!win) { alert("Please allow popups to generate the report."); return; }
@@ -213,6 +271,11 @@ export const openFullFormReport = async ({
     </tbody>
   </table>
   ${remarksLabel ? `<h3>${safeHtml(remarksLabel)}</h3><div class="remarks">${safeHtml(remarks || "No remarks recorded.")}</div>` : ""}
+  ${buildSignaturePage({
+    facultyName: form.info?.name || form.name || "",
+    submittedAt: declaration?.submitted_at || "",
+    reviewChain,
+  })}
 </body>
 </html>`;
 
@@ -232,6 +295,8 @@ export const generateMediaCommReport = async ({
   maxScores = {},
   generatedBy = "",
   detailedSummaryRows = null,
+  declaration = null,
+  reviewChain = [],
 }) => {
   const win = window.open("", "_blank", "width=1000,height=800");
   if (!win) { alert("Please allow popups to generate the report."); return; }
@@ -319,6 +384,11 @@ export const generateMediaCommReport = async ({
     <tr><td>Part B</td><td class="c">${n(totals.partB).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partB || ""))}</td></tr>
     <tr class="tr"><td>Grand Total</td><td class="c">${n(totals.total).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.grand || ""))}</td></tr>
   </table>`}
+  ${buildSignaturePage({
+    facultyName: info.name || "",
+    submittedAt: declaration?.submitted_at || "",
+    reviewChain,
+  })}
 </body>
 </html>`;
   win.document.write(html);
@@ -340,6 +410,8 @@ export const generateStandardReport = async ({
   proposalScore, productScore, fdpScore, trainScore,
   partBTotal, effectivePartBMax, grandTotal, effectiveGrandMax,
   researchGuidanceScore: rgs,
+  declaration = null,
+  reviewChain = [],
 }) => {
   const n = (v) => parseFloat(v) || 0;
   const win = window.open('', '_blank');
@@ -513,6 +585,11 @@ export const generateStandardReport = async ({
     <tr class="tr"><td colspan="2" class="c b">Part B Total</td><td class="c b">${effectivePartBMax}</td><td class="c b">${partBTotal.toFixed(1)}</td></tr>
     <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${effectiveGrandMax}</td><td class="c">${grandTotal.toFixed(1)}</td></tr>
   </table>
+  ${buildSignaturePage({
+    facultyName: info.name || "",
+    submittedAt: declaration?.submitted_at || "",
+    reviewChain,
+  })}
   </body></html>`;
   win.document.write(html);
   win.document.close();
