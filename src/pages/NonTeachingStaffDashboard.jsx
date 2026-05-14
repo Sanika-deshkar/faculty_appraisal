@@ -620,6 +620,10 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
         <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#94a3b8", lineHeight: 1.6 }}>
           {"Non-Teaching Staff -> Reporting Officer -> Registrar -> VC"}
         </div>
+        <div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
+          <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
+          <a href="mailto:appraisal@dypiu.ac.in" style={{ color: "#60a5fa", fontWeight: 600, fontSize: 11, wordBreak: "break-all", textDecoration: "none" }}>appraisal@dypiu.ac.in</a>
+        </div>
         <div style={S.sideActions}>
           <button type="button" onClick={() => setShowLogoutModal(true)} style={{ ...S.sideButton, color: "#f87171" }}>Logout</button>
         </div>
@@ -1024,6 +1028,10 @@ export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, acce
           )}
         </div>
 
+        <div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
+          <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
+          <a href="mailto:appraisal@dypiu.ac.in" style={{ color: "#60a5fa", fontWeight: 600, fontSize: 11, wordBreak: "break-all", textDecoration: "none" }}>appraisal@dypiu.ac.in</a>
+        </div>
         <div style={S.sideActions}>
           <button type="button" onClick={() => setShowLogoutModal(true)} style={{ ...S.sideButton, color: "#f87171" }}>Logout</button>
         </div>
