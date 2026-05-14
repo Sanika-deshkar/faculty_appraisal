@@ -61,6 +61,10 @@ export const api = {
   delete: (url, config) => apiClient.delete(url, config).then((response) => response.data),
 };
 
+// Returns an AbortController whose signal can be passed as { signal } in axios config.
+// Call controller.abort() in the useEffect cleanup to cancel in-flight requests.
+export const makeAbortController = () => new AbortController();
+
 export const createFormData = (fields = {}, file) => {
   const formData = new FormData();
 

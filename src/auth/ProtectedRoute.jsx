@@ -8,7 +8,5 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  sessionStorage.setItem("role", role);
   return children;
 }
-

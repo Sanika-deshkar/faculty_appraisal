@@ -1,16 +1,26 @@
-import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ResetPassword from "./pages/ResetPassword";
-import FacultyProfile from "./pages/FacultyProfile";
-import EditProfile from "./pages/EditProfile";
+import { lazy, Suspense, useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import ProtectedRoute from "./auth/ProtectedRoute";
-import RoleDashboard from "./pages/RoleDashboard";
-import { useNavigate } from "react-router-dom";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { normalizeRole, storeUserSession } from "./auth/session";
 import { APP_INFO } from "./constants/formConfig";
 import { getMe } from "./services/authService";
+
+const Login        = lazy(() => import("./pages/Login"));
+const Signup       = lazy(() => import("./pages/Signup"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const FacultyProfile = lazy(() => import("./pages/FacultyProfile"));
+const EditProfile  = lazy(() => import("./pages/EditProfile"));
+const RoleDashboard = lazy(() => import("./pages/RoleDashboard"));
+
+// ─── Shared loading screen ────────────────────────────────────────────────────
+function PageLoader({ message = "Loading…" }) {
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", color: "#64748b", fontSize: 14 }} className="fa-fade-in">
+      {message}
+    </div>
+  );
+}
 
 // ─── Profile Loader ───────────────────────────────────────────────────────────
 function ProfileLoader() {
@@ -57,11 +67,7 @@ function ProfileLoader() {
   }
 
   if (!user) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", color: "#64748b", fontSize: 14 }} className="fa-fade-in">
-        Loading profile…
-      </div>
-    );
+    return <PageLoader message="Loading profile…" />;
   }
 
   return (
@@ -76,51 +82,54 @@ function ProfileLoader() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <ProfileLoader />
-            </ProtectedRoute>
-          }
-        />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfileLoader />
+                </ProtectedRoute>
+              }
+            />
 
-        <Route
-          path="/edit-profile"
-          element={
-            <ProtectedRoute>
-              <EditProfile />
-            </ProtectedRoute>
-          }
-        />
+            <Route
+              path="/edit-profile"
+              element={
+                <ProtectedRoute>
+                  <EditProfile />
+                </ProtectedRoute>
+              }
+            />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <RoleDashboard />
-            </ProtectedRoute>
-          }
-        />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <RoleDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-        <Route path="/hod-dashboard" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dean-dashboard" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/director-dashboard" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/vc-dashboard" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/hoddashboard" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/deandashboard" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/directordashboard" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/vcdashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/hod-dashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dean-dashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/director-dashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/vc-dashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/hoddashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/deandashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/directordashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/vcdashboard" element={<Navigate to="/dashboard" replace />} />
 
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
+            <Route path="/" element={<Navigate to="/login" />} />
+            <Route path="*" element={<Navigate to="/login" />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }
-
