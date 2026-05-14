@@ -1214,8 +1214,8 @@ export default function HODDashboard() {
   // -- HOD's own appraisal form state --
   const [info, setInfo] = useState({
     name: sessionStorage.getItem("name") || "",
-    qual: "",
-    desig: sessionStorage.getItem("role") === "faculty" ? "Assistant Professor" : "",
+    qual: sessionStorage.getItem("qualification") || "",
+    desig: sessionStorage.getItem("designation") || "",
     school: sessionStorage.getItem("school") || sessionStorage.getItem("department") || "",
     expDyp: "",
     expPrev: "",

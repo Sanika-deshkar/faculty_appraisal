@@ -499,7 +499,7 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
       [section.key]: (prev[section.key] || []).map((row, rowIndex) => {
         if (rowIndex !== index) return row;
         const rowMax = section.rowMax ? (typeof section.rowMax === "function" ? section.rowMax(row) : section.rowMax) : section.max;
-        const nextValue = key === "date" ? maskDateDDMMYYYY(value) : key === "score" ? clampScore(value, rowMax) : value;
+        const nextValue = key === "date" ? maskDateDDMMYYYY(value) : key === "score" ? (value === "" ? "" : clampScore(value, rowMax)) : value;
         const nextRow = { ...row, [key]: nextValue };
         if (section.key === "society" && key === "participated") return { ...nextRow, score: nextValue === "No" || !nextValue ? "0" : row.score };
         if (section.key === "research" && ["degree", "name", "thesis"].includes(key)) return { ...nextRow, score: researchGuidanceScore(nextRow) ? String(researchGuidanceScore(nextRow)) : "" };
