@@ -1237,8 +1237,8 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
             <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>{reviewLocked ? "Close" : "Cancel"}</button>
             {!reviewLocked && (
             <button onClick={() => onSubmit(faculty.id, { partA: dirPartA, partB: dirPartB, total: dirTotal }, dirRemarks, buildDirectorSectionScores(faculty, dirData), reviewConfirmed)}
-              disabled={!reviewConfirmed}
-              style={{ padding: "10px 28px", background: reviewConfirmed ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
+              disabled={!reviewConfirmed || !dirRemarks.trim()}
+              style={{ padding: "10px 28px", background: (reviewConfirmed && dirRemarks.trim()) ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: (reviewConfirmed && dirRemarks.trim()) ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
               ✔ Submit Director Review
             </button>
             )}
@@ -1562,7 +1562,7 @@ export default function DirectorDashboard() {
   const navItems = [
     { id: "myAppraisal", icon: "👤", label: "My Appraisal", sub: "View your self-appraisal form" },
     { id: "facultyApprovals", icon: "🎓", label: "Faculty's Appraisal", sub: `${facultyPendingCount} awaiting review`, badge: facultyPendingCount },
-    { id: "hodApprovals", icon: "👥", label: "HOD's Appraisal", sub: `${hodPendingCount} awaiting review`, badge: hodPendingCount },
+    ...(hasHOD ? [{ id: "hodApprovals", icon: "👥", label: "HOD's Appraisal", sub: `${hodPendingCount} awaiting review`, badge: hodPendingCount }] : []),
     { id: "guidelines", icon: "📋", label: "Guidelines", sub: "Faculty appraisal guidelines AY 2025-26" },
   ];
   const [submitting, setSubmitting] = useState(false);
@@ -1787,6 +1787,10 @@ export default function DirectorDashboard() {
       alert("Please verify and confirm the accuracy declaration before submitting the review.");
       return;
     }
+    if (!remarks?.trim()) {
+      alert("Remarks are mandatory. Please enter your remarks before submitting the review.");
+      return;
+    }
     const sourceList = type === "hod" ? hodList : facultyList;
     const item = sourceList.find((entry) => entry.id === id);
     if (!item) return;
@@ -1892,6 +1896,10 @@ export default function DirectorDashboard() {
             <div style={{ color: "#475569", fontSize: 9 }}>Director · {sessionStorage.getItem("department")?.split(" ")[0] || ""}</div>
           </div>
         </button>
+        <div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
+          <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
+          <a href="mailto:appraisal@dypiu.ac.in" style={{ color: "#60a5fa", fontWeight: 600, fontSize: 11, wordBreak: "break-all", textDecoration: "none" }}>appraisal@dypiu.ac.in</a>
+        </div>
         <button
           onClick={() => setShowLogoutModal(true)}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "inherit" }}
