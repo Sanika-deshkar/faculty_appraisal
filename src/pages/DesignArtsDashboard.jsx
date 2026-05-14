@@ -205,8 +205,11 @@ const calculateDesignArtsTotals = (form, scoreKey = "score") => {
     rowSum("deptActs", 20) + rowSum("uniActs", 30) + rowSum("society", 10) + rowSum("industry", 5) + rowSum("acr", 25),
     maxScores.partA,
   );
+  const b8Score = clampScore(rowSum("fdps", 20) + rowSum("training", 20), 20);
   const partB = clampScore(
-    PART_B_SECTIONS.reduce((total, section) => total + rowSum(section.key, section.max), 0),
+    PART_B_SECTIONS
+      .filter((s) => s.key !== "fdps" && s.key !== "training")
+      .reduce((total, section) => total + rowSum(section.key, section.max), 0) + b8Score,
     maxScores.partB,
   );
   return { partA, partB, total: clampScore(partA + partB, maxScores.grand), maxScores };
@@ -430,7 +433,7 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
   const earned = notApplicable ? 0 : (section.key === "lectures" || section.key === "courseFile")
     ? averageSectionScore(rows, section.max)
     : scoreSectionRows(section.key, rows, section.max);
-  const hideIndividualB8Summary = mode === "self" && (section.key === "fdps" || section.key === "training");
+  const hideIndividualB8Summary = section.key === "fdps" || section.key === "training";
   const totalLabel = ["lectures", "courseFile", "feedback"].includes(section.key)
     ? `Average Score (Max ${section.max})`
     : `Total Score (Max ${section.max})`;
@@ -674,12 +677,28 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
           <button type="button" onClick={deleteRow} style={smallButton("#ef4444")}>Delete Last</button>
         </div>
       )}
-      {mode === "self" && section.key === "training" && (
+      {section.key === "training" && (
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, marginTop: 8 }}>
           <tbody>
             <tr style={{ background: "#f3e8ff" }}>
-              <td style={{ ...tdCenter, fontWeight: "bold" }} colSpan={6}>Total B8 Score (Max 20)</td>
-              <td style={{ ...tdCenter, fontWeight: "bold" }}>{Math.min(scoreSectionRows("fdps", form.fdps || [], 20) + scoreSectionRows("training", form.training || [], 20), 20).toFixed(1)}</td>
+              <td style={{ ...tdCenter, fontWeight: "bold" }} colSpan={section.fields.length + 2}>Total B8 Score (Max 20)</td>
+              <td style={{ ...tdCenter, fontWeight: "bold" }}>
+                {clampScore(scoreSectionRows("fdps", form.fdps || [], 20) + scoreSectionRows("training", form.training || [], 20), 20).toFixed(1)}
+              </td>
+              {mode === "review" && previousRoles.map((role) => (
+                <td key={role} style={{ ...tdCenter, fontWeight: "bold" }}>
+                  {clampScore(scoreSectionRows("fdps", form.fdps || [], 20, role) + scoreSectionRows("training", form.training || [], 20, role), 20).toFixed(1)}
+                </td>
+              ))}
+              {mode === "review" && (
+                <td style={{ ...tdCenter, fontWeight: "bold" }}>
+                  {clampScore(
+                    scoreSectionRows("fdps", reviewData?.fdps || form.fdps || [], 20, reviewerRole) +
+                    scoreSectionRows("training", reviewData?.training || form.training || [], 20, reviewerRole),
+                    20
+                  ).toFixed(1)}
+                </td>
+              )}
             </tr>
           </tbody>
         </table>

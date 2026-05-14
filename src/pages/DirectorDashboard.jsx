@@ -986,6 +986,27 @@ function FacultyReviewForm({ faculty, hodData, setHodData, dirData, setDirData, 
           </tbody>
         </table>
       </SC>
+      <table style={{ ...T, marginTop: 4 }}>
+        <tbody>
+          <tr style={{ background: "#f3e8ff" }}>
+            <td style={{ ...TDC, fontWeight: "bold" }} colSpan={5}>Total B8 Score (Max 10)</td>
+            <td style={{ ...TDS, fontWeight: "bold" }}>
+              {clampScore(
+                (fdps || []).reduce((s, r) => s + clampScore(parseFloat(r.score) || 0, SCORE_LIMITS.fdpRow), 0) +
+                (training || []).reduce((s, r) => s + clampScore(parseFloat(r.score) || 0, SCORE_LIMITS.fdpRow), 0),
+                10
+              ).toFixed(1)}
+            </td>
+            <td style={{ ...TDS_DIR, fontWeight: "bold" }}>
+              {clampScore(
+                (fdps || []).reduce((s, r, i) => s + clampScore(parseFloat(getDir("fdps", i, "dir")) || 0, SCORE_LIMITS.fdpRow), 0) +
+                (training || []).reduce((s, r, i) => s + clampScore(parseFloat(getDir("training", i, "dir")) || 0, SCORE_LIMITS.fdpRow), 0),
+                10
+              ).toFixed(1)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
       </>)}
     </div>
   );
@@ -1055,9 +1076,8 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
     const conf = sumReviewRows("confs", "hod", 30);
     const prop = sumReviewRows("proposals", "hod", 10);
     const prod = sumReviewRows("products", "hod", 10);
-    const fdp = sumReviewRows("fdps", "hod", 10, SCORE_LIMITS.fdpRow);
-    const train = sumReviewRows("training", "hod", 10, SCORE_LIMITS.fdpRow);
-    const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 375);
+    const b8 = clampScore(sumReviewRows("fdps", "hod", 10, SCORE_LIMITS.fdpRow) + sumReviewRows("training", "hod", 10, SCORE_LIMITS.fdpRow), 10);
+    const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + b8, 375);
 
     return { partA, partB, total: clampScore(partA + partB, 575) };
   };
@@ -1116,9 +1136,8 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
     const conf = sumReviewRows("confs", "dir", 30);
     const prop = sumReviewRows("proposals", "dir", 10);
     const prod = sumReviewRows("products", "dir", 10);
-    const fdp = sumReviewRows("fdps", "dir", 10, SCORE_LIMITS.fdpRow);
-    const train = sumReviewRows("training", "dir", 10, SCORE_LIMITS.fdpRow);
-    const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 375);
+    const b8 = clampScore(sumReviewRows("fdps", "dir", 10, SCORE_LIMITS.fdpRow) + sumReviewRows("training", "dir", 10, SCORE_LIMITS.fdpRow), 10);
+    const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + b8, 375);
 
     return { partA, partB, total: clampScore(partA + partB, 575) };
   };
@@ -1593,8 +1612,8 @@ export default function DirectorDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
     ];
     sections.push({ label: "A(iii). Innovative Teaching Methods", rows: visibleInnovRows, fields: ["method", "details", "score"], docKey: (_row, index) => index === 0 ? "innov" : `innov-${index}`, rowMax: SCORE_LIMITS.innovativeRow, maxScore: 10 });
     const errors = validateCompleteRows(sections, docs);
@@ -1638,8 +1657,8 @@ export default function DirectorDashboard() {
       { label: "B6. Conferences", rows: confs, fields: ["title", "type", "org", "level", "score"] },
       { label: "B7(a). Proposals", rows: proposals, fields: ["title", "duration", "agency", "amount", "score"] },
       { label: "B7(b). Products", rows: products, fields: ["details", "usage", "score"] },
-      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
-      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 5 },
+      { label: "B8(a). FDP / Workshops", rows: fdps, fields: ["program", "duration", "org", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
+      { label: "B8(b). Industrial Training", rows: training, fields: ["company", "duration", "nature", "score"], rowMax: SCORE_LIMITS.fdpRow, maxScore: 10 },
     ];
     if (section === "partA") partASections.push({ label: "A(iii). Innovative Teaching Methods", rows: visibleInnovRows, fields: ["method", "details", "score"], docKey: (_row, index) => index === 0 ? "innov" : `innov-${index}`, rowMax: SCORE_LIMITS.innovativeRow, maxScore: 10 });
     const errors = validateCompleteRows(section === "partA" ? partASections : partBSections, docs);
