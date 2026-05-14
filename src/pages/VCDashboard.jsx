@@ -81,11 +81,11 @@ function RoleBadge({ role }) {
   );
 }
 function RO({ val, center }) {
-  return <span style={{ fontSize: 11, fontFamily: "Georgia, serif", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{val || <span style={{ color: "#cbd5e1" }}>—</span>}</span>;
+  return <span style={{ fontSize: 11, fontFamily: "inherit", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{val || <span style={{ color: "#cbd5e1" }}>—</span>}</span>;
 }
 function ScoreValue({ val, center }) {
   const empty = val === undefined || val === null || val === "";
-  return <span style={{ fontSize: 11, fontFamily: "Georgia, serif", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{empty ? <span style={{ color: "#cbd5e1" }}>-</span> : val}</span>;
+  return <span style={{ fontSize: 11, fontFamily: "inherit", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{empty ? <span style={{ color: "#cbd5e1" }}>-</span> : val}</span>;
 }
 function VCInput({ val, onChange, max, disabled = false }) {
   return (
@@ -93,7 +93,7 @@ function VCInput({ val, onChange, max, disabled = false }) {
       max={max}
       disabled={disabled}
       onChange={e => onChange(e.target.value === "" || max === undefined ? e.target.value : String(clampScore(e.target.value, max)))}
-      style={{ width: 58, textAlign: "center", border: "1.5px solid #7c3aed", borderRadius: 5, padding: "3px 5px", fontSize: 11, fontFamily: "Georgia, serif", outline: "none", background: disabled ? "#f1f5f9" : "#fdf4ff", cursor: disabled ? "not-allowed" : "text" }}
+      style={{ width: 58, textAlign: "center", border: "1.5px solid #7c3aed", borderRadius: 5, padding: "3px 5px", fontSize: 11, fontFamily: "inherit", outline: "none", background: disabled ? "#f1f5f9" : "#fdf4ff", cursor: disabled ? "not-allowed" : "text" }}
     />
   );
 }
@@ -114,7 +114,7 @@ function ViewDocsCell({ docKey, docs }) {
 }
 function SC({ title, subtitle, accent = "#7c3aed", children }) {
   return (
-    <div style={{ background: "#fff", borderRadius: 9, boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 14, overflow: "hidden", border: "1px solid #e2e8f0", borderTop: `3px solid ${accent}` }}>
+    <div className="fa-section-card" style={{ background: "#fff", borderRadius: 10, boxShadow: "0 1px 4px rgba(15,23,42,0.07)", marginBottom: 14, overflow: "hidden", border: "1px solid #e8ecf0", borderTop: `3px solid ${accent}` }}>
       <div style={{ padding: "10px 15px", borderBottom: "1px solid #f1f5f9" }}>
         <div style={{ fontWeight: 700, fontSize: 13, color: accent }}>{title}</div>
         {subtitle && <div style={{ color: "#64748b", fontSize: 11, marginTop: 2 }}>{subtitle}</div>}
@@ -126,7 +126,7 @@ function SC({ title, subtitle, accent = "#7c3aed", children }) {
 
 // ─── Table style constants ─────────────────────────────────────────────────────
 const T     = { width: "100%", borderCollapse: "collapse", fontSize: 11 };
-const TH      = { border: "1px solid #cbd5e1", padding: "5px 7px", background: "#0f172a",  color: "#94a3b8",  fontWeight: 700, textAlign: "center", fontSize: 10 };
+const TH      = { border: "1px solid #334155", padding: "5px 7px", background: "#1e293b",  color: "#e2e8f0",  fontWeight: 700, textAlign: "center", fontSize: 10, letterSpacing: "0.3px" };
 const TH_HOD  = { ...TH, background: "#312e81", color: "#c7d2fe" };
 const TH_DIR  = { ...TH, background: "#0c4a6e", color: "#bae6fd" };
 const TH_DEAN = { ...TH, background: "#065f46", color: "#bbf7d0" };
@@ -777,7 +777,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
     <div style={{ display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <div style={{ background: "#0f172a", padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, marginBottom: 16, borderRadius: 10 }}>
-        <button onClick={onBack} style={{ background: "#1e293b", border: "none", color: "#94a3b8", cursor: "pointer", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontFamily: "Georgia, serif" }}>← Back</button>
+        <button onClick={onBack} style={{ background: "#1e293b", border: "none", color: "#94a3b8", cursor: "pointer", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontFamily: "inherit" }}>← Back</button>
         <Avatar initials={person.avatar} color={person.avatarColor || "#7c3aed"} size={40} />
         <div style={{ flex: 1 }}>
           <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 15 }}>{person.name}</div>
@@ -814,7 +814,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
               window.scrollTo({ top: 0, left: 0, behavior: "auto" });
             });
           }}
-            style={{ padding: "7px 18px", border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "Georgia, serif", fontSize: 12, fontWeight: 700, background: sectionView === id ? "#4c1d95" : "#e2e8f0", color: sectionView === id ? "#ddd6fe" : "#475569" }}>
+            style={{ padding: "7px 18px", border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: sectionView === id ? "#4c1d95" : "#e2e8f0", color: sectionView === id ? "#ddd6fe" : "#475569" }}>
             {label}
           </button>
         ))}
@@ -888,7 +888,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
           <label style={{ fontWeight: 700, fontSize: 13, color: "#334155", display: "block", marginBottom: 6 }}>VC Final Observations &amp; Decisions</label>
           <textarea value={remarks} onChange={e => setRemarks(e.target.value)} rows={5} readOnly={reviewLocked}
             placeholder="Final executive decision, appraisal score confirmation, and future recommendations..."
-            style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 7, padding: "10px 12px", fontSize: 13, fontFamily: "Georgia, serif", resize: "vertical", boxSizing: "border-box", marginBottom: 18, background: reviewLocked ? "#f8fafc" : "#fff" }} />
+            style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: 7, padding: "10px 12px", fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box", marginBottom: 18, background: reviewLocked ? "#f8fafc" : "#fff" }} />
 
           {!reviewLocked && (
             <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: "pointer" }}>
@@ -903,15 +903,15 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
           )}
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-            <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "Georgia, serif" }}>{reviewLocked ? "Close" : "Cancel"}</button>
+            <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>{reviewLocked ? "Close" : "Cancel"}</button>
             <button onClick={generateVcReport} disabled={!vcReviewCompleted}
-              style={{ padding: "10px 24px", background: vcReviewCompleted ? "#e2e8f0" : "#f1f5f9", color: vcReviewCompleted ? "#475569" : "#94a3b8", border: "none", borderRadius: 7, cursor: vcReviewCompleted ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
+              style={{ padding: "10px 24px", background: vcReviewCompleted ? "#e2e8f0" : "#f1f5f9", color: vcReviewCompleted ? "#475569" : "#94a3b8", border: "none", borderRadius: 7, cursor: vcReviewCompleted ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
               Generate Report
             </button>
             {!reviewLocked && (
             <button onClick={() => onSubmit(person.id, { partA, partB, total }, remarks, personMode, buildVcSectionScores(person, vcData), reviewConfirmed)}
               disabled={!reviewConfirmed}
-              style={{ padding: "10px 28px", background: reviewConfirmed ? "#4c1d95" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
+              style={{ padding: "10px 28px", background: reviewConfirmed ? "#4c1d95" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
               🎓 Confirm &amp; Sign Appraisal
             </button>
             )}
@@ -998,7 +998,7 @@ function PersonCard({ person, role, onReview, schoolColor, loading = false }) {
         <div style={{ fontSize: 9, color: "#94a3b8" }}>Submitted: {person.submittedOn}</div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => onReview(person, personMode)} disabled={loading}
-            style={{ fontSize: 11, padding: "6px 14px", background: loading ? "#94a3b8" : isVcReviewed(person) ? "#1e293b" : "#4c1d95", color: isVcReviewed(person) ? "#e2e8f0" : "#ede9fe", border: "none", borderRadius: 6, cursor: loading ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif" }}>
+            style={{ fontSize: 11, padding: "6px 14px", background: loading ? "#94a3b8" : isVcReviewed(person) ? "#1e293b" : "#4c1d95", color: isVcReviewed(person) ? "#e2e8f0" : "#ede9fe", border: "none", borderRadius: 6, cursor: loading ? "wait" : "pointer", fontWeight: 700, fontFamily: "inherit" }}>
             {loading ? "Opening..." : isVcReviewed(person) ? "View Review" : "Review"}
           </button>
         </div>
@@ -1114,7 +1114,7 @@ function NonTeachingCard({ item, onReview }) {
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 10 }}>
         <div style={{ fontSize: 9, color: "#94a3b8" }}>Submitted: {item.submittedOn || "-"}</div>
-        <button type="button" onClick={() => onReview(item)} style={{ fontSize: 11, padding: "6px 14px", background: reviewed ? "#1e293b" : "#1d4ed8", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 800, fontFamily: "Georgia, serif" }}>
+        <button type="button" onClick={() => onReview(item)} style={{ fontSize: 11, padding: "6px 14px", background: reviewed ? "#1e293b" : "#1d4ed8", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>
           {reviewed ? "View Review" : "Review"}
         </button>
       </div>
@@ -1370,10 +1370,10 @@ export default function VCDashboard() {
     nonTeachingList.filter(isNonTeachingReviewComplete).length;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "Georgia, serif", background: "#f0ede8", color: "#1e293b" }}>
+    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "inherit", background: "#f0ede8", color: "#1e293b" }}>
 
       {/* ── Sidebar ── */}
-      <aside style={{ width: 248, height: "100vh", minHeight: "100vh", boxSizing: "border-box", overflow: "hidden", background: "#0f172a", display: "flex", flexDirection: "column", padding: "20px 16px", gap: 12, position: "sticky", top: 0, alignSelf: "flex-start", flexShrink: 0 }}>
+      <aside style={{ width: 248, height: "100vh", minHeight: "100vh", boxSizing: "border-box", overflow: "hidden", background: "#0f172a", display: "flex", flexDirection: "column", padding: "20px 16px", gap: 12, position: "sticky", top: 0, alignSelf: "flex-start", flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.06)", boxShadow: "2px 0 16px rgba(15,23,42,0.14)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <div style={{ width: 38, height: 38, borderRadius: 9, background: "linear-gradient(135deg,#7c3aed,#a78bfa)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 13 }}>FA</div>
           <div>
@@ -1388,10 +1388,10 @@ export default function VCDashboard() {
           <div style={{ color: "#6d28d9", fontSize: 9, marginTop: 2 }}>AY {APP_INFO.DEFAULT_AY}</div>
         </div>
 
-        <div style={{ height: 1, background: "#1e293b" }} />
+        <div style={{ height: 1, background: "rgba(255,255,255,0.08)" }} />
 
         <button onClick={() => setReviewing(null)}
-          style={{ background: "#1e293b", border: "none", borderRadius: 9, padding: "10px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, width: "100%", fontFamily: "Georgia, serif" }}>
+          style={{ background: "rgba(99,102,241,0.18)", border: "none", borderRadius: 8, padding: "10px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, width: "100%", fontFamily: "inherit", transition: "background 0.15s" }}>
           <span style={{ fontSize: 16 }}>🏫</span>
           <div style={{ flex: 1, textAlign: "left" }}>
             <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 12 }}>School Reviews</div>
@@ -1438,12 +1438,12 @@ export default function VCDashboard() {
         </div>
 
         <div style={{ flex: 1 }} />
-        <div style={{ height: 1, background: "#1e293b" }} />
+        <div style={{ height: 1, background: "rgba(255,255,255,0.08)" }} />
         <button
           type="button"
           onClick={() => navigate("/edit-profile")}
           title="Edit profile"
-          style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "Georgia, serif", textAlign: "left" }}
+          style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
         >
           <Avatar initials={(sessionStorage.getItem("name") || "U").split(" ").map(w => w[0]).join("").toUpperCase()} color="#7c3aed" size={34} />
           <div>
@@ -1452,7 +1452,7 @@ export default function VCDashboard() {
           </div>
         </button>
         <button onClick={() => setShowLogoutModal(true)}
-          style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "Georgia, serif" }}
+          style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "inherit" }}
           onMouseEnter={e => e.currentTarget.style.background = "#1e293b"}
           onMouseLeave={e => e.currentTarget.style.background = "none"}>
           <span style={{ fontSize: 15 }}>🚪</span>
@@ -1489,7 +1489,7 @@ export default function VCDashboard() {
                 const isActive = deanTypeFilter === key;
                 return (
                   <button key={key} onClick={() => switchDeanType(key)}
-                    style={{ padding: "10px 22px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "Georgia, serif", fontSize: 13, fontWeight: 700, transition: "all .2s", background: isActive ? bg : "none", color: isActive ? color : "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
+                    style={{ padding: "10px 22px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, transition: "all .2s", background: isActive ? bg : "none", color: isActive ? color : "#64748b", display: "flex", alignItems: "center", gap: 8 }}>
                     {label}
                     {schoolPending > 0 && (
                       <span style={{ background: isActive ? color : "#94a3b8", color: "#fff", borderRadius: 10, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>{schoolPending}</span>
@@ -1507,7 +1507,7 @@ export default function VCDashboard() {
                 const isActive = school.id === activeSchoolId;
                 return (
                   <button key={school.id} onClick={() => switchSchool(school.id)}
-                    style={{ flex: 1, padding: "12px 8px", border: "none", cursor: "pointer", fontFamily: "Georgia, serif", fontSize: 11, fontWeight: 700, transition: "all .2s", background: isActive ? `${school.color}15` : "none", color: isActive ? school.color : "#64748b", borderBottom: isActive ? `3px solid ${school.color}` : "3px solid transparent", borderRight: idx < currentSchools.length - 1 ? "1px solid #f1f5f9" : "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    style={{ flex: 1, padding: "12px 8px", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, transition: "all .2s", background: isActive ? `${school.color}15` : "none", color: isActive ? school.color : "#64748b", borderBottom: isActive ? `3px solid ${school.color}` : "3px solid transparent", borderRight: idx < currentSchools.length - 1 ? "1px solid #f1f5f9" : "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
                     <span style={{ fontSize: 18 }}>{school.icon}</span>
                     <span style={{ fontSize: 10, fontWeight: 700 }}>{school.code}</span>
                     <span style={{ fontSize: 9, color: isActive ? school.color : "#94a3b8", fontWeight: 400, maxWidth: 90, textAlign: "center", lineHeight: 1.3 }}>{school.name.split(" ").slice(0, 3).join(" ")}</span>
@@ -1586,7 +1586,7 @@ export default function VCDashboard() {
       {showLogoutModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setShowLogoutModal(false)}>
-          <div style={{ background: "#fff", borderRadius: 14, padding: "32px 36px", maxWidth: 380, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 18, fontFamily: "Georgia, serif" }}
+          <div style={{ background: "#fff", borderRadius: 14, padding: "32px 36px", maxWidth: 380, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 18, fontFamily: "inherit" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🚪</div>
             <div style={{ textAlign: "center" }}>
@@ -1597,11 +1597,11 @@ export default function VCDashboard() {
             </div>
             <div style={{ display: "flex", gap: 12, width: "100%" }}>
               <button onClick={() => setShowLogoutModal(false)}
-                style={{ flex: 1, padding: "10px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
+                style={{ flex: 1, padding: "10px 0", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
                 Cancel
               </button>
               <button onClick={() => { setShowLogoutModal(false); sessionStorage.clear(); navigate("/", { replace: true }); }}
-                style={{ flex: 1, padding: "10px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
+                style={{ flex: 1, padding: "10px 0", background: "#dc2626", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
                 Yes, Logout
               </button>
             </div>

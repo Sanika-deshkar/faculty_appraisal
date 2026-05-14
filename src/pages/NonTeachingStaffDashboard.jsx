@@ -36,7 +36,7 @@ const pct = (value, max) => Math.min(100, Math.round((n(value) / max) * 100)) ||
 const clampOptionalScore = (value, max) => String(value ?? "").trim() === "" ? "" : clampScore(value, max);
 
 const T = { width: "100%", borderCollapse: "collapse", fontSize: 12 };
-const TH = { border: "1px solid #cbd5e1", padding: "7px 8px", background: "#0f172a", color: "#e2e8f0", fontWeight: 700, textAlign: "center", fontSize: 10 };
+const TH = { border: "1px solid #334155", padding: "7px 8px", background: "#1e293b", color: "#e2e8f0", fontWeight: 700, textAlign: "center", fontSize: 10, letterSpacing: "0.3px" };
 const TD = { border: "1px solid #e2e8f0", padding: "7px 8px", verticalAlign: "top" };
 const TDC = { ...TD, textAlign: "center", verticalAlign: "middle" };
 
@@ -91,7 +91,7 @@ function ScoreBar({ score, max, color = ACCENT }) {
 
 function SectionCard({ title, subtitle, accent = ACCENT, children }) {
   return (
-    <section style={{ background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${accent}`, borderRadius: 9, boxShadow: "0 1px 3px rgba(15,23,42,0.06)", marginBottom: 14, overflow: "hidden" }}>
+    <section className="fa-section-card" style={{ background: "#fff", border: "1px solid #e8ecf0", borderTop: `3px solid ${accent}`, borderRadius: 10, boxShadow: "0 1px 4px rgba(15,23,42,0.07)", marginBottom: 14, overflow: "hidden" }}>
       <div style={{ padding: "10px 15px", borderBottom: "1px solid #f1f5f9" }}>
         <div style={{ fontWeight: 800, fontSize: 13, color: accent }}>{title}</div>
         {subtitle && <div style={{ color: "#64748b", fontSize: 11, marginTop: 2 }}>{subtitle}</div>}
@@ -109,7 +109,7 @@ function TextInput({ value, onChange, readOnly = false, placeholder = "", type =
       onChange={(event) => onChange(event.target.value)}
       readOnly={readOnly}
       placeholder={placeholder}
-      style={{ width: "100%", boxSizing: "border-box", height: 34, border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 9px", fontSize: 12, fontFamily: "Georgia, serif", outline: "none", background: readOnly ? "#f8fafc" : "#fff", color: "#0f172a" }}
+      style={{ width: "100%", boxSizing: "border-box", height: 34, border: "1px solid #cbd5e1", borderRadius: 6, padding: "6px 9px", fontSize: 12, fontFamily: "inherit", outline: "none", background: readOnly ? "#f8fafc" : "#fff", color: "#0f172a" }}
     />
   );
 }
@@ -122,7 +122,7 @@ function TextArea({ value, onChange, readOnly = false, placeholder = "", rows = 
       readOnly={readOnly}
       placeholder={placeholder}
       rows={rows}
-      style={{ width: "100%", boxSizing: "border-box", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 10px", fontSize: 12, fontFamily: "Georgia, serif", resize: "vertical", outline: "none", background: readOnly ? "#f8fafc" : "#fff", color: "#0f172a" }}
+      style={{ width: "100%", boxSizing: "border-box", border: "1px solid #cbd5e1", borderRadius: 6, padding: "8px 10px", fontSize: 12, fontFamily: "inherit", resize: "vertical", outline: "none", background: readOnly ? "#f8fafc" : "#fff", color: "#0f172a" }}
     />
   );
 }
@@ -138,7 +138,7 @@ function MarksInput({ value, onChange, max, readOnly = false, accent = ACCENT })
         value={value ?? ""}
         onChange={(event) => onChange(clampOptionalScore(event.target.value, max))}
         readOnly={readOnly}
-        style={{ width: 62, textAlign: "center", border: `1.5px solid ${accent}`, borderRadius: 6, padding: "5px 6px", fontSize: 12, fontFamily: "Georgia, serif", outline: "none", background: readOnly ? "#f8fafc" : "#eff6ff" }}
+        style={{ width: 62, textAlign: "center", border: `1.5px solid ${accent}`, borderRadius: 6, padding: "5px 6px", fontSize: 12, fontFamily: "inherit", outline: "none", background: readOnly ? "#f8fafc" : "#eff6ff" }}
       />
       <span style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>/ {max}</span>
     </div>
@@ -157,7 +157,7 @@ function RatingPicker({ value, onChange, readOnly = false }) {
             title={`${rating.label} (${rating.value})`}
             disabled={readOnly}
             onClick={() => onChange(rating.value)}
-            style={{ width: 30, height: 30, border: active ? `1.5px solid ${rating.color}` : "1px solid #e2e8f0", borderRadius: 5, background: active ? rating.bg : "#fff", color: active ? rating.color : "#94a3b8", fontWeight: 800, cursor: readOnly ? "default" : "pointer", fontFamily: "Georgia, serif" }}
+            style={{ width: 30, height: 30, border: active ? `1.5px solid ${rating.color}` : "1px solid #e2e8f0", borderRadius: 5, background: active ? rating.bg : "#fff", color: active ? rating.color : "#94a3b8", fontWeight: 800, cursor: readOnly ? "default" : "pointer", fontFamily: "inherit" }}
           >
             {rating.value}
           </button>
@@ -220,7 +220,7 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
         </div>
       ))}
       {!readOnly && (
-        <button type="button" onClick={() => ref.current?.click()} disabled={uploading} style={{ border: "1px dashed #cbd5e1", background: "#f8fafc", borderRadius: 5, padding: "5px 8px", color: "#64748b", cursor: uploading ? "wait" : "pointer", fontSize: 10, fontFamily: "Georgia, serif" }}>
+        <button type="button" onClick={() => ref.current?.click()} disabled={uploading} style={{ border: "1px dashed #cbd5e1", background: "#f8fafc", borderRadius: 5, padding: "5px 8px", color: "#64748b", cursor: uploading ? "wait" : "pointer", fontSize: 10, fontFamily: "inherit" }}>
           {uploading ? "Uploading..." : "Attach supporting document"}
           <input ref={ref} type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => handleFiles(event.target.files)} style={{ display: "none" }} />
         </button>
@@ -379,11 +379,11 @@ function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitt
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
-        <button type="button" onClick={onReport} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#f1f5f9", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "Georgia, serif" }}>
+        <button type="button" onClick={onReport} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#f1f5f9", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>
           Generate Report
         </button>
         {!locked && (
-          <button type="button" onClick={onSubmit} disabled={!confirmed || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: confirmed ? accent : "#94a3b8", color: "#fff", cursor: confirmed && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "Georgia, serif" }}>
+          <button type="button" onClick={onSubmit} disabled={!confirmed || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: confirmed ? accent : "#94a3b8", color: "#fff", cursor: confirmed && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "inherit" }}>
             {submitting ? "Submitting..." : `Submit to ${role === "registrar" ? "VC" : role === "reporting_officer" ? "Registrar" : "Reporting Officer"}`}
           </button>
         )}
@@ -549,7 +549,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
                 requestAnimationFrame(() => {
                   window.scrollTo({ top: 0, left: 0, behavior: "auto" });
                 });
-              }} style={{ border: "none", borderRadius: 7, padding: "8px 16px", background: tab === id ? accent : "#e2e8f0", color: tab === id ? "#fff" : "#475569", fontFamily: "Georgia, serif", fontWeight: 800, cursor: "pointer", fontSize: 12 }}>
+              }} style={{ border: "none", borderRadius: 7, padding: "8px 16px", background: tab === id ? accent : "#e2e8f0", color: tab === id ? "#fff" : "#475569", fontFamily: "inherit", fontWeight: 800, cursor: "pointer", fontSize: 12 }}>
                 {label}
               </button>
             ))}
@@ -608,8 +608,8 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
   if (embedded) return content;
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", background: "#f1f5f9", fontFamily: "Georgia, serif", color: "#0f172a" }}>
-      <aside style={{ width: 230, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 20, boxSizing: "border-box", background: "#0f172a", padding: "18px 14px 110px", color: "#e2e8f0", display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ minHeight: "100vh", display: "flex", background: "#f1f5f9", fontFamily: "inherit", color: "#0f172a" }}>
+      <aside style={{ width: 230, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 20, boxSizing: "border-box", background: "#0f172a", padding: "18px 14px 110px", color: "#e2e8f0", display: "flex", flexDirection: "column", gap: 12, borderRight: "1px solid rgba(255,255,255,0.06)", boxShadow: "2px 0 16px rgba(15,23,42,0.14)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Avatar name={sessionStorage.getItem("name") || "Staff"} color={accent} />
           <div>
@@ -826,7 +826,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
   return (
     <div>
       <div style={{ background: "#0f172a", borderRadius: 10, padding: "14px 18px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
-        <button type="button" onClick={onBack} style={{ background: "#1e293b", color: "#cbd5e1", border: "none", borderRadius: 6, padding: "7px 12px", cursor: "pointer", fontFamily: "Georgia, serif" }}>Back</button>
+        <button type="button" onClick={onBack} style={{ background: "#1e293b", color: "#cbd5e1", border: "none", borderRadius: 6, padding: "7px 12px", cursor: "pointer", fontFamily: "inherit" }}>Back</button>
         <Avatar name={item.name} color={item.avatarColor || accent} />
         <div style={{ flex: 1 }}>
           <div style={{ color: "#f8fafc", fontSize: 15, fontWeight: 800 }}>{item.name}</div>
@@ -850,7 +850,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
             requestAnimationFrame(() => {
               window.scrollTo({ top: 0, left: 0, behavior: "auto" });
             });
-          }} style={{ border: "none", borderRadius: 7, padding: "8px 16px", background: tab === id ? accent : "#e2e8f0", color: tab === id ? "#fff" : "#475569", cursor: "pointer", fontFamily: "Georgia, serif", fontWeight: 800 }}>
+          }} style={{ border: "none", borderRadius: 7, padding: "8px 16px", background: tab === id ? accent : "#e2e8f0", color: tab === id ? "#fff" : "#475569", cursor: "pointer", fontFamily: "inherit", fontWeight: 800 }}>
             {label}
           </button>
         ))}
@@ -905,10 +905,10 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
           )}
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
-            <button type="button" onClick={onBack} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#f1f5f9", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "Georgia, serif" }}>{locked ? "Close" : "Cancel"}</button>
-            <button type="button" onClick={handleReport} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#e2e8f0", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "Georgia, serif" }}>Generate Report</button>
+            <button type="button" onClick={onBack} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#f1f5f9", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>{locked ? "Close" : "Cancel"}</button>
+            <button type="button" onClick={handleReport} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#e2e8f0", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>Generate Report</button>
             {!locked && (
-              <button type="button" onClick={handleSubmit} disabled={!confirmed || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: confirmed ? accent : "#94a3b8", color: "#fff", cursor: confirmed && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "Georgia, serif" }}>
+              <button type="button" onClick={handleSubmit} disabled={!confirmed || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: confirmed ? accent : "#94a3b8", color: "#fff", cursor: confirmed && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "inherit" }}>
                 {submitting ? "Submitting..." : "Confirm & Submit"}
               </button>
             )}
@@ -930,7 +930,7 @@ function PriorRemark({ label, value, color }) {
 
 function QueueCard({ item, active, onClick, accent }) {
   return (
-    <button type="button" onClick={onClick} style={{ width: "100%", border: "none", borderLeft: active ? `3px solid ${accent}` : "3px solid transparent", borderRadius: 8, padding: "10px 11px", textAlign: "left", background: active ? `${accent}22` : "transparent", cursor: "pointer", marginBottom: 6, fontFamily: "Georgia, serif" }}>
+    <button type="button" onClick={onClick} style={{ width: "100%", border: "none", borderLeft: active ? `3px solid ${accent}` : "3px solid transparent", borderRadius: 8, padding: "10px 11px", textAlign: "left", background: active ? `${accent}22` : "transparent", cursor: "pointer", marginBottom: 6, fontFamily: "inherit" }}>
       <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 12 }}>{item.name}</div>
       <div style={{ color: "#94a3b8", fontSize: 10, marginTop: 2 }}>{item.roleLabel}</div>
       <div style={{ marginTop: 7 }}><StatusBadge status={item.status} /></div>
@@ -978,8 +978,8 @@ export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, acce
   const pendingCount = items.filter((item) => item.status === expectedPendingStatus(reviewerRole)).length;
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", background: "#f1f5f9", color: "#0f172a", fontFamily: "Georgia, serif" }}>
-      <aside style={{ width: 244, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 20, boxSizing: "border-box", background: "#0f172a", color: "#e2e8f0", display: "flex", flexDirection: "column", padding: "18px 14px 86px", gap: 12 }}>
+    <div style={{ minHeight: "100vh", display: "flex", background: "#f1f5f9", color: "#0f172a", fontFamily: "inherit" }}>
+      <aside style={{ width: 244, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 20, boxSizing: "border-box", background: "#0f172a", color: "#e2e8f0", display: "flex", flexDirection: "column", padding: "18px 14px 86px", gap: 12, borderRight: "1px solid rgba(255,255,255,0.06)", boxShadow: "2px 0 16px rgba(15,23,42,0.14)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Avatar name={sessionStorage.getItem("name") || title} color={accent} />
           <div>
@@ -998,7 +998,7 @@ export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, acce
               requestAnimationFrame(() => {
                 window.scrollTo({ top: 0, left: 0, behavior: "auto" });
               });
-            }} style={{ flex: 1, border: "none", borderRadius: 7, padding: "7px 6px", background: tab === id ? accent : "#1e293b", color: tab === id ? "#fff" : "#94a3b8", cursor: "pointer", fontSize: 10, fontWeight: 800, fontFamily: "Georgia, serif" }}>
+            }} style={{ flex: 1, border: "none", borderRadius: 7, padding: "7px 6px", background: tab === id ? accent : "#1e293b", color: tab === id ? "#fff" : "#94a3b8", cursor: "pointer", fontSize: 10, fontWeight: 800, fontFamily: "inherit" }}>
               {label}
             </button>
           ))}
@@ -1067,8 +1067,8 @@ function LogoutModal({ onCancel, onConfirm }) {
         <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 17, marginBottom: 8 }}>Confirm Logout</div>
         <div style={{ color: "#64748b", fontSize: 12, lineHeight: 1.6, marginBottom: 18 }}>You are about to leave {APP_INFO.PORTAL_NAME}. Any unsaved edits will be lost.</div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button type="button" onClick={onCancel} style={{ flex: 1, border: "none", borderRadius: 8, background: "#f1f5f9", color: "#475569", padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "Georgia, serif" }}>Cancel</button>
-          <button type="button" onClick={onConfirm} style={{ flex: 1, border: "none", borderRadius: 8, background: "#dc2626", color: "#fff", padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "Georgia, serif" }}>Logout</button>
+          <button type="button" onClick={onCancel} style={{ flex: 1, border: "none", borderRadius: 8, background: "#f1f5f9", color: "#475569", padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+          <button type="button" onClick={onConfirm} style={{ flex: 1, border: "none", borderRadius: 8, background: "#dc2626", color: "#fff", padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Logout</button>
         </div>
       </div>
     </div>
@@ -1085,7 +1085,7 @@ const S = {
     cursor: "pointer",
     fontWeight: 800,
     fontSize: 12,
-    fontFamily: "Georgia, serif",
+    fontFamily: "inherit",
   },
   sideButton: {
     width: "100%",
@@ -1097,7 +1097,7 @@ const S = {
     cursor: "pointer",
     fontWeight: 800,
     fontSize: 12,
-    fontFamily: "Georgia, serif",
+    fontFamily: "inherit",
   },
   sideActions: {
     position: "absolute",

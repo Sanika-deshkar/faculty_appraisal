@@ -244,58 +244,61 @@ export default function Signup() {
   };
 
   return (
-    <>
+    <div style={s.page}>
       <style>{`
   *, *::before, *::after { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; }
 
   .dyp-input {
     width: 100%;
-    padding: 10px 14px;
-    border: 1.5px solid rgba(255,255,255,0.55);
-    border-radius: 4px;
+    padding: 10px 12px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
     font-size: 13px;
-    color: white;
-    background: rgba(255,255,255,0.08);
+    color: #0f172a;
+    background: #fff;
     font-family: inherit;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color 0.15s, box-shadow 0.15s;
     outline: none;
+    box-sizing: border-box;
   }
-  .dyp-input::placeholder { color: rgba(255,255,255,0.5); }
+  .dyp-input::placeholder { color: #94a3b8; }
   .dyp-input:focus {
-    border-color: white;
-    box-shadow: 0 0 0 2px rgba(255,255,255,0.15);
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
   }
-  .dyp-input option { background: #0f1932; color: white; }
   .dyp-btn {
     width: 100%;
-    padding: 12px;
+    padding: 11px 16px;
     background: #2563eb;
     color: white;
     border: none;
-    border-radius: 4px;
-    font-size: 15px;
-    font-weight: 600;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
     font-family: inherit;
-    transition: background 0.2s;
+    transition: background 0.15s;
     letter-spacing: 0.2px;
   }
   .dyp-btn:hover:not(:disabled) { background: #1d4ed8; }
-  .dyp-btn:disabled { opacity: 0.72; cursor: not-allowed; }
+  .dyp-btn:disabled { opacity: 0.65; cursor: not-allowed; }
 `}</style>
 
-      <div style={s.wrap}>
-        {/* Top Left Logo */}
-        <img src="/image.png" alt="University Logo" style={s.topLeftLogo} />
-        {/* Top Right Logo */}
-        <img src="/IQAS.png" alt="IQAC Logo" style={s.topRightLogo} />
+      {/* ── Top bar ── */}
+      <div style={s.topBar}>
+        <div style={s.logoWrap}>
+          <img src="/image.png" alt="University Logo" style={s.uniLogo} />
+          <div>
+            <div style={s.portalName}>PBAS Portal</div>
+            <div style={s.uniSub}>D.Y. Patil International University, Akurdi, Pune</div>
+          </div>
+        </div>
+        <img src="/IQAS.png" alt="IQAC Logo" style={s.iqacLogo} />
+      </div>
 
-        <div style={s.overlay} />
-
-        <div style={s.card}>
-
-          {/* ════ Signup form ════ */}
+      {/* ── Form container ── */}
+      <div style={s.container}>
+        <div style={s.card} className="fa-scale-in">
           <div style={s.right}>
             <h2 style={s.panelTitle}>Create Account</h2>
             <p style={s.sub}>Fill in your details to get started</p>
@@ -413,118 +416,100 @@ export default function Signup() {
               <Link to="/login" style={s.loginLink}>Log in</Link>
             </p>
           </div>
-
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = {
-  topLeftLogo: {
-    position: "absolute",
-    top: 20,
-    left: 20,
-    height: 100,
-    zIndex: 2,
-  },
-  topRightLogo: {
-    position: "absolute",
-    top: 20,
-    right: 20,
-    height: 100,
-    zIndex: 2,
-  },
-  wrap: {
+  page: {
     minHeight: "100vh",
-    width: "100%",
-    backgroundImage: "url('/dyp.jpeg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
+    background: "#f8fafc",
+    fontFamily: "inherit",
+    color: "#1e293b",
+  },
+
+  /* ── Top bar ── */
+  topBar: {
+    background: "#0f172a",
+    padding: "12px 32px",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    padding: "24px 16px",
-    position: "relative",
+    justifyContent: "space-between",
+    position: "sticky",
+    top: 0,
+    zIndex: 10,
   },
-  overlay: {
-    position: "absolute",
-    inset: 0,
-    background: "rgba(8, 16, 38, 0.30)",
-    pointerEvents: "none",
+  logoWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  },
+  uniLogo: {
+    height: 46,
+  },
+  portalName: {
+    color: "#f1f5f9",
+    fontWeight: 700,
+    fontSize: 14,
+    letterSpacing: "-0.2px",
+  },
+  uniSub: {
+    color: "#64748b",
+    fontSize: 10,
+    marginTop: 2,
+  },
+  iqacLogo: {
+    height: 46,
+  },
+
+  /* ── Form container ── */
+  container: {
+    maxWidth: 760,
+    margin: "0 auto",
+    padding: "36px 24px 56px",
   },
   card: {
-    position: "relative",
-    zIndex: 1,
-    width: "55%",
-    maxWidth: 700,
-    display: "flex",
-    alignItems: "stretch",
-    borderRadius: 8,
-    background: "rgba(15, 25, 50, 0.72)",
-    backdropFilter: "blur(8px)",
-    WebkitBackdropFilter: "blur(8px)",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
+    background: "#fff",
+    border: "1px solid #e8ecf0",
+    borderRadius: 16,
+    boxShadow: "0 4px 24px rgba(15,23,42,0.08)",
     overflow: "hidden",
   },
-  left: {
-    flex: 1,
-    color: "white",
-    padding: "32px 32px",
-    display: "flex",
-    flexDirection: "column",
-    gap: 14,
-    justifyContent: "center",
-  },
-  uniName: {
-    fontSize: 26,
-    fontWeight: 700,
-    margin: 0,
-    lineHeight: 1.3,
-    color: "white",
-  },
-  desc: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.72)",
-    lineHeight: 1.8,
-    margin: 0,
-    maxWidth: 420,
-  },
   right: {
-    flex: 1,
-    padding: "28px 32px",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
+    padding: "32px 36px",
   },
+
+  /* ── Card header ── */
   panelTitle: {
-    fontSize: 18,
-    fontWeight: 700,
-    color: "white",
+    fontSize: 22,
+    fontWeight: 800,
+    color: "#0f172a",
     marginBottom: 4,
     marginTop: 0,
+    letterSpacing: "-0.3px",
   },
   sub: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.55)",
-    margin: "0 0 20px",
+    color: "#64748b",
+    margin: "0 0 24px",
   },
   error: {
-    background: "rgba(185,28,28,0.25)",
-    border: "1px solid rgba(252,165,165,0.5)",
-    color: "#fca5a5",
-    padding: "9px 12px",
-    borderRadius: 4,
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    color: "#991b1b",
+    padding: "10px 14px",
+    borderRadius: 8,
     fontSize: 12,
-    marginBottom: 14,
-    lineHeight: 1.5,
+    marginBottom: 16,
+    lineHeight: 1.6,
   },
   formGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "12px 16px",
+    gap: "14px 16px",
   },
   inputGroup: {
     display: "flex",
@@ -532,21 +517,23 @@ const s = {
     gap: 6,
   },
   label: {
-    color: "rgba(255,255,255,0.6)",
+    color: "#475569",
     fontSize: 11,
     fontWeight: 600,
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: "0.5px",
   },
   loginText: {
-    marginTop: 18,
+    marginTop: 22,
     textAlign: "center",
     fontSize: 13,
-    color: "rgba(255,255,255,0.55)",
+    color: "#64748b",
+    paddingTop: 20,
+    borderTop: "1px solid #f1f5f9",
   },
   loginLink: {
-    color: "#60a5fa",
-    fontWeight: 600,
+    color: "#2563eb",
+    fontWeight: 700,
     textDecoration: "none",
   },
 };

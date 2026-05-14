@@ -1,0 +1,287 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   PBAS Design System — Modern UI
+   Modernizes typography, focus states, scrollbars, hover effects and
+   row interactions across all dashboards.  No functionality is changed.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+/* ── Base reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+/* ── Custom scrollbar ───────────────────────────────────────────────────── */
+::-webkit-scrollbar            { width: 6px;  height: 6px; }
+::-webkit-scrollbar-track      { background: transparent; }
+::-webkit-scrollbar-thumb      { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover{ background: #94a3b8; }
+
+/* ── Text selection ─────────────────────────────────────────────────────── */
+::selection { background: rgba(99,102,241,0.14); color: #1e293b; }
+
+/* ── Smooth transitions for all interactive elements ───────────────────── */
+button {
+  transition:
+    background  0.15s ease,
+    color       0.15s ease,
+    box-shadow  0.15s ease,
+    border-color 0.15s ease,
+    opacity     0.15s ease;
+}
+
+a {
+  text-decoration: none;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+a:hover { opacity: 0.82; }
+
+/* ── Input / textarea / select focus ring ───────────────────────────────
+   Inline styles set outline:none but leave box-shadow unset, so the ring
+   is injected via CSS without touching any component code.
+   ─────────────────────────────────────────────────────────────────────── */
+input:focus:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
+  border-color: #818cf8 !important;
+  outline: none;
+}
+
+/* ── Table body row hover ───────────────────────────────────────────────
+   Inline backgrounds (striped rows) are overridden via !important only
+   on hover so the effect is visible against any base row color.
+   ─────────────────────────────────────────────────────────────────────── */
+tbody tr:hover > td {
+  background-color: rgba(99,102,241,0.045) !important;
+  transition: background-color 0.12s ease;
+}
+
+/* ── Sidebar button hover ───────────────────────────────────────────────
+   Applies a subtle glass-effect highlight to all direct-child buttons
+   inside the <aside> sidebar — nav items, profile link, and logout.
+   ─────────────────────────────────────────────────────────────────────── */
+aside > button:hover {
+  background: rgba(255,255,255,0.09) !important;
+}
+
+/* ── Number input: dim spinners ─────────────────────────────────────────── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 0.45;
+}
+
+/* ── Status / grade badge pill ──────────────────────────────────────────── */
+.pbas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.2px;
+}
+
+/* ── Score progress bar ─────────────────────────────────────────────────── */
+.pbas-score-bar {
+  width: 100%;
+  height: 5px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+.pbas-score-bar__fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* ── Section card ───────────────────────────────────────────────────────── */
+.pbas-section-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(15,23,42,0.07), 0 0 0 1px rgba(15,23,42,0.05);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.pbas-section-card__header {
+  padding: 11px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.pbas-section-card__body {
+  padding: 14px 16px;
+}
+
+/* ── Overflow-scroll wrapper for wide tables ────────────────────────────── */
+.pbas-table-scroll {
+  overflow-x: auto;
+  border-radius: 6px;
+}
+
+/* ── Save footer ────────────────────────────────────────────────────────── */
+.pbas-save-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── Print: hide sidebar ────────────────────────────────────────────────── */
+@media print {
+  aside { display: none !important; }
+}
+
+/* ── Responsive: narrow sidebar on small screens ───────────────────────── */
+@media (max-width: 960px) {
+  aside { width: 220px !important; }
+}
+@media (max-width: 720px) {
+  aside {
+    position: fixed !important;
+    z-index: 100;
+    transform: translateX(-100%);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PBAS Animation & Transition System
+   Purely visual — no functionality, logic, or layout is changed.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes fa-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fa-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fa-scale-in {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes fa-slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fa-slide-in-top {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fa-pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.52; }
+}
+
+/* ── Utility Animation Classes ──────────────────────────────────────────── */
+.fa-fade-in    { animation: fa-fade-in      0.28s ease both; }
+.fa-fade-up    { animation: fa-fade-up      0.38s ease both; }
+.fa-scale-in   { animation: fa-scale-in     0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
+.fa-slide-left { animation: fa-slide-in-left 0.34s ease both; }
+.fa-slide-top  { animation: fa-slide-in-top  0.28s ease both; }
+.fa-page-enter { animation: fa-fade-up      0.40s ease both; }
+.fa-pulse      { animation: fa-pulse-soft   1.6s ease-in-out infinite; }
+
+/* ── Page / Layout Entrance ─────────────────────────────────────────────── */
+/* Dashboard content area fades in on component mount */
+main { animation: fa-fade-in 0.30s ease both; }
+
+/* Sidebar slides in from left — desktop only so it doesn't fight
+   the mobile hidden-translate rule */
+@media (min-width: 721px) {
+  aside { animation: fa-slide-in-left 0.28s ease both; }
+}
+
+/* ── Section Card — Staggered Entrance + Hover Lift ─────────────────────── */
+.fa-section-card {
+  animation: fa-fade-up 0.38s ease both;
+  transition: box-shadow 0.26s ease, transform 0.26s ease !important;
+}
+/* Stagger each card so they cascade in one after another */
+.fa-section-card:nth-child(1) { animation-delay:   0ms; }
+.fa-section-card:nth-child(2) { animation-delay:  55ms; }
+.fa-section-card:nth-child(3) { animation-delay: 110ms; }
+.fa-section-card:nth-child(4) { animation-delay: 165ms; }
+.fa-section-card:nth-child(5) { animation-delay: 220ms; }
+.fa-section-card:nth-child(6) { animation-delay: 275ms; }
+.fa-section-card:nth-child(7) { animation-delay: 330ms; }
+.fa-section-card:nth-child(8) { animation-delay: 385ms; }
+.fa-section-card:hover {
+  box-shadow: 0 8px 30px rgba(15,23,42,0.12) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* ── Button Micro-Interactions ──────────────────────────────────────────── */
+button {
+  transition:
+    background   0.18s ease,
+    color        0.18s ease,
+    box-shadow   0.18s ease,
+    border-color 0.18s ease,
+    opacity      0.18s ease,
+    transform    0.10s ease !important;
+}
+/* Press effect on all enabled buttons */
+button:not(:disabled):active { transform: scale(0.96) !important; }
+
+/* Primary blue (#2563eb) — darker on hover + shadow glow + micro-lift */
+button[style*="#2563eb"]:not(:disabled):hover {
+  background: #1d4ed8 !important;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.38) !important;
+  transform: translateY(-1px) !important;
+}
+/* Dark navy (#0f172a) — shadow lift */
+button[style*="#0f172a"]:not(:disabled):hover {
+  box-shadow: 0 4px 14px rgba(15,23,42,0.28) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Sidebar Nav Button Transitions ─────────────────────────────────────── */
+aside button {
+  transition:
+    background        0.18s ease,
+    color             0.18s ease,
+    border-left-color 0.18s ease,
+    transform         0.10s ease !important;
+}
+aside button:not(:disabled):active { transform: scale(0.97) !important; }
+
+/* ── Form Controls — Smooth State Transitions ───────────────────────────── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select,
+textarea {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease !important;
+}
+/* Checkbox — subtle micro-bounce on click */
+input[type="checkbox"] {
+  cursor: pointer;
+  transition: transform 0.12s ease !important;
+}
+input[type="checkbox"]:active { transform: scale(0.82) !important; }
+
+/* ── Modal Overlay & Content Box Animations ─────────────────────────────── */
+/* Backdrop fade — matches the rgba(15,23,42,0.55) overlay used in dashboards */
+div[style*="rgba(15,23,42,0.55)"]       { animation: fa-fade-in  0.20s ease both; }
+div[style*="rgba(15,23,42,0.55)"] > div { animation: fa-scale-in 0.26s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* ── Table Row ──────────────────────────────────────────────────────────── */
+tbody tr { transition: background-color 0.12s ease; }

@@ -42,7 +42,7 @@ const roleColor = {
   return (
     <div style={S.page}>
       {/* Top bar */}
-      <div style={S.topBar}>
+      <div style={S.topBar} className="fa-slide-top">
         <div style={S.logoWrap}>
           <div style={S.logoMark}>FA</div>
           <div>
@@ -54,7 +54,7 @@ const roleColor = {
       </div>
 
       {/* Content */}
-      <div style={S.content}>
+      <div style={S.content} className="fa-page-enter">
 
         {/* Greeting */}
         <div style={S.greeting}>
@@ -141,7 +141,7 @@ const S = {
   page: {
     minHeight: "100vh",
     background: "#f8fafc",
-    fontFamily: "'Georgia', serif",
+    fontFamily: "inherit",
     color: "#1e293b",
   },
 
@@ -303,15 +303,15 @@ const S = {
   proceedBtn: {
     width: "100%",
     padding: "14px",
-    background: "#0f172a",
+    background: "#2563eb",
     color: "#fff",
     border: "none",
     borderRadius: 9,
     fontSize: 14,
     fontWeight: 700,
-    fontFamily: "'Georgia', serif",
+    fontFamily: "inherit",
     letterSpacing: 0.3,
-    transition: "opacity 0.2s",
+    transition: "background 0.15s, opacity 0.2s",
     display: "block",
     textAlign: "center",
   },

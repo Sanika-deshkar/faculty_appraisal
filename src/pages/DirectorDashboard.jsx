@@ -71,7 +71,7 @@ function StatusBadge({ status }) {
 
 function SC({ title, subtitle, accent = "#0ea5e9", children }) {
   return (
-    <div style={{ background: "#fff", borderRadius: 9, boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 14, overflow: "hidden", border: "1px solid #e2e8f0", borderTop: `3px solid ${accent}` }}>
+    <div className="fa-section-card" style={{ background: "#fff", borderRadius: 10, boxShadow: "0 1px 4px rgba(15,23,42,0.07)", marginBottom: 14, overflow: "hidden", border: "1px solid #e8ecf0", borderTop: `3px solid ${accent}` }}>
       <div style={{ padding: "10px 15px", borderBottom: "1px solid #f1f5f9" }}>
         <div style={{ fontWeight: 700, fontSize: 13, color: accent }}>{title}</div>
         {subtitle && <div style={{ color: "#64748b", fontSize: 11, marginTop: 2 }}>{subtitle}</div>}
@@ -111,8 +111,8 @@ function TI({ val, onChange, center, placeholder, readOnly = false, numeric = fa
         placeholder={placeholder || ""}
         inputMode={integer ? "numeric" : numeric ? "decimal" : undefined}
         style={center
-          ? { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none", textAlign: "center" }
-          : { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "Georgia, serif", outline: "none" }}
+          ? { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "inherit", outline: "none", textAlign: "center" }
+          : { width: "100%", maxWidth: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, lineHeight: 1.25, fontFamily: "inherit", outline: "none" }}
       />
       {textErr && (
         <span style={{ position: "absolute", left: 0, top: "100%", fontSize: 9, color: "#ef4444", whiteSpace: "nowrap", lineHeight: 1.2 }}>
@@ -211,7 +211,7 @@ function RowBtns({ onAdd, onDel, canDel = true }) {
 
 // ─── Read-Only Controls (Reviewing Others) ────────────────────────────────────
 function RO({ val, center }) {
-  return <span style={{ fontSize: 11, fontFamily: "Georgia, serif", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{val || <span style={{ color: "#cbd5e1" }}>—</span>}</span>;
+  return <span style={{ fontSize: 11, fontFamily: "inherit", color: "#1e293b", display: "block", textAlign: center ? "center" : "left" }}>{val || <span style={{ color: "#cbd5e1" }}>—</span>}</span>;
 }
 
 function DirInput({ val, onChange, max, disabled = false }) {
@@ -220,7 +220,7 @@ function DirInput({ val, onChange, max, disabled = false }) {
       max={max}
       disabled={disabled}
       onChange={e => onChange(e.target.value === "" || max === undefined ? e.target.value : String(clampScore(e.target.value, max)))}
-      style={{ width: 58, textAlign: "center", border: "1.5px solid #0ea5e9", borderRadius: 5, padding: "3px 5px", fontSize: 11, fontFamily: "Georgia, serif", outline: "none", background: disabled ? "#f1f5f9" : "#f0fbff", cursor: disabled ? "not-allowed" : "text" }}
+      style={{ width: 58, textAlign: "center", border: "1.5px solid #0ea5e9", borderRadius: 5, padding: "3px 5px", fontSize: 11, fontFamily: "inherit", outline: "none", background: disabled ? "#f1f5f9" : "#f0fbff", cursor: disabled ? "not-allowed" : "text" }}
     />
   );
 }
@@ -235,7 +235,7 @@ function SectionSaveFooter({ label, saved, saving, locked, onSave }) {
         type="button"
         onClick={onSave}
         disabled={locked || saving}
-        style={{ padding: "9px 22px", background: locked ? "#94a3b8" : "#2563eb", color: "#fff", border: "none", borderRadius: 7, cursor: locked || saving ? "not-allowed" : "pointer", fontWeight: 800, fontSize: 12, fontFamily: "Georgia, serif", opacity: saving ? 0.75 : 1 }}
+        style={{ padding: "9px 22px", background: locked ? "#94a3b8" : "#2563eb", color: "#fff", border: "none", borderRadius: 7, cursor: locked || saving ? "not-allowed" : "pointer", fontWeight: 800, fontSize: 12, fontFamily: "inherit", opacity: saving ? 0.75 : 1 }}
       >
         {saving ? "Saving..." : `Save ${label}`}
       </button>
@@ -261,7 +261,7 @@ function ViewDocsCell({ docKey, docs }) {
 
 // ─── Table style constants ────────────────────────────────────────────────────
 const T = { width: "100%", borderCollapse: "collapse", fontSize: 12 };
-const TH = { border: "1px solid #cbd5e1", padding: "7px 8px", background: "#0f172a", color: "#cbd5e1", fontWeight: 700, textAlign: "center", fontSize: 10 };
+const TH = { border: "1px solid #334155", padding: "7px 8px", background: "#1e293b", color: "#e2e8f0", fontWeight: 700, textAlign: "center", fontSize: 10, letterSpacing: "0.3px" };
 const TH_HOD = { ...TH, background: "#312e81", color: "#c7d2fe" };
 const TH_DIR = { ...TH, background: "#065f46", color: "#6ee7b7" };
 const TD = { border: "1px solid #e2e8f0", padding: "4px 6px", verticalAlign: "middle" };
@@ -1142,7 +1142,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: "100%" }}>
       {/* Header */}
       <div style={{ background: "#0f172a", padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, marginBottom: 16, borderRadius: 10 }}>
-        <button onClick={onBack} style={{ background: "#1e293b", border: "none", color: "#94a3b8", cursor: "pointer", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontFamily: "Georgia, serif" }}>← Back</button>
+        <button onClick={onBack} style={{ background: "#1e293b", border: "none", color: "#94a3b8", cursor: "pointer", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontFamily: "inherit" }}>← Back</button>
         <Avatar initials={faculty.avatar} color={faculty.avatarColor} size={40} />
         <div style={{ flex: 1 }}>
           <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 15 }}>{faculty.name}</div>
@@ -1173,7 +1173,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
               window.scrollTo({ top: 0, left: 0, behavior: "auto" });
             });
           }}
-            style={{ padding: "7px 18px", border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "Georgia, serif", fontSize: 12, fontWeight: 700, background: sectionView === id ? "#312e81" : "#e2e8f0", color: sectionView === id ? "#e0e7ff" : "#475569" }}>
+            style={{ padding: "7px 18px", border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: sectionView === id ? "#312e81" : "#e2e8f0", color: sectionView === id ? "#e0e7ff" : "#475569" }}>
             {label}
           </button>
         ))}
@@ -1219,7 +1219,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
           <label style={{ fontWeight: 700, fontSize: 13, color: "#065f46", display: "block", marginBottom: 6 }}>Director Remarks</label>
           <textarea value={dirRemarks} onChange={e => setDirRemarks(e.target.value)} rows={4} readOnly={reviewLocked}
             placeholder="Enter your director remarks, observations, and recommendations..."
-            style={{ width: "100%", border: "1.5px solid #86efac", borderRadius: 7, padding: "10px 12px", fontSize: 12, fontFamily: "Georgia, serif", resize: "vertical", boxSizing: "border-box", marginBottom: 16, background: reviewLocked ? "#f8fafc" : "#f0fdf4", outline: "none" }} />
+            style={{ width: "100%", border: "1.5px solid #86efac", borderRadius: 7, padding: "10px 12px", fontSize: 12, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box", marginBottom: 16, background: reviewLocked ? "#f8fafc" : "#f0fdf4", outline: "none" }} />
 
           {!reviewLocked && (
             <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: "pointer" }}>
@@ -1234,11 +1234,11 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
           )}
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-            <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "Georgia, serif" }}>{reviewLocked ? "Close" : "Cancel"}</button>
+            <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>{reviewLocked ? "Close" : "Cancel"}</button>
             {!reviewLocked && (
             <button onClick={() => onSubmit(faculty.id, { partA: dirPartA, partB: dirPartB, total: dirTotal }, dirRemarks, buildDirectorSectionScores(faculty, dirData), reviewConfirmed)}
               disabled={!reviewConfirmed}
-              style={{ padding: "10px 28px", background: reviewConfirmed ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}>
+              style={{ padding: "10px 28px", background: reviewConfirmed ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
               ✔ Submit Director Review
             </button>
             )}
@@ -1816,10 +1816,10 @@ export default function DirectorDashboard() {
     : (filterStatus === "All" ? facultyList : (filterStatus === "Pending Review" ? facultyList.filter(isDirectorPending) : facultyList.filter(isDirectorReviewed)));
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "Georgia, serif", background: "#f8fafc", color: "#1e293b" }}>
+    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "inherit", background: "#f8fafc", color: "#1e293b" }}>
 
       {/* ── Sidebar ── */}
-      <aside style={{ width: 252, height: "100vh", minHeight: "100vh", boxSizing: "border-box", overflow: "hidden", background: "#0f172a", display: "flex", flexDirection: "column", padding: "22px 16px", gap: 14, position: "sticky", top: 0, alignSelf: "flex-start", flexShrink: 0, borderTopRightRadius: 18, borderBottomRightRadius: 18, marginRight: 8, boxShadow: "6px 0 20px rgba(15,23,42,0.18)" }}>
+      <aside style={{ width: 252, height: "100vh", minHeight: "100vh", boxSizing: "border-box", overflow: "hidden", background: "#0f172a", display: "flex", flexDirection: "column", padding: "22px 16px", gap: 14, position: "sticky", top: 0, alignSelf: "flex-start", flexShrink: 0, borderRight: "1px solid rgba(255,255,255,0.06)", boxShadow: "2px 0 16px rgba(15,23,42,0.14)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 38, height: 38, borderRadius: 9, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 13 }}>FA</div>
           <div>
@@ -1828,11 +1828,11 @@ export default function DirectorDashboard() {
           </div>
         </div>
 
-        <div style={{ height: 1, background: "#1e293b" }} />
+        <div style={{ height: 1, background: "rgba(255,255,255,0.08)" }} />
 
         {navItems.map(tab => (
           <button key={tab.id} onClick={() => { setActiveMainTab(tab.id); setReviewingFaculty(null); }}
-            style={{ background: activeMainTab === tab.id ? "#1e293b" : "none", border: "none", borderRadius: 9, padding: "10px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, width: "100%", fontFamily: "Georgia, serif" }}>
+            style={{ background: activeMainTab === tab.id ? "rgba(99,102,241,0.18)" : "transparent", border: "none", borderRadius: 8, padding: "10px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, width: "100%", fontFamily: "inherit", transition: "background 0.15s" }}>
             <span style={{ fontSize: 16 }}>{tab.icon}</span>
             <div style={{ flex: 1, textAlign: "left" }}>
               <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 12 }}>{tab.label}</div>
@@ -1851,7 +1851,7 @@ export default function DirectorDashboard() {
             <select
               value={hodAppraisalTab}
               onChange={(e) => handleMyAppraisalSectionChange(e.target.value)}
-              style={{ width: "100%", border: "1px solid #334155", borderRadius: 7, padding: "7px 8px", fontSize: 12, fontFamily: "Georgia, serif", color: "#e2e8f0", background: "#0f172a", outline: "none" }}
+              style={{ width: "100%", border: "1px solid #334155", borderRadius: 7, padding: "7px 8px", fontSize: 12, fontFamily: "inherit", color: "#e2e8f0", background: "#0f172a", outline: "none" }}
             >
               <option value="partA">Part A</option>
               <option value="partB" disabled={!isMyAppraisalSectionOpen("partB")}>Part B</option>
@@ -1863,7 +1863,7 @@ export default function DirectorDashboard() {
           <div style={{ marginTop: 6, background: "#1e293b", borderRadius: 8, padding: "9px 10px" }}>
             <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 }}>Guidelines Section</div>
             <select value={guidelinesTab} onChange={e => setGuidelinesTab(e.target.value)}
-              style={{ width: "100%", border: "1px solid #334155", borderRadius: 7, padding: "7px 8px", fontSize: 12, fontFamily: "Georgia, serif", color: "#e2e8f0", background: "#0f172a", outline: "none" }}>
+              style={{ width: "100%", border: "1px solid #334155", borderRadius: 7, padding: "7px 8px", fontSize: 12, fontFamily: "inherit", color: "#e2e8f0", background: "#0f172a", outline: "none" }}>
               <option value="form">Form Guidelines</option>
               <option value="grading">Grading Scheme</option>
             </select>
@@ -1871,12 +1871,12 @@ export default function DirectorDashboard() {
         )}
 
         <div style={{ flex: 1 }} />
-        <div style={{ height: 1, background: "#1e293b" }} />
+        <div style={{ height: 1, background: "rgba(255,255,255,0.08)" }} />
         <button
           type="button"
           onClick={() => navigate("/edit-profile")}
           title="Edit profile"
-          style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "Georgia, serif", textAlign: "left" }}
+          style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
         >
           <Avatar initials={(sessionStorage.getItem("name") || "U").split(" ").map(n => n[0]).join("").toUpperCase()} color="#6366f1" size={34} />
           <div style={{ flex: 1 }}>
@@ -1886,7 +1886,7 @@ export default function DirectorDashboard() {
         </button>
         <button
           onClick={() => setShowLogoutModal(true)}
-          style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "Georgia, serif" }}
+          style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "inherit" }}
           onMouseEnter={e => e.currentTarget.style.background = "#1e293b"}
           onMouseLeave={e => e.currentTarget.style.background = "none"}
         >
@@ -1974,7 +1974,7 @@ export default function DirectorDashboard() {
                     <td style={TD}><TI val={r.course} onChange={(v) => setCF(i, "course", v)} /></td>
                     <td style={TD}><TI val={r.title} onChange={(v) => setCF(i, "title", v)} /></td>
                     <td style={TD}>
-                      <select value={r.details} onChange={(e) => setCF(i, "details", e.target.value)} style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "Georgia, serif", fontSize: 11 }}>
+                      <select value={r.details} onChange={(e) => setCF(i, "details", e.target.value)} style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "inherit", fontSize: 11 }}>
                         <option value="">Select</option>
                         <option value="1.Available">1.Available</option>
                         <option value="2.Partially Available">2.Partially Available</option>
@@ -2233,7 +2233,7 @@ export default function DirectorDashboard() {
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.label} onChange={(v) => setSoc(i, "label", v)} readOnly={socLocked} /></td>
                           <td style={TDC}>
-                            <select value={societySelectionForRow(r) || "No"} onChange={(e) => setSociety((rows) => rows.map((row, ri) => ri === i ? { ...row, participated: e.target.value, score: e.target.value === "No" ? "0" : row.score } : row))} style={{ fontSize: 12, padding: "4px 6px", borderRadius: 4, border: "1px solid #cbd5e1", fontFamily: "Georgia, serif" }}>
+                            <select value={societySelectionForRow(r) || "No"} onChange={(e) => setSociety((rows) => rows.map((row, ri) => ri === i ? { ...row, participated: e.target.value, score: e.target.value === "No" ? "0" : row.score } : row))} style={{ fontSize: 12, padding: "4px 6px", borderRadius: 4, border: "1px solid #cbd5e1", fontFamily: "inherit" }}>
                               <option value="No">No</option>
                               <option value="Yes">Yes</option>
                             </select>
@@ -2393,7 +2393,7 @@ export default function DirectorDashboard() {
                           <td style={TD}><TI val={r.issn} onChange={(v) => setBook(i, "issn", v)} /></td>
                           <td style={TD}><TI val={r.pub} onChange={(v) => setBook(i, "pub", v)} /></td>
                           <td style={TD}><TI val={r.coauth} onChange={(v) => setBook(i, "coauth", v)} /></td>
-                          <td style={TD}><select value={r.first || ""} onChange={(e) => setBook(i, "first", e.target.value)} style={{ width: "100%", height: 30, border: "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, fontFamily: "Georgia, serif" }}><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option></select></td>
+                          <td style={TD}><select value={r.first || ""} onChange={(e) => setBook(i, "first", e.target.value)} style={{ width: "100%", height: 30, border: "1px solid #d1d5db", borderRadius: 4, padding: "5px 6px", fontSize: 11, fontFamily: "inherit" }}><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option></select></td>
                           <td style={TD}><DocCell id={`book-${i}`} docs={docs} setDocs={setDocs} /></td>
                           <td style={TD}><ViewCell id={`book-${i}`} docs={docs} /></td>
                           <td style={TDS}><TI val={r.score} numeric onChange={(v) => setBook(i, "score", v)} center /></td>
@@ -2478,7 +2478,7 @@ export default function DirectorDashboard() {
                               value={r.degree || ""}
                               disabled={sectionApplicability.research === "notApplicable"}
                               onChange={(event) => setRes(i, "degree", event.target.value)}
-                              style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, fontFamily: "Georgia, serif" }}
+                              style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, fontFamily: "inherit" }}
                             >
                               <option value="">Select</option>
                               <option value="PhD">PhD</option>
@@ -2906,14 +2906,14 @@ export default function DirectorDashboard() {
                 <div style={{ display: "flex", justifyContent: "center", gap: 12 }}>
                   <button
                     onClick={generateReport}
-                    style={{ padding: "10px 28px", background: "#4c1d95", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif" }}
+                    style={{ padding: "10px 28px", background: "#4c1d95", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}
                   >
                     Generate Report
                   </button>
                   <button
                     onClick={handleSubmitAppraisal}
                     disabled={submitting || appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed}
-                    style={{ padding: "10px 28px", background: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "Georgia, serif", opacity: submitting ? 0.7 : 1 }}
+                    style={{ padding: "10px 28px", background: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "#64748b" : "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: (appraisalLocked || !accuracyConfirmed || !attachmentsConfirmed) ? "not-allowed" : "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit", opacity: submitting ? 0.7 : 1 }}
                   >
                     {appraisalLocked ? "Submitted & Locked" : submitting ? "Submitting..." : "✔ Submit Appraisal"}
                   </button>
@@ -2950,7 +2950,7 @@ export default function DirectorDashboard() {
               <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b" }}>Filter:</span>
               {["All", "Pending Review", "Reviewed"].map(f => (
                 <button key={f} onClick={() => setFilterStatus(f)}
-                  style={{ fontSize: 11, padding: "4px 12px", border: "1px solid #e2e8f0", borderRadius: 20, cursor: "pointer", fontFamily: "Georgia, serif", background: filterStatus === f ? "#0f172a" : "none", color: filterStatus === f ? "#f1f5f9" : "#475569" }}>
+                  style={{ fontSize: 11, padding: "4px 12px", border: "1px solid #e2e8f0", borderRadius: 20, cursor: "pointer", fontFamily: "inherit", background: filterStatus === f ? "#0f172a" : "none", color: filterStatus === f ? "#f1f5f9" : "#475569" }}>
                   {f}
                 </button>
               ))}
@@ -3057,7 +3057,7 @@ export default function DirectorDashboard() {
                             setReviewLoading(null);
                           }
                         }}
-                        style={{ fontSize: 11, padding: "7px 18px", background: isDirectorReviewed(item) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === item.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "Georgia, serif", opacity: reviewLoading === item.id ? 0.7 : 1 }}>
+                        style={{ fontSize: 11, padding: "7px 18px", background: isDirectorReviewed(item) ? "#1e293b" : "#312e81", color: "#f1f5f9", border: "none", borderRadius: 6, cursor: reviewLoading === item.id ? "wait" : "pointer", fontWeight: 700, fontFamily: "inherit", opacity: reviewLoading === item.id ? 0.7 : 1 }}>
                         {reviewLoading === item.id ? "Loading..." : isDirectorReviewed(item) ? "View Review" : "Review Form"}
                       </button>
                     </div>
@@ -3114,7 +3114,7 @@ export default function DirectorDashboard() {
 
         {activeMainTab === "guidelines" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ maxWidth: 900, margin: "0 auto", fontFamily: "Georgia, serif", width: "100%" }}>
+            <div style={{ maxWidth: 900, margin: "0 auto", fontFamily: "inherit", width: "100%" }}>
             <div style={{ background: "#fff", borderRadius: 9, padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 16 }}>
               <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800, color: "#0f172a" }}>D Y PATIL INTERNATIONAL UNIVERSITY</h2>
               <div style={{ color: "#64748b", fontSize: 13 }}>Akurdi, Pune</div>
@@ -3478,7 +3478,7 @@ export default function DirectorDashboard() {
       {showLogoutModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setShowLogoutModal(false)}>
-          <div style={{ background: "#fff", borderRadius: 14, padding: "32px 36px", maxWidth: 380, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 18, fontFamily: "Georgia, serif" }}
+          <div style={{ background: "#fff", borderRadius: 14, padding: "32px 36px", maxWidth: 380, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 18, fontFamily: "inherit" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>🚪</div>
             <div style={{ textAlign: "center" }}>
@@ -3500,7 +3500,7 @@ export default function DirectorDashboard() {
     cursor: "pointer",
     fontWeight: 700,
     fontSize: 13,
-    fontFamily: "Georgia, serif"
+    fontFamily: "inherit"
   }}
 >
   Cancel
@@ -3523,7 +3523,7 @@ export default function DirectorDashboard() {
     cursor: "pointer",
     fontWeight: 700,
     fontSize: 13,
-    fontFamily: "Georgia, serif"
+    fontFamily: "inherit"
   }}
 >
   Yes, Logout

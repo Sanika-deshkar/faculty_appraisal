@@ -50,7 +50,7 @@ function ProfileLoader() {
 
   if (error) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Georgia, serif", color: "#991b1b", fontSize: 14 }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", color: "#991b1b", fontSize: 14 }} className="fa-fade-in">
         {error} <button onClick={() => navigate("/login")} style={{ marginLeft: 12, cursor: "pointer" }}>Log in</button>
       </div>
     );
@@ -58,7 +58,7 @@ function ProfileLoader() {
 
   if (!user) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Georgia, serif", color: "#64748b", fontSize: 14 }}>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", color: "#64748b", fontSize: 14 }} className="fa-fade-in">
         Loading profile…
       </div>
     );

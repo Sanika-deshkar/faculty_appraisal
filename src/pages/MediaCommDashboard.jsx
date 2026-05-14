@@ -320,7 +320,7 @@ function TI({ value, onChange, readOnly = false, center = false, type = "text", 
         onChange={handleChange}
         onBlur={handleBlur}
         inputMode={integer ? "numeric" : numeric ? "decimal" : undefined}
-        style={{ width: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #cbd5e1", borderRadius: 4, padding: "5px 7px", fontSize: 11, fontFamily: "Georgia, serif", background: readOnly ? "#f8fafc" : "#fff", textAlign: center ? "center" : "left" }}
+        style={{ width: "100%", height: 30, boxSizing: "border-box", border: textErr ? "1.5px solid #ef4444" : "1px solid #cbd5e1", borderRadius: 4, padding: "5px 7px", fontSize: 11, fontFamily: "inherit", background: readOnly ? "#f8fafc" : "#fff", textAlign: center ? "center" : "left" }}
       />
       {textErr && <span style={{ position: "absolute", left: 0, top: "100%", fontSize: 9, color: "#ef4444", whiteSpace: "nowrap", lineHeight: 1.2 }}>Text expected</span>}
     </div>
@@ -576,7 +576,7 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
                         value={key === "participated" ? societySelectionForRow(row) : row[key] || ""}
                         disabled={!editableSelf || readOnlyField || notApplicable || selfLocked}
                         onChange={(event) => updateRow(index, key, event.target.value)}
-                        style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "Georgia, serif", fontSize: 11 }}
+                        style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "inherit", fontSize: 11 }}
                       >
                         <option value="">Select</option>
                         <option value="Yes">Yes</option>
@@ -587,7 +587,7 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
                         value={row[key] || ""}
                         disabled={!editableSelf || readOnlyField || notApplicable || selfLocked}
                         onChange={(event) => updateRow(index, key, event.target.value)}
-                        style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "Georgia, serif", fontSize: 11 }}
+                        style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "inherit", fontSize: 11 }}
                       >
                         <option value="">Select</option>
                         <option value="PhD">PhD</option>
@@ -598,7 +598,7 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
                         value={row[key] || ""}
                         disabled={!editableSelf || notApplicable || selfLocked}
                         onChange={(event) => updateRow(index, key, event.target.value)}
-                        style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "Georgia, serif", fontSize: 11 }}
+                        style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "inherit", fontSize: 11 }}
                       >
                         <option value="">Select</option>
                         <option value="1.Available">1.Available</option>
@@ -921,7 +921,7 @@ function SectionSelector({ value, onChange, label = "Appraisal Section", isOptio
             window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           });
         }}
-        style={{ height: 36, border: "1px solid #cbd5e1", borderRadius: 7, background: "#fff", color: "#0f172a", padding: "0 10px", fontFamily: "Georgia, serif", fontSize: 12, fontWeight: 700 }}
+        style={{ height: 36, border: "1px solid #cbd5e1", borderRadius: 7, background: "#fff", color: "#0f172a", padding: "0 10px", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}
       >
         {SECTION_OPTIONS.map((option) => <option key={option.value} value={option.value} disabled={isOptionDisabled(option.value)}>{option.label}</option>)}
       </select>
@@ -993,7 +993,7 @@ function buildMediaSectionScores(person, reviewData, reviewerRole) {
 
 function GuideSection({ title, accent = ACCENT, children }) {
   return (
-    <div style={{ background: "#fff", borderRadius: 9, boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 14, overflow: "hidden", border: "1px solid #e2e8f0", borderTop: `3px solid ${accent}` }}>
+    <div className="fa-section-card" style={{ background: "#fff", borderRadius: 10, boxShadow: "0 1px 4px rgba(15,23,42,0.07)", marginBottom: 14, overflow: "hidden", border: "1px solid #e8ecf0", borderTop: `3px solid ${accent}` }}>
       <div style={{ padding: "10px 15px", borderBottom: "1px solid #f1f5f9", fontWeight: 700, fontSize: 13, color: accent }}>{title}</div>
       <div style={{ padding: "13px 15px" }}>{children}</div>
     </div>
@@ -1144,7 +1144,7 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
           <SummaryBox totals={reviewerSummaryTotals} maxScores={totals.maxScores} roleScoreLabel={`${roleLabel(reviewerRole)} score for the SoMCS media appraisal form.`} />
           <label style={{ display: "grid", gap: 6, fontWeight: 800, color: "#134e4a", fontSize: 13 }}>
             {roleLabel(reviewerRole)} Remarks
-            <textarea value={remarks} readOnly={readOnly} onChange={(event) => setRemarks(event.target.value)} rows={5} style={{ border: "1px solid #99f6e4", borderRadius: 7, padding: 10, fontFamily: "Georgia, serif", resize: "vertical" }} />
+            <textarea value={remarks} readOnly={readOnly} onChange={(event) => setRemarks(event.target.value)} rows={5} style={{ border: "1px solid #99f6e4", borderRadius: 7, padding: 10, fontFamily: "inherit", resize: "vertical" }} />
           </label>
           {!readOnly && <AccuracyCheckbox checked={confirmed} onChange={setConfirmed} />}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
@@ -1462,8 +1462,8 @@ export default function MediaCommDashboard({ fixedRole }) {
   const pendingCount = queue.filter((item) => item.status === "Pending Review").length;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "Georgia, serif" }}>
-      <aside style={{ width: 230, height: "100vh", minHeight: "100vh", position: "sticky", top: 0, alignSelf: "flex-start", boxSizing: "border-box", overflow: "hidden", background: "#0f172a", color: "#f8fafc", padding: "18px 12px", display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "inherit" }}>
+      <aside style={{ width: 230, height: "100vh", minHeight: "100vh", position: "sticky", top: 0, alignSelf: "flex-start", boxSizing: "border-box", overflow: "hidden", background: "#0f172a", color: "#f8fafc", padding: "18px 12px", display: "flex", flexDirection: "column", gap: 14, borderRight: "1px solid rgba(255,255,255,0.06)", boxShadow: "2px 0 16px rgba(15,23,42,0.14)" }}>
         <div style={{ borderBottom: "1px solid #1e293b", paddingBottom: 14 }}>
           <div style={{ fontSize: 13, fontWeight: 900 }}>{APP_INFO.PORTAL_NAME}</div>
           <div style={{ color: "#94a3b8", fontSize: 11, marginTop: 3 }}>Media & Communication</div>
@@ -1477,7 +1477,7 @@ export default function MediaCommDashboard({ fixedRole }) {
                 <select
                   value={selfSectionView}
                   onChange={(event) => handleSelfSectionChange(event.target.value)}
-                  style={{ height: 34, border: "1px solid #334155", borderRadius: 7, background: "#1e293b", color: "#f8fafc", padding: "0 9px", fontFamily: "Georgia, serif", fontSize: 11, fontWeight: 700 }}
+                  style={{ height: 34, border: "1px solid #334155", borderRadius: 7, background: "#1e293b", color: "#f8fafc", padding: "0 9px", fontFamily: "inherit", fontSize: 11, fontWeight: 700 }}
                 >
                   {SECTION_OPTIONS.map((option) => <option key={option.value} value={option.value} disabled={!isSelfSectionOpen(option.value)}>{option.label}</option>)}
                 </select>
@@ -1491,7 +1491,7 @@ export default function MediaCommDashboard({ fixedRole }) {
           <div style={{ background: "#1e293b", borderRadius: 8, padding: "9px 10px" }}>
             <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 }}>Guidelines Section</div>
             <select value={guidelinesTab} onChange={(e) => setGuidelinesTab(e.target.value)}
-              style={{ width: "100%", border: "1px solid #334155", borderRadius: 7, padding: "7px 8px", fontSize: 12, fontFamily: "Georgia, serif", color: "#e2e8f0", background: "#0f172a", outline: "none" }}>
+              style={{ width: "100%", border: "1px solid #334155", borderRadius: 7, padding: "7px 8px", fontSize: 12, fontFamily: "inherit", color: "#e2e8f0", background: "#0f172a", outline: "none" }}>
               <option value="form">Form Guidelines</option>
               <option value="grading">Grading Scheme</option>
             </select>
@@ -1502,7 +1502,7 @@ export default function MediaCommDashboard({ fixedRole }) {
             type="button"
             onClick={() => navigate("/edit-profile")}
             title="Edit profile"
-            style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "Georgia, serif", textAlign: "left" }}
+            style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, width: "100%", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
           >
             <Avatar initials={userInitials(sessionStorage.getItem("name"))} color={ACCENT} size={34} />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -1516,7 +1516,7 @@ export default function MediaCommDashboard({ fixedRole }) {
           </button>
           <button
             onClick={() => setShowLogoutModal(true)}
-            style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "Georgia, serif" }}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "inherit" }}
             onMouseEnter={(event) => { event.currentTarget.style.background = "#1e293b"; }}
             onMouseLeave={(event) => { event.currentTarget.style.background = "none"; }}
           >
@@ -1583,46 +1583,96 @@ export default function MediaCommDashboard({ fixedRole }) {
         )}
 
         {activeTab === "approvals" && !reviewing && role !== "faculty" && (
-          <div style={{ display: "grid", gap: 14 }}>
-            {loadingQueue && <div style={{ color: "#64748b" }}>Loading SoMCS queue...</div>}
-            {!loadingQueue && queue.length === 0 && <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 30, color: "#64748b" }}>No SoMCS submissions are assigned to you.</div>}
-            {queue.map((item) => (
-              <div key={item.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${ACCENT}`, borderRadius: 10, padding: 16, display: "grid", gap: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 900, color: "#0f172a" }}>{item.name}</div>
-                    <div style={{ color: "#64748b", fontSize: 12 }}>{titleCase(item.appraisalRole)} - {item.school}</div>
-                  </div>
-                  <StatusBadge status={item.status} />
+          <div>
+            {/* ── Queue header & live stats ── */}
+            {!loadingQueue && queue.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a" }}>Faculty Approvals Queue</div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Review and grade submitted appraisals</div>
                 </div>
-                {(() => {
-                  const maxScores = {
-                    partA: n(item.effectivePartAMax) || PART_A_MAX,
-                    partB: n(item.effectivePartBMax) || PART_B_MAX,
-                    grand: n(item.effectiveGrandMax) || (n(item.effectivePartAMax) || PART_A_MAX) + (n(item.effectivePartBMax) || PART_B_MAX),
-                  };
-                  const itemTotals = {
-                    partA: n(item.selfPartA ?? item.partATotal),
-                    partB: n(item.selfPartB ?? item.partBTotal),
-                    total: n(item.selfTotal ?? item.grandTotal),
-                  };
-                  return <SummaryBox totals={itemTotals} maxScores={maxScores} roleScoreLabel={`Submitted on ${item.submittedOn || "record"}`} />;
-                })()}
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button
-                    disabled={reviewLoading === item.id}
-                    onClick={() => openSubmittedReview(item)}
-                    style={{
-                      ...smallButton(item.status === "Reviewed" ? "#1e293b" : ACCENT2),
-                      cursor: reviewLoading === item.id ? "wait" : "pointer",
-                      opacity: reviewLoading === item.id ? 0.7 : 1,
-                    }}
-                  >
-                    {reviewLoading === item.id ? "Loading..." : item.status === "Reviewed" ? "View Review" : "Review Form"}
-                  </button>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ background: "#f1f5f9", color: "#475569", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700 }}>Total: {queue.length}</span>
+                  <span style={{ background: "#fef9c3", color: "#854d0e", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700 }}>Pending: {queue.filter(i => i.status !== "Reviewed").length}</span>
+                  <span style={{ background: "#dcfce7", color: "#166534", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700 }}>Reviewed: {queue.filter(i => i.status === "Reviewed").length}</span>
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* ── Loading indicator ── */}
+            {loadingQueue && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "24px 0", color: "#64748b", fontSize: 13 }}>
+                <div className="fa-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: ACCENT }} />
+                Loading SoMCS queue…
+              </div>
+            )}
+
+            {/* ── Empty state ── */}
+            {!loadingQueue && queue.length === 0 && (
+              <div style={{ textAlign: "center", padding: "56px 24px", background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0" }}>
+                <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#f0fdf4", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24 }}>✓</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#0f172a", marginBottom: 6 }}>All caught up!</div>
+                <div style={{ color: "#64748b", fontSize: 13 }}>No SoMCS submissions are assigned to you at this time.</div>
+              </div>
+            )}
+
+            {/* ── Faculty cards ── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {queue.map((item) => {
+                const initials = (item.name || "?").trim().split(/\s+/).map(w => w[0]).join("").substring(0, 2).toUpperCase();
+                const isReviewed = item.status === "Reviewed";
+                const maxScores = {
+                  partA: n(item.effectivePartAMax) || PART_A_MAX,
+                  partB: n(item.effectivePartBMax) || PART_B_MAX,
+                  grand: n(item.effectiveGrandMax) || (n(item.effectivePartAMax) || PART_A_MAX) + (n(item.effectivePartBMax) || PART_B_MAX),
+                };
+                const itemTotals = {
+                  partA: n(item.selfPartA ?? item.partATotal),
+                  partB: n(item.selfPartB ?? item.partBTotal),
+                  total: n(item.selfTotal ?? item.grandTotal),
+                };
+                const scoreLabel = `Submitted on ${item.submittedOn || "record"}`;
+                return (
+                  <div key={item.id} style={{ background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", borderLeft: `4px solid ${isReviewed ? "#22c55e" : ACCENT}`, overflow: "hidden" }}>
+                    {/* ── Name / role / action row ── */}
+                    <div style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ width: 42, height: 42, borderRadius: "50%", background: `linear-gradient(135deg,${ACCENT},${ACCENT2})`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 13, flexShrink: 0, letterSpacing: 0.5 }}>{initials}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: "#0f172a", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>{titleCase(item.appraisalRole)} · {item.school}</div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                        <StatusBadge status={item.status} />
+                        <button
+                          disabled={reviewLoading === item.id}
+                          onClick={() => openSubmittedReview(item)}
+                          style={{ ...smallButton(isReviewed ? "#1e293b" : ACCENT2), padding: "6px 14px", fontSize: 11, cursor: reviewLoading === item.id ? "wait" : "pointer", opacity: reviewLoading === item.id ? 0.7 : 1 }}
+                        >
+                          {reviewLoading === item.id ? "Loading…" : isReviewed ? "View Review →" : "Review Form →"}
+                        </button>
+                      </div>
+                    </div>
+                    {/* ── Score metrics grid ── */}
+                    <div style={{ padding: "12px 18px 14px", background: "#fafbff", borderTop: "1px solid #f1f5f9" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px 20px", marginBottom: 8 }}>
+                        {[["Part A", itemTotals.partA, maxScores.partA, ACCENT], ["Part B", itemTotals.partB, maxScores.partB, ACCENT2], ["Grand Total", itemTotals.total, maxScores.grand, "#059669"]].map(([label, value, max, color]) => (
+                          <div key={label}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 4 }}>
+                              <span style={{ fontWeight: 600, color: "#475569" }}>{label}</span>
+                              <span style={{ fontWeight: 700, color }}>{n(value).toFixed(1)}<span style={{ color: "#94a3b8", fontWeight: 500 }}>/{max}</span></span>
+                            </div>
+                            <div style={{ height: 5, background: "#e2e8f0", borderRadius: 99, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${Math.min(100, max > 0 ? (n(value) / max) * 100 : 0)}%`, background: color, borderRadius: 99, transition: "width 0.6s ease" }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: 10, color: "#94a3b8", textAlign: "right" }}>{scoreLabel}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -1638,7 +1688,7 @@ export default function MediaCommDashboard({ fixedRole }) {
 
         {activeTab === "guidelines" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ maxWidth: 900, margin: "0 auto", fontFamily: "Georgia, serif", width: "100%" }}>
+            <div style={{ maxWidth: 900, margin: "0 auto", fontFamily: "inherit", width: "100%" }}>
               <div style={{ background: "#fff", borderRadius: 9, padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 16 }}>
                 <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800, color: "#0f172a" }}>D Y PATIL INTERNATIONAL UNIVERSITY</h2>
                 <div style={{ color: "#64748b", fontSize: 13 }}>Akurdi, Pune</div>
@@ -2014,20 +2064,20 @@ export default function MediaCommDashboard({ fixedRole }) {
 function LogoutConfirmModal({ onCancel, onConfirm }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.55)", zIndex: 1000, display: "grid", placeItems: "center" }} onClick={onCancel}>
-      <div style={{ width: "min(380px, 92vw)", background: "#fff", borderRadius: 12, padding: "26px 28px", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", fontFamily: "Georgia, serif" }} onClick={(event) => event.stopPropagation()}>
+      <div style={{ width: "min(380px, 92vw)", background: "#fff", borderRadius: 12, padding: "26px 28px", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", fontFamily: "inherit" }} onClick={(event) => event.stopPropagation()}>
         <div style={{ color: "#0f172a", fontWeight: 900, fontSize: 17, marginBottom: 8 }}>Confirm Logout</div>
         <div style={{ color: "#64748b", fontSize: 12, lineHeight: 1.6, marginBottom: 18 }}>You are about to leave {APP_INFO.PORTAL_NAME}. Any unsaved edits will be lost.</div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button type="button" onClick={onCancel} style={{ flex: 1, border: "none", borderRadius: 8, background: "#f1f5f9", color: "#475569", padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "Georgia, serif" }}>Cancel</button>
-          <button type="button" onClick={onConfirm} style={{ flex: 1, border: "none", borderRadius: 8, background: "#dc2626", color: "#fff", padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "Georgia, serif" }}>Yes, Logout</button>
+          <button type="button" onClick={onCancel} style={{ flex: 1, border: "none", borderRadius: 8, background: "#f1f5f9", color: "#475569", padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+          <button type="button" onClick={onConfirm} style={{ flex: 1, border: "none", borderRadius: 8, background: "#dc2626", color: "#fff", padding: "10px", fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Yes, Logout</button>
         </div>
       </div>
     </div>
   );
 }
 
-const thStyle = { border: "1px solid #cbd5e1", padding: "7px 8px", background: "#0f172a", color: "#e2e8f0", fontWeight: 800, textAlign: "center", fontSize: 10, whiteSpace: "nowrap" };
+const thStyle = { border: "1px solid #334155", padding: "7px 8px", background: "#1e293b", color: "#e2e8f0", fontWeight: 800, textAlign: "center", fontSize: 10, whiteSpace: "nowrap", letterSpacing: "0.3px" };
 const tdStyle = { border: "1px solid #e2e8f0", padding: "5px 7px", verticalAlign: "middle", minWidth: 120 };
 const tdCenter = { ...tdStyle, textAlign: "center", minWidth: 70 };
-const smallButton = (background) => ({ padding: "8px 14px", background, color: "#fff", border: "none", borderRadius: 7, cursor: background === "#94a3b8" ? "not-allowed" : "pointer", fontWeight: 800, fontSize: 12, fontFamily: "Georgia, serif" });
-const navButton = (active) => ({ width: "100%", border: "none", borderLeft: `3px solid ${active ? ACCENT : "transparent"}`, background: active ? `${ACCENT}33` : "transparent", color: active ? "#fbbf24" : "#cbd5e1", borderRadius: 8, padding: "10px 12px", cursor: "pointer", textAlign: "left", fontWeight: 800, fontFamily: "Georgia, serif" });
+const smallButton = (background) => ({ padding: "8px 14px", background, color: "#fff", border: "none", borderRadius: 7, cursor: background === "#94a3b8" ? "not-allowed" : "pointer", fontWeight: 800, fontSize: 12, fontFamily: "inherit" });
+const navButton = (active) => ({ width: "100%", border: "none", borderLeft: `3px solid ${active ? ACCENT : "transparent"}`, background: active ? `${ACCENT}33` : "transparent", color: active ? "#fbbf24" : "#cbd5e1", borderRadius: 8, padding: "10px 12px", cursor: "pointer", textAlign: "left", fontWeight: 800, fontFamily: "inherit" });
