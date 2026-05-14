@@ -30,12 +30,12 @@ import {
   scoreSectionRows,
   societyRowLocked,
   societyRowScore,
-  societySelectionForRow,
   sumSectionScore,
   toggleInnovativeMethod,
   validateCompleteRows,
 } from "../utils/appraisalFormUtils";
 import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles, workflowValidationError } from "../utils/hierarchy";
+import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 
 const ACCENT = "#b45309";
 const ACCENT2 = "#0f766e";
@@ -102,7 +102,7 @@ const emptyMediaForm = () => ({
   feedback: [{ code: "", fb1: "", fb2: "", score: "" }],
   deptActs: [{ activity: "", nature: "", score: "" }],
   uniActs: [{ activity: "", nature: "", score: "" }],
-  society: [{ label: "", details: "", participated: "", score: "" }],
+  society: [{ label: "", details: "", score: "" }],
   acr: createAcrRows(),
   journals: [{ title: "", journal: "", issn: "", index: "", score: "" }],
   popularWritings: [{ media: "", film: "", score: "" }],
@@ -130,7 +130,7 @@ const PART_A_SECTIONS = [
   { key: "feedback", title: "Student Feedback", max: 10, doc: "fb", fields: [["code", "Course Code / Name"], ["fb1", "First Feedback (%)"], ["fb2", "Second Feedback (%)"]] },
   { key: "deptActs", title: "Departmental / School Activities", max: 20, doc: "dept", fields: [["activity", "Activity"], ["nature", "Nature"]] },
   { key: "uniActs", title: "University Level Activities", max: 30, doc: "uni", fields: [["activity", "Activity"], ["nature", "Nature"]] },
-  { key: "society", title: "(ix) Contribution to Society - Max 10 marks (Max 5 per row)", max: 10, doc: "soc", rowMax: SCORE_LIMITS.societyRow, fields: [["label", "Activity"], ["participated", "Yes/No"], ["details", "Details"]] },
+  { key: "society", title: "(ix) Contribution to Society - Max 10 marks (Max 5 per row)", max: 10, doc: "soc", rowMax: SCORE_LIMITS.societyRow, fields: [["label", "Activity"], ["details", "Details"]] },
   { key: "acr", title: "(xi) Annual Confidential Report (ACR) - Max 25 marks", max: 25, doc: "acr", rowMax: SCORE_LIMITS.acrRow, fields: [["label", "Attribute", true]], selfReadOnlyScore: true },
 ];
 
@@ -491,8 +491,6 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
         const rowMax = section.rowMax ? (typeof section.rowMax === "function" ? section.rowMax(row) : section.rowMax) : section.max;
         const nextValue = key === "date" ? maskDateDDMMYYYY(value) : key === "score" ? clampScore(value, rowMax) : value;
         const nextRow = { ...row, [key]: nextValue };
-        if (section.key === "society" && key === "participated") return { ...nextRow, score: nextValue === "No" || !nextValue ? "0" : row.score };
-        if (section.key === "society" && key === "score" && n(nextValue) > 0 && !nextRow.participated) return { ...nextRow, participated: "Yes" };
         if (section.key === "research" && ["degree", "name", "thesis"].includes(key)) return { ...nextRow, score: researchGuidanceScore(nextRow) ? String(researchGuidanceScore(nextRow)) : "" };
         return nextRow;
       }),
@@ -571,9 +569,9 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
                 <td style={tdCenter}>{index + 1}</td>
                 {section.fields.map(([key, , readOnlyField]) => (
                   <td key={key} style={tdStyle}>
-                    {mode !== "self" ? <RO value={row[key]} /> : key === "first" || key === "participated" ? (
+                    {mode !== "self" ? <RO value={row[key]} /> : key === "first" ? (
                       <select
-                        value={key === "participated" ? societySelectionForRow(row) : row[key] || ""}
+                        value={row[key] || ""}
                         disabled={!editableSelf || readOnlyField || notApplicable || selfLocked}
                         onChange={(event) => updateRow(index, key, event.target.value)}
                         style={{ width: "100%", height: 30, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontFamily: "inherit", fontSize: 11 }}
@@ -1337,6 +1335,10 @@ export default function MediaCommDashboard({ fixedRole }) {
       alert("Please verify and confirm the accuracy declaration before submitting the review.");
       return;
     }
+    if (!remarks?.trim()) {
+      alert("Remarks are mandatory. Please enter your remarks before submitting the review.");
+      return;
+    }
     const item = queue.find((entry) => entry.id === id);
     if (!item) return;
     try {
@@ -1529,9 +1531,12 @@ export default function MediaCommDashboard({ fixedRole }) {
         </div>
       </aside>
       <main style={{ flex: 1, padding: "20px 24px", overflowX: "auto" }}>
-        <div style={{ marginBottom: 16 }}>
-          <h2 style={{ margin: 0, color: "#0f172a", fontSize: 21 }}>School of Media & Communication Studies</h2>
-          <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>{roleLabel(role)} workflow dashboard</div>
+        <div style={{ marginBottom: 16, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+          <div>
+            <h2 style={{ margin: 0, color: "#0f172a", fontSize: 21 }}>School of Media & Communication Studies</h2>
+            <div style={{ color: "#64748b", fontSize: 12, marginTop: 3 }}>{roleLabel(role)} workflow dashboard</div>
+          </div>
+          <AppraisalHeaderImage />
         </div>
 
         {activeTab === "my" && canSelfSubmit && (

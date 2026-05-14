@@ -5,9 +5,10 @@ import { ACR_DETAIL_POINTS, APP_INFO, createAcrRows } from "../constants/formCon
 import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAppraisalDraftSection, submitAppraisal } from "../services/appraisalPersistence";
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
-import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, scoreRemaining, societyRowLocked, societyRowScore, societySelectionForRow, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
+import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, scoreRemaining, societyRowLocked, societyRowScore, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
 import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel } from "../utils/hierarchy";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
+import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -573,7 +574,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, reviewerLabel = "HOD"
         </div>
         {faculty.sectionApplicability?.society !== "notApplicable" && <table style={T}>
           <thead><tr>
-            <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Yes/No</th><th style={TH}>Details</th>
+            <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Details</th>
             <th style={TH}>View Docs</th><th style={TH}>Faculty Score (Max 5)</th><th style={TH_HOD}>{reviewerScoreLabel}</th>
           </tr></thead>
           <tbody>
@@ -581,7 +582,6 @@ function FacultyReviewForm({ faculty, hodData, setHodData, reviewerLabel = "HOD"
               <tr key={i} style={societyRowLocked(r) ? { background: "#f1f5f9", opacity: 0.65 } : i % 2 ? { background: "#f8fafc" } : {}}>
                 <td style={TDC}>{i + 1}</td>
                 <td style={TD}><RO val={r.label} /></td>
-                <td style={TDC}><RO val={societySelectionForRow(r) || "No"} center /></td>
                 <td style={TD}><RO val={r.details} /></td>
                 <td style={TDV}><ViewDocsCell docKey={`soc-${i}`} docs={docs} /></td>
                 <td style={TDS}><RO val={societyRowScore(r)} center /></td>
@@ -1490,7 +1490,7 @@ export default function HODDashboard({
       { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
       { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
       { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
-      { label: "A(ix). Contribution to Society", rows: society, fields: ["details", "participated"] },
+      { label: "A(ix). Contribution to Society", rows: society, fields: ["details"] },
       { label: "A(x). Industry Connect", rows: industry, fields: ["name", "details", "score"] },
       { label: "B1. Journals", rows: journals, fields: ["title", "journal", "issn", "index", "score"] },
       { label: "B2. Books / Chapters", rows: books, fields: ["title", "book", "issn", "pub", "coauth", "first", "score"] },
@@ -1528,7 +1528,7 @@ export default function HODDashboard({
       { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
       { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
       { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
-      { label: "A(ix). Contribution to Society", rows: society, fields: ["details", "participated"] },
+      { label: "A(ix). Contribution to Society", rows: society, fields: ["details"] },
       { label: "A(x). Industry Connect", rows: industry, fields: ["name", "details", "score"] },
     ];
     const partBSections = [
@@ -1777,9 +1777,9 @@ export default function HODDashboard({
 
     <h3>E. Contribution to Society &nbsp;(Max 10)</h3>
     ${sectionApplicability.society === "notApplicable" ? "<p><em>Not Applicable</em></p>" : `<table>
-      <tr><th>SN</th><th>Activity</th><th>Participated</th><th>Details</th><th>API Score</th></tr>
-      ${society.map((s,i) => `<tr><td class="c">${i+1}</td><td>${s.label||'&nbsp;'}</td><td class="c">${societySelectionForRow(s)||'&nbsp;'}</td><td>${s.details||'&nbsp;'}</td><td class="c">${societyRowScore(s)}</td></tr>`).join('')}
-      <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${societyScore.toFixed(1)}</td></tr>
+      <tr><th>SN</th><th>Activity</th><th>Details</th><th>API Score</th></tr>
+      ${society.map((s,i) => `<tr><td class="c">${i+1}</td><td>${s.label||'&nbsp;'}</td><td>${s.details||'&nbsp;'}</td><td class="c">${societyRowScore(s)}</td></tr>`).join('')}
+      <tr class="tr"><td colspan="3" class="c b">Total (Max 10)</td><td class="c">${societyScore.toFixed(1)}</td></tr>
     </table>`}
 
     <h3>F. Industry Connect Activity &nbsp;(Max 5)</h3>
@@ -2109,9 +2109,12 @@ export default function HODDashboard({
         {/* MY APPRAISAL TAB */}
         {activeMainTab === "myAppraisal" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ background: "#fff", borderRadius: 9, padding: "16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 4 }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>My Appraisal Form</h2>
-              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b" }}>{info.name || "HOD"} · {info.ay}</p>
+            <div style={{ background: "#fff", borderRadius: 9, padding: "16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 4, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>My Appraisal Form</h2>
+                <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b" }}>{info.name || "HOD"} · {info.ay}</p>
+              </div>
+              <AppraisalHeaderImage height={45} />
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2426,7 +2429,6 @@ export default function HODDashboard({
                       <tr>
                         <th style={{ ...TH, width: 30 }}>SN</th>
                         <th style={TH}>Activity</th>
-                        <th style={TH}>Yes/No</th>
                         <th style={TH}>Details</th>
                         <th style={TH}>Attachment</th>
                         <th style={TH}>View Docs</th>
@@ -2440,12 +2442,6 @@ export default function HODDashboard({
                         <tr key={i} style={socLocked ? { background: "#f1f5f9", opacity: 0.65 } : i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.label} onChange={(v) => setSoc(i, "label", v)} readOnly={socLocked} /></td>
-                          <td style={TDC}>
-                            <select value={societySelectionForRow(r) || "No"} onChange={(e) => setSociety((rows) => rows.map((row, ri) => ri === i ? { ...row, participated: e.target.value, score: e.target.value === "No" ? "0" : row.score } : row))} style={{ fontSize: 12, padding: "4px 6px", borderRadius: 4, border: "1px solid #cbd5e1", fontFamily: "inherit" }}>
-                              <option value="No">No</option>
-                              <option value="Yes">Yes</option>
-                            </select>
-                          </td>
                           <td style={TD}><TI val={r.details} onChange={(v) => setSoc(i, "details", v)} readOnly={socLocked} /></td>
                           <td style={TD}><DocCell id={`soc-${i}`} docs={docs} setDocs={setDocs} readOnly={socLocked} /></td>
                           <td style={TD}><ViewCell id={`soc-${i}`} docs={docs} /></td>
@@ -2454,12 +2450,12 @@ export default function HODDashboard({
                         );
                       })}
                       <tr style={{ background: "#eff6ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Score (Max 10)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={5}>Total Score (Max 10)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{societyScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>
-                  <RowBtns onAdd={() => setSociety((p) => [...p, { label: "", details: "", participated: "", score: "" }])} onDel={() => setSociety((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={society.length > 1} />
+                  <RowBtns onAdd={() => setSociety((p) => [...p, { label: "", details: "", score: "" }])} onDel={() => setSociety((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={society.length > 1} />
                   </>}
                 </div>
 
@@ -3141,9 +3137,10 @@ export default function HODDashboard({
                 <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a", letterSpacing: -0.5 }}>Faculty's Appraisal</h1>
                 <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 11 }}>{sessionStorage.getItem("department") || ""} · AY {APP_INFO.DEFAULT_AY}</p>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#fef3c7", color: "#92400e" }}>⏳ {pendingCount} Pending</div>
                 <div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#d1fae5", color: "#065f46" }}>✔ {reviewedCount} Reviewed</div>
+                <AppraisalHeaderImage />
               </div>
             </div>
 

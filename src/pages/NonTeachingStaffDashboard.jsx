@@ -26,6 +26,7 @@ import {
 } from "../services/nonTeachingWorkflow";
 import { clampScore, scoreRemaining } from "../utils/appraisalFormUtils";
 import { profileFromsessionStorage } from "../utils/hierarchy";
+import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 
 const ACCENT = "#1d4ed8";
 const REG_ACCENT = "#155e75";
@@ -525,7 +526,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
         <div style={{ color: "#64748b", padding: 30 }}>Loading appraisal...</div>
       ) : (
         <>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
             <div>
               <h1 style={{ margin: 0, fontSize: 22, color: "#0f172a" }}>Non-Teaching Staff Appraisal</h1>
               <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 12 }}>{nonTeachingRoleLabel(normalizedRole)} | AY {form.info?.ay || APP_INFO.DEFAULT_AY}</p>
@@ -533,6 +534,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <button type="button" onClick={() => navigate("/edit-profile")} style={S.headerButton}>Edit Profile</button>
               <StatusBadge status={form.status} />
+              <AppraisalHeaderImage />
             </div>
           </div>
 
@@ -788,6 +790,10 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
       alert("Please verify and confirm the accuracy declaration before submitting the review.");
       return;
     }
+    if (!remarks?.trim()) {
+      alert("Remarks are mandatory. Please enter your remarks before submitting the review.");
+      return;
+    }
     try {
       validateNonTeachingForm(form, role === "vc" ? "vc" : role, true);
     } catch (err) {
@@ -912,7 +918,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
             <button type="button" onClick={onBack} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#f1f5f9", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>{locked ? "Close" : "Cancel"}</button>
             <button type="button" onClick={handleReport} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#e2e8f0", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>Generate Report</button>
             {!locked && (
-              <button type="button" onClick={handleSubmit} disabled={!confirmed || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: confirmed ? accent : "#94a3b8", color: "#fff", cursor: confirmed && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "inherit" }}>
+              <button type="button" onClick={handleSubmit} disabled={!confirmed || !remarks.trim() || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: (confirmed && remarks.trim()) ? accent : "#94a3b8", color: "#fff", cursor: confirmed && remarks.trim() && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "inherit" }}>
                 {submitting ? "Submitting..." : "Confirm & Submit"}
               </button>
             )}

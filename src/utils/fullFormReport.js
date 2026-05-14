@@ -1,4 +1,4 @@
-﻿import { clampScore, researchGuidanceScore, rowMaxForSection, societySelectionForRow, societyRowScore, SCORE_LIMITS, projectGuidanceRowMax } from "./appraisalFormUtils";
+﻿import { clampScore, researchGuidanceScore, rowMaxForSection, societyRowScore, SCORE_LIMITS, projectGuidanceRowMax } from "./appraisalFormUtils";
 
 const n = (value) => parseFloat(value) || 0;
 
@@ -484,9 +484,9 @@ export const generateStandardReport = async ({
   ${uniActs.map((u,i)=>`<tr><td class="c">${i+1}</td><td>${u.activity||'&nbsp;'}</td><td>${u.nature||'&nbsp;'}</td><td class="c">${u.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="3" class="c b">Total (Max 30)</td><td class="c">${uniScore.toFixed(1)}</td></tr></table>
   <h3>E. Contribution to Society (Max 10)</h3>
-  ${sectionApplicability.society==='notApplicable'?'<p><em>Not Applicable</em></p>':`<table><tr><th>SN</th><th>Activity</th><th>Participated</th><th>Details</th><th>API Score</th></tr>
-  ${society.map((s,i)=>`<tr><td class="c">${i+1}</td><td>${s.label||'&nbsp;'}</td><td class="c">${societySelectionForRow(s)||'&nbsp;'}</td><td>${s.details||'&nbsp;'}</td><td class="c">${societyRowScore(s)}</td></tr>`).join('')}
-  <tr class="tr"><td colspan="4" class="c b">Total (Max 10)</td><td class="c">${societyScore.toFixed(1)}</td></tr></table>`}
+  ${sectionApplicability.society==='notApplicable'?'<p><em>Not Applicable</em></p>':`<table><tr><th>SN</th><th>Activity</th><th>Details</th><th>API Score</th></tr>
+  ${society.map((s,i)=>`<tr><td class="c">${i+1}</td><td>${s.label||'&nbsp;'}</td><td>${s.details||'&nbsp;'}</td><td class="c">${societyRowScore(s)}</td></tr>`).join('')}
+  <tr class="tr"><td colspan="3" class="c b">Total (Max 10)</td><td class="c">${societyScore.toFixed(1)}</td></tr></table>`}
   <h3>F. Industry Connect Activity (Max 5)</h3>
   <table><tr><th>SN</th><th>Name of Industry</th><th>Details of Activity</th><th>API Score</th></tr>
   ${industry.map((ind,i)=>`<tr><td class="c">${i+1}</td><td>${ind.name||'&nbsp;'}</td><td>${ind.details||'&nbsp;'}</td><td class="c">${ind.score||'&nbsp;'}</td></tr>`).join('')}
@@ -595,3 +595,4 @@ export const generateStandardReport = async ({
   win.document.close();
   win.print();
 };
+

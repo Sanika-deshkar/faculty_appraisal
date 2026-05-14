@@ -112,11 +112,11 @@ export const societySelectionForRow = (row = {}) => {
   return toNumber(row.score) > 0 ? "Yes" : "";
 };
 
-export const societyRowLocked = (row = {}) =>
-  normalizedText(societySelectionForRow(row)) !== "yes";
+export const societyRowLocked = () =>
+  false;
 
 export const societyRowScore = (row = {}) =>
-  societyRowLocked(row) ? 0 : clampScore(toNumber(row.score), SCORE_LIMITS.societyRow);
+  clampScore(toNumber(row.score), SCORE_LIMITS.societyRow);
 
 export const effectiveMaxScore = (baseMax, applicability = {}, sections = []) =>
   Math.max(
@@ -221,11 +221,9 @@ export const normalizeAutoScores = (form = {}) => ({
     score: feedbackRowScore(row, 10).toFixed(1),
   })),
   society: (form.society || []).map((row) => {
-    const selection = societySelectionForRow(row);
     return {
       ...row,
-      participated: selection,
-      score: normalizedText(selection) === "yes" ? String(clampScore(toNumber(row.score), SCORE_LIMITS.societyRow)) : "0",
+      score: String(clampScore(toNumber(row.score), SCORE_LIMITS.societyRow) || ""),
     };
   }),
   research: (form.research || []).map((row) => {
@@ -341,7 +339,7 @@ export const validateCompleteRows = (sections = [], defaultDocs) => {
 
       const requireAttachmentForRow = typeof shouldRequireAttachment === "function"
         ? shouldRequireAttachment(row, index)
-        : shouldRequireAttachment && !(labelText.includes("society") && normalizedText(societySelectionForRow(row)) !== "yes");
+        : shouldRequireAttachment;
 
       if (requireAttachmentForRow) {
         const files = docsForRow(docs, resolvedDocPrefix, index, typeof docKey === "function" ? docKey(row, index) : docKey);

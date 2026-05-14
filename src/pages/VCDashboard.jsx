@@ -12,8 +12,9 @@ import { openFullFormReport } from "../utils/fullFormReport";
 import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
 import { NonTeachingAuthorityReviewPanel } from "./NonTeachingStaffDashboard";
-import { SCORE_LIMITS, clampScore, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, societyRowLocked, societyRowScore, societySelectionForRow } from "../utils/appraisalFormUtils";
+import { SCORE_LIMITS, clampScore, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, societyRowLocked, societyRowScore } from "../utils/appraisalFormUtils";
 import { standardReviewSummary } from "../utils/reviewSummaryTotals";
+import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const n = (v) => parseFloat(v) || 0;
@@ -548,14 +549,13 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director", sect
       {/* E. Contribution to Society */}
       <SC title="E. Contribution to Society (Max 10, Max 5 per row)" accent="#10b981">
         <table style={T}><thead><tr>
-          <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Yes/No</th><th style={TH}>Details</th><th style={TH}>Docs</th>
+          <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Details</th><th style={TH}>Docs</th>
           {renderScoreHeaders()}
         </tr></thead>
         <tbody>{rows(person.society).map((r, i) => (
           <tr key={i} style={societyRowLocked(r) ? { background: "#f1f5f9", opacity: 0.65 } : i % 2 ? { background: "#f8fafc" } : {}}>
             <td style={TDC}>{i + 1}</td>
             <td style={TD}><RO val={r.label} /></td>
-            <td style={TDC}><RO val={societySelectionForRow(r) || "No"} center /></td>
             <td style={TD}><RO val={r.details} /></td>
             <td style={TDV}><ViewDocsCell docKey={`soc-${i}`} docs={docs} /></td>
             {renderScoreCells(r, "society", i)}
@@ -1478,8 +1478,11 @@ export default function VCDashboard() {
                 <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0f172a", letterSpacing: -0.5 }}>School-wise Appraisal Reviews</h1>
                 <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 11 }}>{APP_INFO.SHORT_NAME} · AY {APP_INFO.DEFAULT_AY}</p>
               </div>
-              <div style={{ fontSize: 11, color: "#64748b", background: "#fff", padding: "8px 14px", borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,.06)" }}>
-                {deanList.length + dirList.length + hodList.length + centerHeadList.length + facList.length + nonTeachingList.length} total submissions
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ fontSize: 11, color: "#64748b", background: "#fff", padding: "8px 14px", borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,.06)" }}>
+                  {deanList.length + dirList.length + hodList.length + centerHeadList.length + facList.length + nonTeachingList.length} total submissions
+                </div>
+                <AppraisalHeaderImage />
               </div>
             </div>
 

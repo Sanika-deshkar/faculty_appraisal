@@ -5,11 +5,12 @@ import { HodInput } from "../components/Inputs";
 import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAppraisalDraftSection, submitAppraisal } from "../services/appraisalPersistence";
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
-import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, scoreRemaining, societyRowLocked, societyRowScore, societySelectionForRow, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
+import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, scoreRemaining, societyRowLocked, societyRowScore, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
 import { DEAN_TRACKS, getSchoolKey, getSchoolsByDeanTrack } from "../constants/universityHierarchy";
 import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel } from "../utils/hierarchy";
 import { generateStandardReport } from "../utils/fullFormReport";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
+import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 
 const ENGINEERING_SCHOOLS = getSchoolsByDeanTrack(DEAN_TRACKS.ENGINEERING);
 const ENGINEERING_SCHOOL_VALUES = ENGINEERING_SCHOOLS.flatMap((school) => [
@@ -537,7 +538,7 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
         </div>
         {faculty.sectionApplicability?.society !== "notApplicable" && <table style={T}>
           <thead><tr>
-            <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Yes/No</th><th style={TH}>Details</th>
+            <th style={TH}>SN</th><th style={TH}>Activity</th><th style={TH}>Details</th>
             <th style={TH}>View Docs</th><th style={TH}>Faculty Score (Max 5)</th><th style={TH_HOD}>HOD Score</th>
           </tr></thead>
           <tbody>
@@ -545,7 +546,6 @@ function FacultyReviewForm({ faculty, hodData, setHodData, sectionView = "partA"
               <tr key={i} style={societyRowLocked(r) ? { background: "#f1f5f9", opacity: 0.65 } : i % 2 ? { background: "#f8fafc" } : {}}>
                 <td style={TDC}>{i + 1}</td>
                 <td style={TD}><RO val={r.label} /></td>
-                <td style={TDC}><RO val={societySelectionForRow(r) || "No"} center /></td>
                 <td style={TD}><RO val={r.details} /></td>
                 <td style={TDV}><ViewDocsCell docKey={`soc-${i}`} docs={docs} /></td>
                 <td style={TDS}><RO val={societyRowScore(r)} center /></td>
@@ -1081,7 +1081,8 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>Cancel</button>
             <button onClick={() => onSubmit(faculty.id, total, remarks)}
-              style={{ padding: "10px 28px", background: "#059669", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
+              disabled={!remarks.trim()}
+              style={{ padding: "10px 28px", background: remarks.trim() ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: remarks.trim() ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
               ? Submit HOD Review
             </button>
           </div>
@@ -1377,7 +1378,6 @@ function DeanReviewScoreForm({ approval, deanData, setDeanData, sectionView = "p
         docPrefix="soc"
         columns={[
           { label: "Activity", render: (r) => r.label },
-          { label: "Yes/No", render: (r) => societySelectionForRow(r) || "No", center: true },
           { label: "Details", render: (r) => r.details },
         ]}
       />
@@ -2104,7 +2104,7 @@ export default function DeanDashboard() {
       { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
       { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
       { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
-      { label: "A(ix). Contribution to Society", rows: society, fields: ["details", "participated"] },
+      { label: "A(ix). Contribution to Society", rows: society, fields: ["details"] },
       { label: "A(x). Industry Connect", rows: industry, fields: ["name", "details", "score"] },
       { label: "B1. Journals", rows: journals, fields: ["title", "journal", "issn", "index", "score"] },
       { label: "B2. Books / Chapters", rows: books, fields: ["title", "book", "issn", "pub", "coauth", "first", "score"] },
@@ -2142,7 +2142,7 @@ export default function DeanDashboard() {
       { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
       { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
       { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
-      { label: "A(ix). Contribution to Society", rows: society, fields: ["details", "participated"] },
+      { label: "A(ix). Contribution to Society", rows: society, fields: ["details"] },
       { label: "A(x). Industry Connect", rows: industry, fields: ["name", "details", "score"] },
     ];
     const partBSections = [
@@ -2431,9 +2431,12 @@ export default function DeanDashboard() {
         {/* MY APPRAISAL TAB */}
         {activeMainTab === "myAppraisal" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ background: "#fff", borderRadius: 9, padding: "16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 4 }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>My Appraisal Form</h2>
-              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b" }}>{info.name || "HOD"} · {info.ay}</p>
+            <div style={{ background: "#fff", borderRadius: 9, padding: "16px 20px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 4, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>My Appraisal Form</h2>
+                <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b" }}>{info.name || "HOD"} · {info.ay}</p>
+              </div>
+              <AppraisalHeaderImage height={45} />
             </div>
 
             {appraisalLocked && (
@@ -2754,7 +2757,6 @@ export default function DeanDashboard() {
                       <tr>
                         <th style={{ ...TH, width: 30 }}>SN</th>
                         <th style={TH}>Activity</th>
-                        <th style={TH}>Yes/No</th>
                         <th style={TH}>Details</th>
                         <th style={TH}>Attachment</th>
                         <th style={TH}>View Docs</th>
@@ -2768,12 +2770,6 @@ export default function DeanDashboard() {
                         <tr key={i} style={socLocked ? { background: "#f1f5f9", opacity: 0.65 } : i % 2 === 1 ? { background: "#f8fafc" } : {}}>
                           <td style={TDC}>{i + 1}</td>
                           <td style={TD}><TI val={r.label} onChange={(v) => setSoc(i, "label", v)} readOnly={socLocked} /></td>
-                          <td style={TDC}>
-                            <select value={societySelectionForRow(r) || "No"} onChange={(e) => setSociety((rows) => rows.map((row, ri) => ri === i ? { ...row, participated: e.target.value, score: e.target.value === "No" ? "0" : row.score } : row))} style={{ fontSize: 12, padding: "4px 6px", borderRadius: 4, border: "1px solid #cbd5e1", fontFamily: "inherit" }}>
-                              <option value="No">No</option>
-                              <option value="Yes">Yes</option>
-                            </select>
-                          </td>
                           <td style={TD}><TI val={r.details} onChange={(v) => setSoc(i, "details", v)} readOnly={socLocked} /></td>
                           <td style={TD}><DocCell id={`soc-${i}`} docs={docs} setDocs={setDocs} readOnly={socLocked} /></td>
                           <td style={TD}><ViewCell id={`soc-${i}`} docs={docs} /></td>
@@ -2782,12 +2778,12 @@ export default function DeanDashboard() {
                         );
                       })}
                       <tr style={{ background: "#eff6ff" }}>
-                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={6}>Total Score (Max 10)</td>
+                        <td style={{ ...TDC, fontWeight: "bold" }} colSpan={5}>Total Score (Max 10)</td>
                         <td style={{ ...TDS, fontWeight: "bold" }}>{societyScore.toFixed(1)}</td>
                       </tr>
                     </tbody>
                   </table>
-                  <RowBtns onAdd={() => setSociety((p) => [...p, { label: "", details: "", participated: "", score: "" }])} onDel={() => setSociety((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={society.length > 1} />
+                  <RowBtns onAdd={() => setSociety((p) => [...p, { label: "", details: "", score: "" }])} onDel={() => setSociety((p) => p.length > 1 ? p.slice(0, -1) : p)} canDel={society.length > 1} />
                   </>}
                 </div>
 
@@ -3471,9 +3467,10 @@ export default function DeanDashboard() {
                 </h1>
                 <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>{ENGINEERING_SCHOOLS.length} Engineering Schools · {APP_INFO.UNIVERSITY_NAME} · AY {info.ay}</p>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ fontSize: 12, fontWeight: 800, padding: "8px 18px", borderRadius: 20, background: "#fef3c7", color: "#92400e" }}>{pendingCount} Pending</div>
                 <div style={{ fontSize: 12, fontWeight: 800, padding: "8px 18px", borderRadius: 20, background: "#d1fae5", color: "#065f46" }}>{reviewedCount} Dean Reviewed</div>
+                <AppraisalHeaderImage />
               </div>
             </div>
 
