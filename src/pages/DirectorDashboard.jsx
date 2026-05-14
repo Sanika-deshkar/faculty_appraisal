@@ -1598,9 +1598,14 @@ export default function DirectorDashboard() {
     ];
     sections.push({ label: "A(iii). Innovative Teaching Methods", rows: visibleInnovRows, fields: ["method", "details", "score"], docKey: (_row, index) => index === 0 ? "innov" : `innov-${index}`, rowMax: SCORE_LIMITS.innovativeRow, maxScore: 10 });
     const errors = validateCompleteRows(sections, docs);
-    [...projects2, ...externalProjects].forEach((row, index) => {
+    projects2.forEach((row, index) => {
       if (row.date && !isValidDDMMYYYY(row.date)) {
-        errors.push(`B4 project row ${index + 1}: date must be DD/MM/YYYY.`);
+        errors.push(`B4(b) Internal Projects row ${index + 1}: date must be DD/MM/YYYY.`);
+      }
+    });
+    externalProjects.forEach((row, index) => {
+      if (row.date && !isValidDDMMYYYY(row.date)) {
+        errors.push(`B4(c) External Projects row ${index + 1}: date must be DD/MM/YYYY.`);
       }
     });
     if (errors.length) {
@@ -1640,8 +1645,11 @@ export default function DirectorDashboard() {
     const errors = validateCompleteRows(section === "partA" ? partASections : partBSections, docs);
     if (section === "partA") {
     } else {
-      [...projects2, ...externalProjects].forEach((row, index) => {
-        if (row.date && !isValidDDMMYYYY(row.date)) errors.push(`B4 project row ${index + 1}: date must be DD/MM/YYYY.`);
+      projects2.forEach((row, index) => {
+        if (row.date && !isValidDDMMYYYY(row.date)) errors.push(`B4(b) Internal Projects row ${index + 1}: date must be DD/MM/YYYY.`);
+      });
+      externalProjects.forEach((row, index) => {
+        if (row.date && !isValidDDMMYYYY(row.date)) errors.push(`B4(c) External Projects row ${index + 1}: date must be DD/MM/YYYY.`);
       });
     }
     if (errors.length) {
