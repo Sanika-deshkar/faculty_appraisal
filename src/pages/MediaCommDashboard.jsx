@@ -1157,8 +1157,8 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
             {!readOnly && (
               <button
                 onClick={() => onSubmit(person.id, { partA: totals.partA, partB: totals.partB, total: totals.total }, remarks, buildMediaSectionScores(form, reviewData, reviewerRole), confirmed)}
-                disabled={!confirmed}
-                style={smallButton(confirmed ? "#059669" : "#94a3b8")}
+                disabled={!confirmed || !remarks.trim()}
+                style={smallButton((confirmed && remarks.trim()) ? "#059669" : "#94a3b8")}
               >
                 Submit {roleLabel(reviewerRole)} Review
               </button>
@@ -1514,6 +1514,10 @@ export default function MediaCommDashboard({ fixedRole }) {
               </div>
             </div>
           </button>
+          <div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
+            <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
+            <a href="mailto:appraisal@dypiu.ac.in" style={{ color: "#60a5fa", fontWeight: 600, fontSize: 11, wordBreak: "break-all", textDecoration: "none" }}>appraisal@dypiu.ac.in</a>
+          </div>
           <button
             onClick={() => setShowLogoutModal(true)}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "inherit" }}

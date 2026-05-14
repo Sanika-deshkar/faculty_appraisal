@@ -1150,8 +1150,8 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false, reviewerLabe
             <button onClick={onBack} style={{ padding: "9px 22px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 12, fontFamily: "inherit" }}>{reviewLocked ? "Close" : "Cancel"}</button>
             {!reviewLocked && (
             <button onClick={() => onSubmit(faculty.id, { partA, partB, total }, remarks, buildHodSectionScores(faculty, hodData), reviewConfirmed)}
-              disabled={!reviewConfirmed}
-              style={{ padding: "10px 28px", background: reviewConfirmed ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
+              disabled={!reviewConfirmed || !remarks.trim()}
+              style={{ padding: "10px 28px", background: (reviewConfirmed && remarks.trim()) ? "#059669" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: (reviewConfirmed && remarks.trim()) ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
               ✔ Submit {reviewerLabel} Review
             </button>
             )}
@@ -1988,6 +1988,10 @@ export default function HODDashboard({
       alert("Please verify and confirm the accuracy declaration before submitting the review.");
       return;
     }
+    if (!remarks?.trim()) {
+      alert("Remarks are mandatory. Please enter your remarks before submitting the review.");
+      return;
+    }
     const item = facultyList.find((faculty) => faculty.id === id);
     if (!item) return;
 
@@ -2084,6 +2088,10 @@ export default function HODDashboard({
             <div style={{ color: "#475569", fontSize: 9 }}>HOD · {sessionStorage.getItem("department")?.split(" ")[0] || ""}</div>
           </div>
         </button>
+        <div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
+          <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
+          <a href="mailto:appraisal@dypiu.ac.in" style={{ color: "#60a5fa", fontWeight: 600, fontSize: 11, wordBreak: "break-all", textDecoration: "none" }}>appraisal@dypiu.ac.in</a>
+        </div>
         <button
           onClick={() => setShowLogoutModal(true)}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "inherit" }}

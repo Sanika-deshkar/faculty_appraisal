@@ -1698,7 +1698,7 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
           <div style={{ display: "flex", gap: 12 }}>
             <button onClick={onBack} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#f8fafc", color: "#475569", fontWeight: 700, cursor: "pointer" }}>{reviewLocked ? "Close" : "Cancel"}</button>
             {!reviewLocked && (
-              <button onClick={() => onSubmit(approval.id, deanScores, remarks, sectionScores, reviewConfirmed)} disabled={!reviewConfirmed} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: reviewConfirmed ? "#0f172a" : "#64748b", color: "#f8fafc", fontWeight: 700, cursor: reviewConfirmed ? "pointer" : "not-allowed" }}>Approve & Forward</button>
+              <button onClick={() => onSubmit(approval.id, deanScores, remarks, sectionScores, reviewConfirmed)} disabled={!reviewConfirmed || !remarks.trim()} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: (reviewConfirmed && remarks.trim()) ? "#0f172a" : "#64748b", color: "#f8fafc", fontWeight: 700, cursor: (reviewConfirmed && remarks.trim()) ? "pointer" : "not-allowed" }}>Approve & Forward</button>
             )}
           </div>
         </>
@@ -2282,6 +2282,10 @@ export default function DeanDashboard() {
       alert("Please verify and confirm the accuracy declaration before submitting the review.");
       return;
     }
+    if (!remarks?.trim()) {
+      alert("Remarks are mandatory. Please enter your remarks before submitting the review.");
+      return;
+    }
     const sourceList = activeMainTab === "facultyApprovals"
       ? facultyList
       : activeMainTab === "hodApprovals"
@@ -2406,6 +2410,10 @@ export default function DeanDashboard() {
             <div style={{ color: "#475569", fontSize: 9 }}>Dean · {sessionStorage.getItem("department")?.split(" ")[0] || ""}</div>
           </div>
         </button>
+        <div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
+          <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
+          <a href="mailto:appraisal@dypiu.ac.in" style={{ color: "#60a5fa", fontWeight: 600, fontSize: 11, wordBreak: "break-all", textDecoration: "none" }}>appraisal@dypiu.ac.in</a>
+        </div>
         <button
           onClick={() => setShowLogoutModal(true)}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "inherit" }}

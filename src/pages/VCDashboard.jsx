@@ -910,8 +910,8 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
             </button>
             {!reviewLocked && (
             <button onClick={() => onSubmit(person.id, { partA, partB, total }, remarks, personMode, buildVcSectionScores(person, vcData), reviewConfirmed)}
-              disabled={!reviewConfirmed}
-              style={{ padding: "10px 28px", background: reviewConfirmed ? "#4c1d95" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: reviewConfirmed ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
+              disabled={!reviewConfirmed || !remarks.trim()}
+              style={{ padding: "10px 28px", background: (reviewConfirmed && remarks.trim()) ? "#4c1d95" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: (reviewConfirmed && remarks.trim()) ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
               🎓 Confirm &amp; Sign Appraisal
             </button>
             )}
@@ -1288,6 +1288,10 @@ export default function VCDashboard() {
       alert("Please verify and confirm the accuracy declaration before submitting the review.");
       return;
     }
+    if (!remarks?.trim()) {
+      alert("Remarks are mandatory. Please enter your remarks before submitting the review.");
+      return;
+    }
     const sourceList = personMode === "dean" ? deanList : personMode === "director" ? dirList : personMode === "hod" ? hodList : personMode === "center_head" ? centerHeadList : facList;
     const item = sourceList.find(entry => entry.id === id);
     if (!item) return;
@@ -1451,6 +1455,10 @@ export default function VCDashboard() {
             <div style={{ color: "#475569", fontSize: 9 }}>Vice Chancellor · {APP_INFO.SHORT_NAME}</div>
           </div>
         </button>
+        <div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
+          <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
+          <a href="mailto:appraisal@dypiu.ac.in" style={{ color: "#60a5fa", fontWeight: 600, fontSize: 11, wordBreak: "break-all", textDecoration: "none" }}>appraisal@dypiu.ac.in</a>
+        </div>
         <button onClick={() => setShowLogoutModal(true)}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: 9, background: "none", border: "1px solid #374151", borderRadius: 8, padding: "9px 11px", cursor: "pointer", fontFamily: "inherit" }}
           onMouseEnter={e => e.currentTarget.style.background = "#1e293b"}
