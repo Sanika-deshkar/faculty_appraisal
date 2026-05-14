@@ -220,10 +220,6 @@ export default function Login() {
               {resetLoading ? "Sending reset link..." : "Forgot password?"}
             </button>
 
-            <p style={s.signupText}>
-              Don't have an account?{" "}
-              <Link to="/signup" style={s.signupLink}>Sign up</Link>
-            </p>
           </div>
 
         </div>
@@ -345,19 +341,6 @@ const s = {
     padding: 4,
     color: "rgba(255,255,255,0.6)",
     lineHeight: 1,
-  },
-
-  signupText: {
-    marginTop: 18,
-    textAlign: "center",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.55)",
-  },
-
-  signupLink: {
-    color: "#60a5fa",
-    fontWeight: 600,
-    textDecoration: "none",
   },
 
   error: {
