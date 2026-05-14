@@ -121,31 +121,18 @@ export default function EditProfile() {
     setError("");
     setMessage("");
 
-    const email = String(formData.email || "").trim().toLowerCase();
-    const role = normalizeRole(formData.role, "");
-    const nonTeaching = formData.staffType === "non_teaching";
-    const selectedRoleIsNonTeaching = isNonTeachingRole(role);
-    const school = canonicalSchoolValue(formData.school);
-    const department = nonTeaching
-      ? String(formData.department || "").trim()
-      : isSoemrSchool(school)
-        ? canonicalDepartmentValue(formData.department)
-        : "";
-
-    if (!email || !formData.role || (!nonTeaching && role !== "vc" && !school) || !formData.name.trim() || !formData.employeeId.trim() || !formData.designation.trim()) {
-      setError(nonTeaching
-        ? "Please fill in Role, Email, Full Name, Employee ID, Designation, and Department / Office."
-        : "Please fill in School, Role, Email, Full Name, Employee ID, and Designation.");
-      return;
-    }
-
-    if (!isValidName(formData.name)) {
-      setError("Full name must be between 2 and 100 characters.");
+    if (!formData.employeeId.trim()) {
+      setError("Employee ID is required.");
       return;
     }
 
     if (!isValidEmployeeId(formData.employeeId)) {
       setError("Employee ID must be 2–30 characters and contain only letters, numbers, /, - or _.");
+      return;
+    }
+
+    if (!formData.designation.trim()) {
+      setError("Designation is required.");
       return;
     }
 
@@ -159,48 +146,18 @@ export default function EditProfile() {
       return;
     }
 
-    if (!nonTeaching && selectedRoleIsNonTeaching) {
-      setError("Please select a teaching role for this teaching profile.");
-      return;
-    }
-
-    if (nonTeaching && !selectedRoleIsNonTeaching) {
-      setError("Please select a non-teaching role for this non-teaching profile.");
-      return;
-    }
-
-    if (!nonTeaching && role !== "vc" && !isValidSchool(school)) {
-      setError("Please select one of the approved schools or centers from the dropdown.");
-      return;
-    }
-
-    if (nonTeaching && !department) {
-      setError("Please enter the department/office for non-teaching staff.");
-      return;
-    }
-
-    if (isSoemrSchool(school) && (!department || !isValidSoemrDepartment(department))) {
-      setError("Please select the correct SoEMR department from the dropdown.");
-      return;
-    }
-
-    if (formData.role === "hod" && !isSoemrSchool(school)) {
-      setError("HOD profiles must remain assigned to a SoEMR department in this hierarchy.");
-      return;
-    }
-
-    if (formData.role === "center_head" && !isCisrSchool(school)) {
-      setError("Center Head profiles must remain assigned to CISR.");
-      return;
-    }
-
-    if (isCisrSchool(school) && (formData.role === "director" || formData.role === "dean" || formData.role === "hod")) {
-      setError("CISR uses only Center Head and Faculty roles below VC.");
-      return;
-    }
-
     setSaving(true);
     try {
+      const email = String(formData.email || "").trim().toLowerCase();
+      const role = normalizeRole(formData.role, "");
+      const nonTeaching = formData.staffType === "non_teaching";
+      const school = canonicalSchoolValue(formData.school);
+      const department = nonTeaching
+        ? String(formData.department || "").trim()
+        : isSoemrSchool(school)
+          ? canonicalDepartmentValue(formData.department)
+          : "";
+
       const cleanFormData = {
         ...formData,
         email,
@@ -257,55 +214,36 @@ export default function EditProfile() {
           {error && <div style={S.error}>{error}</div>}
           {message && <div style={S.success}>{message}</div>}
 
+          {/* ── Frozen fields ── */}
+          <div style={S.sectionLabel}>Account Information <span style={S.frozenBadge}>🔒 Read-only</span></div>
           <div style={S.grid}>
             <Field label="Staff Type">
-              <input style={{ ...S.input, background: "#f8fafc", color: "#64748b" }} value={STAFF_TYPE_LABEL[formData.staffType]} readOnly />
+              <input style={S.frozen} value={STAFF_TYPE_LABEL[formData.staffType]} readOnly />
             </Field>
-
-            <Field label="Role" required>
-              <select style={S.input} name="role" value={formData.role} onChange={handleChange} required>
-                <option value="">Select role</option>
-                {roleOptions.map((role) => (
-                  <option key={role.value} value={role.value}>{role.label}</option>
-                ))}
-              </select>
+            <Field label="Role">
+              <input style={S.frozen} value={ROLE_LABEL[formData.role] || formData.role} readOnly />
             </Field>
-
             {!isNonTeaching && (
-              <Field label="School" required={requiresSchool} wide>
-                <select style={S.input} name="school" value={formData.school} onChange={handleChange} required={requiresSchool}>
-                  <option value="">Select school</option>
-                  {SCHOOL_OPTIONS.map((school) => (
-                    <option key={school.value} value={school.value}>{school.label}</option>
-                  ))}
-                </select>
+              <Field label="School" wide>
+                <input style={S.frozen} value={formData.school} readOnly />
               </Field>
             )}
-
-            {needsDepartment && (
-              <Field label="SoEMR Department" required>
-                <select style={S.input} name="department" value={formData.department} onChange={handleChange} required>
-                  <option value="">Select department</option>
-                  {SOEMR_DEPARTMENTS.map((department) => (
-                    <option key={department} value={department}>{department}</option>
-                  ))}
-                </select>
+            {(needsDepartment || isNonTeaching) && (
+              <Field label={isNonTeaching ? "Department / Office" : "SoEMR Department"}>
+                <input style={S.frozen} value={formData.department} readOnly />
               </Field>
             )}
-
-            {isNonTeaching && (
-              <Field label="Department / Office" required>
-                <input style={S.input} name="department" value={formData.department} onChange={handleChange} required />
-              </Field>
-            )}
-
-            <Field label="Email" required>
-              <input style={{ ...S.input, background: "#f8fafc", color: "#64748b" }} name="email" type="email" value={formData.email} readOnly required />
+            <Field label="Email">
+              <input style={S.frozen} value={formData.email} readOnly />
             </Field>
-
-            <Field label="Full Name" required>
-              <input style={S.input} name="name" value={formData.name} onChange={handleChange} required maxLength={100} placeholder="e.g. Dr. Jane Smith" />
+            <Field label="Full Name">
+              <input style={S.frozen} value={formData.name} readOnly />
             </Field>
+          </div>
+
+          {/* ── Editable fields ── */}
+          <div style={{ ...S.sectionLabel, marginTop: 22 }}>Your Details <span style={S.editableBadge}>Editable</span></div>
+          <div style={S.grid}>
             <Field label="Employee ID" required>
               <input style={S.input} name="employeeId" value={formData.employeeId} onChange={handleChange} required maxLength={30} placeholder="e.g. EMP001" />
             </Field>
@@ -315,7 +253,6 @@ export default function EditProfile() {
             <Field label="Qualification">
               <input style={S.input} name="qualification" value={formData.qualification} onChange={handleChange} maxLength={100} placeholder="e.g. Ph.D, M.Tech" />
             </Field>
-
             <Field label="Experience (Years)">
               <input style={S.input} name="experience" value={formData.experience} onChange={handleChange} inputMode="decimal" maxLength={4} placeholder="e.g. 10" />
             </Field>
@@ -466,6 +403,27 @@ const S = {
     background: "#fff",
     boxSizing: "border-box",
     transition: "border-color 0.15s",
+  },
+  frozen: {
+    width: "100%", border: "1.5px solid #e2e8f0", borderRadius: 8,
+    padding: "10px 12px", fontSize: 13, color: "#94a3b8",
+    background: "#f1f5f9", cursor: "not-allowed", userSelect: "none",
+    fontFamily: "inherit", boxSizing: "border-box",
+  },
+  sectionLabel: {
+    fontSize: 11, fontWeight: 700, color: "#475569",
+    textTransform: "uppercase", letterSpacing: 0.8,
+    marginBottom: 14, display: "flex", alignItems: "center", gap: 8,
+  },
+  frozenBadge: {
+    fontSize: 9, fontWeight: 700, background: "#f1f5f9", color: "#94a3b8",
+    border: "1px solid #e2e8f0", borderRadius: 4, padding: "2px 7px",
+    textTransform: "uppercase", letterSpacing: 0.5,
+  },
+  editableBadge: {
+    fontSize: 9, fontWeight: 700, background: "#eff6ff", color: "#2563eb",
+    border: "1px solid #bfdbfe", borderRadius: 4, padding: "2px 7px",
+    textTransform: "uppercase", letterSpacing: 0.5,
   },
   actions: {
     display: "flex",

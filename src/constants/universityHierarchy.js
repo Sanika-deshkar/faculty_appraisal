@@ -107,7 +107,7 @@ export const getSchoolLabelsByDeanTrack = (deanTrack) =>
   getSchoolsByDeanTrack(deanTrack).map((school) => school.label);
 
 export const SCHOOL_OPTIONS = UNIVERSITY_SCHOOLS.map((school) => ({
-  value: school.label,
+  value: school.code,
   label: school.label,
 }));
 
@@ -144,7 +144,7 @@ export const getSchoolByValue = (value) => {
 
 export const getSchoolKey = (school) => getSchoolByValue(school)?.code || "";
 
-export const canonicalSchoolValue = (school) => getSchoolByValue(school)?.label || "";
+export const canonicalSchoolValue = (school) => getSchoolByValue(school)?.code || "";
 
 export const isValidSchool = (school) =>
   SCHOOL_OPTIONS.some((option) => option.value === school);
