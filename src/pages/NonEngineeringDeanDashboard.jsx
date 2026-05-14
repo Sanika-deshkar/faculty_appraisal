@@ -22,7 +22,7 @@ const NON_ENGINEERING_SCHOOL_VALUES = NON_ENGINEERING_SCHOOLS.flatMap((school) =
 ]);
 const NON_ENGINEERING_SCHOOL_CODES = NON_ENGINEERING_SCHOOLS.map((school) => school.code);
 const SCHOOL_VISUALS = {
-  SoC: { icon: "?", color: "#14b8a6", bg: "#ecfeff" },
+  SoCM: { icon: "CM", color: "#14b8a6", bg: "#ecfeff" },
   SoMCS: { icon: "?", color: "#6366f1", bg: "#eef2ff" },
   SoD: { icon: "DS", color: "#ec4899", bg: "#fdf2f8" },
   CioD: { icon: "DS", color: "#ec4899", bg: "#fdf2f8" },

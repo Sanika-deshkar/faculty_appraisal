@@ -65,7 +65,7 @@ export const FACULTY_LIST = [
   },
   {
     id: 2, name: "Prof. Amit Verma", employeeId: "EMP-2025-002",
-    designation: "Assistant Professor", department: "", school: schoolLabel("SoC"),
+    designation: "Assistant Professor", department: "", school: schoolLabel("SoCM"),
     submittedOn: "2025-04-19", status: "Pending Review", avatar: "AV", avatarColor: "#10b981",
     info: { name: "Prof. Amit Verma", qual: "MBA", desig: "Assistant Professor", ay: "2025-2026" },
     lectures: [{ sem: "Sem I", code: "MGMT101", planned: "36", conducted: "35", score: "18", hod: "" }],
