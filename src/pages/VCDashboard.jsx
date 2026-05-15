@@ -760,9 +760,9 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
       partASections: VC_REPORT_PART_A_SECTIONS,
       partBSections: VC_REPORT_PART_B_SECTIONS,
       totals: {
-        partA: n(person.vcPartA ?? partA),
-        partB: n(person.vcPartB ?? partB),
-        total: n(person.vcTotal ?? total),
+        partA: reviewLocked && String(person.vcPartA ?? "").trim() !== "" ? n(person.vcPartA) : partA,
+        partB: reviewLocked && String(person.vcPartB ?? "").trim() !== "" ? n(person.vcPartB) : partB,
+        total: reviewLocked && String(person.vcTotal ?? "").trim() !== "" ? n(person.vcTotal) : total,
       },
       maxScores: { partA: 200, partB: MAX_SCORES.PART_B, grand: MAX_SCORES.GRAND_TOTAL },
       scoreRoles: ["score", ...previousRoles, "vc"],

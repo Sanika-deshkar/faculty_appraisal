@@ -15,6 +15,7 @@ import {
   expectedPendingStatus,
   fetchNonTeachingQueueForRole,
   loadNonTeachingAppraisal,
+  nonTeachingReviewFlow,
   nonTeachingRoleLabel,
   openNonTeachingReport,
   primeFormForReviewer,
@@ -56,6 +57,22 @@ const initials = (name = "User") =>
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+const flowLabels = {
+  self: "Staff",
+  ro: "Reporting Officer",
+  registrar: "Registrar",
+  vc: "VC",
+};
+
+const flowTextFor = (form, role) =>
+  nonTeachingReviewFlow({
+    ...form,
+    appraisalRole: role,
+    submittedByRole: role,
+  })
+    .map((stage) => flowLabels[stage] || stage)
+    .join(" -> ");
 
 function Avatar({ name, color = ACCENT, size = 38 }) {
   return (
@@ -230,12 +247,19 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
   );
 }
 
-function WorkflowTracker({ status, role }) {
+function WorkflowTracker({ status, role, form }) {
   const normalizedRole = normalizeNonTeachingRole(role, role);
+  const directToRegistrar =
+    normalizedRole === "non_teaching_staff" &&
+    !nonTeachingReviewFlow({
+      ...form,
+      appraisalRole: normalizedRole,
+      submittedByRole: normalizedRole,
+    }).includes("ro");
   const allStages = [
     { id: "draft", label: "Draft", status: NON_TEACHING_STATUS.DRAFT },
     { id: "submitted", label: "Submitted", status: NON_TEACHING_STATUS.SUBMITTED },
-    { id: "ro", label: "Reporting Officer", status: NON_TEACHING_STATUS.RO_REVIEWED },
+    { id: "ro", label: directToRegistrar ? "Sent to Registrar" : "Reporting Officer", status: NON_TEACHING_STATUS.RO_REVIEWED },
     { id: "registrar", label: "Registrar", status: NON_TEACHING_STATUS.REGISTRAR_REVIEWED },
     { id: "vc", label: "VC", status: NON_TEACHING_STATUS.VC_APPROVED },
   ];
@@ -243,6 +267,8 @@ function WorkflowTracker({ status, role }) {
     ? ["draft", "registrar", "vc"]
     : normalizedRole === "reporting_officer"
       ? ["draft", "ro", "registrar", "vc"]
+      : directToRegistrar
+        ? ["draft", "ro", "registrar", "vc"]
       : ["draft", "submitted", "ro", "registrar", "vc"];
   const stages = allStages.filter((stage) => stageIds.includes(stage.id));
   const order = [
@@ -345,6 +371,18 @@ function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitt
   const self = calculateNonTeachingTotals(form, "self");
   const selfMax = NON_TEACHING_MAX.partA;
   const scoreCards = [["Self Claimed", self.total, ACCENT]];
+  const nextRole = nonTeachingReviewFlow({
+    ...form,
+    appraisalRole: role,
+    submittedByRole: role,
+  })[1];
+  const nextReviewer = nextRole === "vc"
+    ? "VC"
+    : nextRole === "registrar"
+      ? "Registrar"
+      : nextRole === "ro"
+        ? "Reporting Officer"
+        : "Next Authority";
 
   return (
     <SectionCard title={`Summary of Total Score (Max ${selfMax})`} accent="#059669">
@@ -385,7 +423,7 @@ function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitt
         </button>
         {!locked && (
           <button type="button" onClick={onSubmit} disabled={!confirmed || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: confirmed ? accent : "#94a3b8", color: "#fff", cursor: confirmed && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "inherit" }}>
-            {submitting ? "Submitting..." : `Submit to ${role === "registrar" ? "VC" : role === "reporting_officer" ? "Registrar" : "Reporting Officer"}`}
+            {submitting ? "Submitting..." : `Submit to ${nextReviewer}`}
           </button>
         )}
       </div>
@@ -538,7 +576,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
             </div>
           </div>
 
-          <WorkflowTracker status={form.status} role={normalizedRole} />
+          <WorkflowTracker status={form.status} role={normalizedRole} form={form} />
 
           <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
             {[
@@ -620,7 +658,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
           </div>
         </div>
         <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#94a3b8", lineHeight: 1.6 }}>
-          {"Non-Teaching Staff -> Reporting Officer -> Registrar -> VC"}
+          {flowTextFor(form, normalizedRole)}
         </div>
         <div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
           <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
@@ -636,13 +674,13 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
   );
 }
 
-function AuthorityPartA({ form, setForm, reviewerRole, readOnly }) {
+function AuthorityPartA({ form, setForm, reviewerRole, readOnly, visibleRoles = [] }) {
   const role = normalizeNonTeachingRole(reviewerRole, reviewerRole);
   const editableKey = role === "vc" ? "vcMarks" : role === "registrar" ? "regMarks" : "roMarks";
   const accent = roleAccent(role);
-  const showReportingOfficer = role === "reporting_officer" || role === "vc";
-  const showRegistrar = role === "registrar" || role === "vc";
-  const showVc = role === "vc";
+  const showReportingOfficer = visibleRoles.includes("ro");
+  const showRegistrar = visibleRoles.includes("registrar");
+  const showVc = visibleRoles.includes("vc");
   const setMark = (key, value) => {
     setForm((current) => ({
       ...current,
@@ -700,12 +738,12 @@ function AuthorityPartA({ form, setForm, reviewerRole, readOnly }) {
   );
 }
 
-function AuthorityPartB({ form, setForm, reviewerRole, readOnly }) {
+function AuthorityPartB({ form, setForm, reviewerRole, readOnly, visibleRoles = [] }) {
   const role = normalizeNonTeachingRole(reviewerRole, reviewerRole);
   const suffix = role === "vc" ? "vc" : role === "registrar" ? "reg" : "ro";
-  const showReportingOfficer = role === "reporting_officer" || role === "vc";
-  const showRegistrar = role === "registrar" || role === "vc";
-  const showVc = role === "vc";
+  const showReportingOfficer = visibleRoles.includes("ro");
+  const showRegistrar = visibleRoles.includes("registrar");
+  const showVc = visibleRoles.includes("vc");
   const setRating = (sectionKey, index, value) => {
     setForm((current) => ({
       ...current,
@@ -782,6 +820,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
   const pendingStatus = expectedPendingStatus(role);
   const locked = readOnly || item.status !== pendingStatus;
   const accent = roleAccent(role);
+  const visibleRoles = visibleNonTeachingReviewRoles(role, item);
   const selfTotals = calculateNonTeachingTotals(form, "self");
   const totals = calculateNonTeachingTotals(form, role === "vc" ? "vc" : role);
 
@@ -829,7 +868,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
         registrarRemarks: role === "registrar" ? remarks : form.registrarRemarks,
         vcRemarks: role === "vc" ? remarks : form.vcRemarks,
       },
-      visibleRoles: visibleNonTeachingReviewRoles(role),
+      visibleRoles,
     });
   };
 
@@ -867,14 +906,14 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
       </div>
 
       <fieldset disabled={locked} style={{ border: "none", padding: 0, margin: 0 }}>
-        {tab === "partA" && <AuthorityPartA form={form} setForm={setForm} reviewerRole={role} readOnly={locked} />}
-        {tab === "partB" && <AuthorityPartB form={form} setForm={setForm} reviewerRole={role} readOnly={locked} />}
+        {tab === "partA" && <AuthorityPartA form={form} setForm={setForm} reviewerRole={role} readOnly={locked} visibleRoles={visibleRoles} />}
+        {tab === "partB" && <AuthorityPartB form={form} setForm={setForm} reviewerRole={role} readOnly={locked} visibleRoles={visibleRoles} />}
       </fieldset>
 
       {tab === "remarks" && (
         <SectionCard title={locked ? "Submitted Review" : `${nonTeachingRoleLabel(role)} Remarks & Submission`} accent={accent}>
-          {role === "vc" && form.roRemarks && <PriorRemark label="Reporting Officer Remarks" value={form.roRemarks} color={ACCENT} />}
-          {role === "vc" && form.registrarRemarks && <PriorRemark label="Registrar Remarks" value={form.registrarRemarks} color={REG_ACCENT} />}
+          {role === "vc" && visibleRoles.includes("ro") && form.roRemarks && <PriorRemark label="Reporting Officer Remarks" value={form.roRemarks} color={ACCENT} />}
+          {role === "vc" && visibleRoles.includes("registrar") && form.registrarRemarks && <PriorRemark label="Registrar Remarks" value={form.registrarRemarks} color={REG_ACCENT} />}
 
           <div style={{ color: "#334155", fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>Staff Submitted Score</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14 }}>

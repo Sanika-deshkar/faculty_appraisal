@@ -953,7 +953,7 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
   const reviewCompleted = panelReadOnly || isReviewerReviewComplete(person, reviewerRole);
   const savedReviewerTotalKeys = [`${reviewerRole}PartA`, `${reviewerRole}PartB`, `${reviewerRole}Total`];
   const hasSavedReviewerTotals = savedReviewerTotalKeys.some((key) => String(person?.[key] ?? "").trim() !== "");
-  const reviewerSummaryTotals = reviewCompleted && hasSavedReviewerTotals ? {
+  const reviewerSummaryTotals = panelReadOnly && hasSavedReviewerTotals ? {
     ...totals,
     partA: String(person?.[`${reviewerRole}PartA`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}PartA`]) : totals.partA,
     partB: String(person?.[`${reviewerRole}PartB`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}PartB`]) : totals.partB,
@@ -968,9 +968,9 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
     const cfScore = applicability["courseFile"] === "notApplicable" ? 0 : averageSectionScore(reviewerForm.courseFile || [], 20, "score");
     const innovScore = clampScore(Array.isArray(reviewerForm.innovRows) ? reviewerForm.innovRows.reduce((t, r) => t + clampScore(r.score, SCORE_LIMITS.innovativeRow), 0) : innovativeTeachingScore(reviewerForm.innovDetails, reviewerForm.innovScore, 10), 10);
     const maxScores = getDesignArtsEffectiveMaxScores(reviewerForm);
-    const partATotal = n(person?.[`${reviewerRole}PartA`] ?? totals.partA);
-    const partBTotal = n(person?.[`${reviewerRole}PartB`] ?? totals.partB);
-    const grandTotal = n(person?.[`${reviewerRole}Total`] ?? totals.total);
+    const partATotal = panelReadOnly && String(person?.[`${reviewerRole}PartA`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}PartA`]) : totals.partA;
+    const partBTotal = panelReadOnly && String(person?.[`${reviewerRole}PartB`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}PartB`]) : totals.partB;
+    const grandTotal = panelReadOnly && String(person?.[`${reviewerRole}Total`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}Total`]) : totals.total;
     const b8Score = clampScore(rowSum("fdps", 20) + rowSum("training", 20), 20);
     generateMediaCommReport({
       title: `${schoolDisplayName} Appraisal Report`,

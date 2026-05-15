@@ -1031,7 +1031,7 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
   const reviewCompleted = panelReadOnly || isReviewerReviewComplete(person, reviewerRole);
   const savedReviewerTotalKeys = [`${reviewerRole}PartA`, `${reviewerRole}PartB`, `${reviewerRole}Total`];
   const hasSavedReviewerTotals = savedReviewerTotalKeys.some((key) => String(person?.[key] ?? "").trim() !== "");
-  const reviewerSummaryTotals = reviewCompleted && hasSavedReviewerTotals ? {
+  const reviewerSummaryTotals = panelReadOnly && hasSavedReviewerTotals ? {
     ...totals,
     partA: String(person?.[`${reviewerRole}PartA`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}PartA`]) : totals.partA,
     partB: String(person?.[`${reviewerRole}PartB`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}PartB`]) : totals.partB,
@@ -1070,9 +1070,9 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
     const b7bScore = rowSum("products", 20);
     const b8Score = clampScore(rowSum("fdps", 20) + rowSum("training", 20), 20);
     const maxScores = getMediaEffectiveMaxScores(reviewerForm);
-    const partATotal = n(person?.[`${reviewerRole}PartA`] ?? totals.partA);
-    const partBTotal = n(person?.[`${reviewerRole}PartB`] ?? totals.partB);
-    const grandTotal = n(person?.[`${reviewerRole}Total`] ?? totals.total);
+    const partATotal = panelReadOnly && String(person?.[`${reviewerRole}PartA`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}PartA`]) : totals.partA;
+    const partBTotal = panelReadOnly && String(person?.[`${reviewerRole}PartB`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}PartB`]) : totals.partB;
+    const grandTotal = panelReadOnly && String(person?.[`${reviewerRole}Total`] ?? "").trim() !== "" ? n(person?.[`${reviewerRole}Total`]) : totals.total;
     await generateMediaCommReport({
       title: "SoMCS Appraisal Report",
       subtitle: "School of Media & Communication Studies",

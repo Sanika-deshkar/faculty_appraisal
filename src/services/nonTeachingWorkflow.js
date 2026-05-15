@@ -107,6 +107,11 @@ const firstNonEmpty = (...values) =>
 const emailKey = (value) => clean(value).toLowerCase();
 const pickFirstNonEmpty = (source = {}, keys = []) =>
   firstNonEmpty(...keys.map((key) => source?.[key]));
+const isTruthyFlag = (value) => {
+  if (value === true || value === 1) return true;
+  const normalized = clean(value).toLowerCase();
+  return ["true", "1", "yes", "y"].includes(normalized);
+};
 const academicYear = (value) =>
   clean(value) || APP_INFO.DEFAULT_AY || "2025-2026";
 const initialsFor = (name = "", fallback = "U") =>
@@ -126,6 +131,30 @@ export const nonTeachingRoleLabel = (role) =>
 export const createEmptyPartB = () =>
   Object.fromEntries(RATING_SECTIONS.map((section) => [section.key, {}]));
 
+export const nonTeachingReportsToRegistrar = (source = {}) =>
+  isTruthyFlag(firstNonEmpty(
+    source.reports_to_registrar,
+    source.reportsToRegistrar,
+    source.direct_to_registrar,
+    source.directToRegistrar,
+    source.profile?.reports_to_registrar,
+    source.profile?.reportsToRegistrar,
+    source.form?.reports_to_registrar,
+    source.form?.reportsToRegistrar,
+    source.form?.direct_to_registrar,
+    source.form?.directToRegistrar,
+    source.payload?.reports_to_registrar,
+    source.payload?.reportsToRegistrar,
+    source.payload?.direct_to_registrar,
+    source.payload?.directToRegistrar,
+    source.info?.reports_to_registrar,
+    source.info?.reportsToRegistrar,
+    source.form?.info?.reports_to_registrar,
+    source.form?.info?.reportsToRegistrar,
+    source.payload?.info?.reports_to_registrar,
+    source.payload?.info?.reportsToRegistrar,
+  ));
+
 export const emptyNonTeachingForm = (
   profile = profileFromsessionStorage(),
   role = "non_teaching_staff",
@@ -140,6 +169,15 @@ export const emptyNonTeachingForm = (
   return {
     appraisalType: "non-teaching",
     submittedByRole: normalizedRole,
+    reports_to_registrar: normalizedRole === "non_teaching_staff" && nonTeachingReportsToRegistrar({
+      ...profile,
+      reports_to_registrar: firstNonEmpty(
+        profile.reports_to_registrar,
+        profile.reportsToRegistrar,
+        sessionStorage.getItem("reports_to_registrar"),
+        sessionStorage.getItem("reportsToRegistrar"),
+      ),
+    }),
     status: NON_TEACHING_STATUS.DRAFT,
     info: {
       name,
@@ -218,6 +256,17 @@ export const normalizeNonTeachingForm = (
     form.submittedByRole,
     normalizeNonTeachingRole(role, role),
   );
+  const reportsToRegistrar =
+    merged.submittedByRole === "non_teaching_staff" &&
+    nonTeachingReportsToRegistrar({
+      ...profile,
+      ...form,
+      form,
+      payload: form,
+      info: merged.info,
+    });
+  merged.reports_to_registrar = reportsToRegistrar;
+  merged.reportsToRegistrar = reportsToRegistrar;
   merged.info.ay = academicYear(merged.info.ay || profile.academic_year);
   merged.info.email = emailKey(
     merged.info.email || profile.email || sessionStorage.getItem("username"),
@@ -329,12 +378,18 @@ export const calculateNonTeachingTotals = (form = {}, authority = "self") => {
   };
 };
 
-export const statusAfterSelfSubmit = (role) => {
+export const statusAfterSelfSubmit = (role, source = {}) => {
   const normalizedRole = normalizeNonTeachingRole(role, role);
   if (normalizedRole === "registrar")
     return NON_TEACHING_STATUS.REGISTRAR_REVIEWED;
   if (normalizedRole === "reporting_officer")
     return NON_TEACHING_STATUS.RO_REVIEWED;
+  if (
+    normalizedRole === "non_teaching_staff" &&
+    nonTeachingReportsToRegistrar(source)
+  ) {
+    return NON_TEACHING_STATUS.RO_REVIEWED;
+  }
   return NON_TEACHING_STATUS.SUBMITTED;
 };
 
@@ -357,19 +412,49 @@ export const expectedPendingStatus = (role) => {
   return NON_TEACHING_STATUS.DRAFT;
 };
 
-export const visibleNonTeachingReviewRoles = (role) => {
+export const nonTeachingReviewFlow = (itemOrForm = {}) => {
+  const rawRole = firstNonEmpty(
+    itemOrForm.appraisalRole,
+    itemOrForm.appraisal_role,
+    itemOrForm.submittedByRole,
+    itemOrForm.form?.submittedByRole,
+    itemOrForm.payload?.submittedByRole,
+  );
+  const subjectRole = normalizeNonTeachingRole(rawRole, rawRole || "non_teaching_staff");
+
+  if (subjectRole === "registrar") return ["self", "vc"];
+  if (subjectRole === "reporting_officer") return ["self", "registrar", "vc"];
+  if (
+    subjectRole === "non_teaching_staff" &&
+    nonTeachingReportsToRegistrar(itemOrForm)
+  ) {
+    return ["self", "registrar", "vc"];
+  }
+  if (subjectRole === "non_teaching_staff")
+    return ["self", "ro", "registrar", "vc"];
+  return ["self"];
+};
+
+export const visibleNonTeachingReviewRoles = (role, itemOrForm = {}) => {
   const normalizedRole = normalizeNonTeachingRole(role, role);
-  if (normalizedRole === "vc") return ["self", "ro", "registrar", "vc"];
-  if (normalizedRole === "registrar") return ["self", "registrar"];
-  if (normalizedRole === "reporting_officer") return ["self", "ro"];
+  const flow = nonTeachingReviewFlow(itemOrForm);
+  if (normalizedRole === "vc") return flow;
+  if (normalizedRole === "registrar") {
+    const index = flow.indexOf("registrar");
+    return index >= 0 ? flow.slice(0, index + 1) : ["self"];
+  }
+  if (normalizedRole === "reporting_officer") {
+    const index = flow.indexOf("ro");
+    return index >= 0 ? flow.slice(0, index + 1) : ["self"];
+  }
   return ["self"];
 };
 
 export const canReviewNonTeachingItem = (item = {}, reviewerRole) => {
   const role = normalizeNonTeachingRole(reviewerRole, reviewerRole);
   const subjectRole = normalizeNonTeachingRole(
-    item.appraisalRole || item.form?.submittedByRole,
-    item.appraisalRole || item.form?.submittedByRole,
+    item.appraisalRole || item.appraisal_role || item.form?.submittedByRole || item.payload?.submittedByRole,
+    item.appraisalRole || item.appraisal_role || item.form?.submittedByRole || item.payload?.submittedByRole,
   );
 
   if (role === "vc")
@@ -379,7 +464,11 @@ export const canReviewNonTeachingItem = (item = {}, reviewerRole) => {
       subjectRole === "non_teaching_staff" ||
       subjectRole === "reporting_officer"
     );
-  if (role === "reporting_officer") return subjectRole === "non_teaching_staff";
+  if (role === "reporting_officer")
+    return (
+      subjectRole === "non_teaching_staff" &&
+      !nonTeachingReportsToRegistrar(item)
+    );
   return false;
 };
 
@@ -483,10 +572,15 @@ export const submitNonTeachingSelfAppraisal = async ({
   profile = profileFromsessionStorage(),
 } = {}) => {
   const normalizedRole = normalizeNonTeachingRole(role, role);
-  const status = statusAfterSelfSubmit(normalizedRole);
+  const normalizedForm = normalizeNonTeachingForm(
+    { ...form, submittedByRole: normalizedRole },
+    profile,
+    normalizedRole,
+  );
+  const status = statusAfterSelfSubmit(normalizedRole, normalizedForm);
   const finalForm = stripSelfPartBRatings(
     normalizeNonTeachingForm(
-      { ...form, status, submittedByRole: normalizedRole },
+      { ...normalizedForm, status },
       profile,
       normalizedRole,
     ),
@@ -529,6 +623,12 @@ export const decorateNonTeachingRow = (row, profile = {}) => {
   const roTotals = calculateNonTeachingTotals(form, "reporting_officer");
   const registrarTotals = calculateNonTeachingTotals(form, "registrar");
   const vcTotals = calculateNonTeachingTotals(form, "vc");
+  const reportsToRegistrar = nonTeachingReportsToRegistrar({
+    ...profile,
+    ...row,
+    form,
+    payload: row.payload,
+  });
 
   return {
     id: `${row.staff_email}:${row.academic_year}`,
@@ -545,6 +645,8 @@ export const decorateNonTeachingRow = (row, profile = {}) => {
     department: profile.department || form.info?.department || "",
     appraisalRole: role,
     roleLabel: nonTeachingRoleLabel(role),
+    reports_to_registrar: reportsToRegistrar,
+    reportsToRegistrar,
     avatar: initialsFor(name, row.staff_email),
     avatarColor:
       role === "registrar"
@@ -591,6 +693,11 @@ const normalizeNonTeachingQueueItem = (item = {}) => {
   const roTotals = calculateNonTeachingTotals(form, "reporting_officer");
   const registrarTotals = calculateNonTeachingTotals(form, "registrar");
   const vcTotals = calculateNonTeachingTotals(form, "vc");
+  const reportsToRegistrar = nonTeachingReportsToRegistrar({
+    ...item,
+    form,
+    payload: item.payload,
+  });
 
   return {
     ...item,
@@ -607,6 +714,8 @@ const normalizeNonTeachingQueueItem = (item = {}) => {
     appraisalRole: role,
     appraisal_role: role,
     roleLabel: nonTeachingRoleLabel(role),
+    reports_to_registrar: reportsToRegistrar,
+    reportsToRegistrar,
     avatar: item.avatar || initialsFor(name, staffEmail),
     avatarColor: item.avatarColor ||
       (role === "registrar" ? "#7c3aed" : role === "reporting_officer" ? "#0891b2" : "#1d4ed8"),
@@ -761,6 +870,8 @@ export const submitNonTeachingReview = async ({
     designation: item?.designation,
     department: item?.department,
     appraisal_role: item?.appraisalRole,
+    reports_to_registrar: item?.reports_to_registrar,
+    reportsToRegistrar: item?.reportsToRegistrar,
   });
 };
 
