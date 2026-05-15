@@ -124,8 +124,15 @@ export const reviewedStatusFor = (role) => `${roleLabel(role)} Reviewed`;
 export const rejectedStatusFor = (role) => `${roleLabel(role)} Rejected`;
 export const isRejectedStatus = (status) => normalizeText(status).includes("rejected");
 export const isAppraisalFinalisedByVc = (item = {}) => {
-  const status = normalizeText(item?.declaration?.status || item?.declarationStatus || item?.declaration_status || "");
-  return status === "reviewed";
+  const statuses = [
+    item?.declaration?.status,
+    item?.declarationStatus,
+    item?.declaration_status,
+    item?.workflowStatus,
+    item?.workflow_status,
+    item?.status,
+  ].map(normalizeText);
+  return statuses.some((status) => status === "reviewed" || status === "vc reviewed");
 };
 export const reviewStatusForDecision = (role, decision = "approved") =>
   decision === "rejected" ? rejectedStatusFor(role) : reviewedStatusFor(role);
