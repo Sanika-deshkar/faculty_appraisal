@@ -838,7 +838,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
 
       {sectionView === "summary" && (
         <div style={{ background: "#fff", borderRadius: 10, padding: "22px 24px", boxShadow: "0 1px 6px rgba(0,0,0,.06)" }}>
-          <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>{reviewLocked ? "VC Submitted Review" : "VC Remarks &amp; Final Submission"}</h3>
+          <h3 style={{ margin: "0 0 16px", color: "#0f172a", fontSize: 15 }}>Vice Chancellor Remarks and Grade</h3>
 
           {previousRoles.map((role) => {
             const meta = vcRoleMeta(role);

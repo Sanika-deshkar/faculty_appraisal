@@ -1150,7 +1150,7 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
           <SummaryBox totals={facultyTotals} maxScores={facultyTotals.maxScores} roleScoreLabel="Faculty submitted score for the SoMCS media appraisal form." />
           <SummaryBox totals={reviewerSummaryTotals} maxScores={totals.maxScores} roleScoreLabel={`${roleLabel(reviewerRole)} score for the SoMCS media appraisal form.`} />
           <label style={{ display: "grid", gap: 6, fontWeight: 800, color: "#134e4a", fontSize: 13 }}>
-            {roleLabel(reviewerRole)} Remarks
+            {reviewerRole === "vc" ? "Vice Chancellor Remarks and Grade" : `${roleLabel(reviewerRole)} Remarks`}
             <textarea value={remarks} readOnly={readOnly} onChange={(event) => setRemarks(event.target.value)} rows={5} style={{ border: "1px solid #99f6e4", borderRadius: 7, padding: 10, fontFamily: "inherit", resize: "vertical" }} />
           </label>
           {!readOnly && <AccuracyCheckbox checked={confirmed} onChange={setConfirmed} />}

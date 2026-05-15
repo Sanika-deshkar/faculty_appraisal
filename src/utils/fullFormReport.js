@@ -48,7 +48,7 @@ export const buildReviewRemarks = ({
     },
     {
       role: "vc",
-      label: roleLabels.vc || "VC Remarks",
+      label: roleLabels.vc || "Vice Chancellor Remarks and Grade",
       keys: ["vcRemarks", "vc_remarks"],
     },
   ];
