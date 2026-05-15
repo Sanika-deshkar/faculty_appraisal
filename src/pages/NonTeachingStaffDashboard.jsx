@@ -12,11 +12,12 @@ import {
   SELF_ITEMS,
   calculateNonTeachingTotals,
   emptyNonTeachingForm,
-  expectedPendingStatus,
   fetchNonTeachingQueueForRole,
+  isPendingForNonTeachingReviewer,
   loadNonTeachingAppraisal,
   nonTeachingReviewFlow,
   nonTeachingRoleLabel,
+  normalizeNonTeachingStatus,
   openNonTeachingReport,
   primeFormForReviewer,
   saveNonTeachingDraft,
@@ -83,18 +84,20 @@ function Avatar({ name, color = ACCENT, size = 38 }) {
 }
 
 function StatusBadge({ status }) {
+  const normalizedStatus = normalizeNonTeachingStatus(status);
   const map = {
     [NON_TEACHING_STATUS.DRAFT]: { bg: "#f1f5f9", color: "#475569", dot: "#94a3b8" },
-    [NON_TEACHING_STATUS.SUBMITTED]: { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
+    [NON_TEACHING_STATUS.PENDING_RO_REVIEW]: { bg: "#fef3c7", color: "#92400e", dot: "#f59e0b" },
+    [NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW]: { bg: "#ccfbf1", color: "#155e75", dot: "#14b8a6" },
     [NON_TEACHING_STATUS.RO_REVIEWED]: { bg: "#dbeafe", color: "#1e40af", dot: "#3b82f6" },
     [NON_TEACHING_STATUS.REGISTRAR_REVIEWED]: { bg: "#cffafe", color: "#155e75", dot: "#06b6d4" },
     [NON_TEACHING_STATUS.VC_APPROVED]: { bg: "#d1fae5", color: "#065f46", dot: "#10b981" },
   };
-  const current = map[status] || map[NON_TEACHING_STATUS.DRAFT];
+  const current = map[normalizedStatus] || map[NON_TEACHING_STATUS.DRAFT];
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: current.bg, color: current.color, fontSize: 10, fontWeight: 800, padding: "4px 9px", borderRadius: 20 }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: current.dot }} />
-      {status || NON_TEACHING_STATUS.DRAFT}
+      {normalizedStatus || NON_TEACHING_STATUS.DRAFT}
     </span>
   );
 }
@@ -249,6 +252,7 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
 
 function WorkflowTracker({ status, role, form }) {
   const normalizedRole = normalizeNonTeachingRole(role, role);
+  const normalizedStatus = normalizeNonTeachingStatus(status);
   const directToRegistrar =
     normalizedRole === "non_teaching_staff" &&
     !nonTeachingReviewFlow({
@@ -256,12 +260,20 @@ function WorkflowTracker({ status, role, form }) {
       appraisalRole: normalizedRole,
       submittedByRole: normalizedRole,
     }).includes("ro");
+  const registrarPendingStage =
+    directToRegistrar || normalizedRole === "reporting_officer";
   const allStages = [
     { id: "draft", label: "Draft", status: NON_TEACHING_STATUS.DRAFT },
-    { id: "submitted", label: "Submitted", status: NON_TEACHING_STATUS.SUBMITTED },
-    { id: "ro", label: directToRegistrar ? "Sent to Registrar" : "Reporting Officer", status: NON_TEACHING_STATUS.RO_REVIEWED },
-    { id: "registrar", label: "Registrar", status: NON_TEACHING_STATUS.REGISTRAR_REVIEWED },
-    { id: "vc", label: "VC", status: NON_TEACHING_STATUS.VC_APPROVED },
+    { id: "submitted", label: "Pending RO Review", status: NON_TEACHING_STATUS.PENDING_RO_REVIEW },
+    {
+      id: "ro",
+      label: registrarPendingStage ? "Pending Registrar Review" : "RO Reviewed",
+      status: registrarPendingStage
+        ? NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW
+        : NON_TEACHING_STATUS.RO_REVIEWED,
+    },
+    { id: "registrar", label: "Registrar Reviewed", status: NON_TEACHING_STATUS.REGISTRAR_REVIEWED },
+    { id: "vc", label: "VC Approved", status: NON_TEACHING_STATUS.VC_APPROVED },
   ];
   const stageIds = normalizedRole === "registrar"
     ? ["draft", "registrar", "vc"]
@@ -273,12 +285,13 @@ function WorkflowTracker({ status, role, form }) {
   const stages = allStages.filter((stage) => stageIds.includes(stage.id));
   const order = [
     NON_TEACHING_STATUS.DRAFT,
-    NON_TEACHING_STATUS.SUBMITTED,
+    NON_TEACHING_STATUS.PENDING_RO_REVIEW,
+    NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW,
     NON_TEACHING_STATUS.RO_REVIEWED,
     NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
     NON_TEACHING_STATUS.VC_APPROVED,
   ];
-  const currentIndex = Math.max(0, order.indexOf(status));
+  const currentIndex = Math.max(0, order.indexOf(normalizedStatus));
 
   return (
     <SectionCard title="Approval Workflow" accent="#0f172a">
@@ -817,8 +830,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
   const [remarks, setRemarks] = useState(role === "vc" ? item.form?.vcRemarks : role === "registrar" ? item.form?.registrarRemarks : item.form?.roRemarks);
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const pendingStatus = expectedPendingStatus(role);
-  const locked = readOnly || item.status !== pendingStatus;
+  const locked = readOnly || !isPendingForNonTeachingReviewer(item, role);
   const accent = roleAccent(role);
   const visibleRoles = visibleNonTeachingReviewRoles(role, item);
   const selfTotals = calculateNonTeachingTotals(form, "self");
@@ -1024,7 +1036,7 @@ export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, acce
   }, [reviewerRole]);
 
   const selected = items.find((item) => item.id === selectedId);
-  const pendingCount = items.filter((item) => item.status === expectedPendingStatus(reviewerRole)).length;
+  const pendingCount = items.filter((item) => isPendingForNonTeachingReviewer(item, reviewerRole)).length;
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", background: "#f1f5f9", color: "#0f172a", fontFamily: "inherit" }}>
@@ -1097,7 +1109,7 @@ export function NonTeachingReviewDashboard({ reviewerRole, title, subtitle, acce
           <NonTeachingAuthorityReviewPanel
             item={selected}
             reviewerRole={reviewerRole}
-            readOnly={selected.status !== expectedPendingStatus(reviewerRole)}
+            readOnly={!isPendingForNonTeachingReviewer(selected, reviewerRole)}
             onBack={() => setSelectedId("")}
             onSubmitted={(updated) => {
               setItems((current) => current.map((item) => item.id === updated.id ? updated : item));

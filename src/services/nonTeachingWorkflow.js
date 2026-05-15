@@ -10,11 +10,14 @@ import { api } from "./api";
 
 export const NON_TEACHING_STATUS = {
   DRAFT: "Draft",
-  SUBMITTED: "Submitted",
-  RO_REVIEWED: "Reporting Officer Reviewed",
+  PENDING_RO_REVIEW: "Pending RO Review",
+  PENDING_REGISTRAR_REVIEW: "Pending Registrar Review",
+  RO_REVIEWED: "RO Reviewed",
   REGISTRAR_REVIEWED: "Registrar Reviewed",
   VC_APPROVED: "VC Approved",
 };
+
+NON_TEACHING_STATUS.SUBMITTED = NON_TEACHING_STATUS.PENDING_RO_REVIEW;
 
 export const NON_TEACHING_MAX = {
   partA: 25,
@@ -107,6 +110,26 @@ const firstNonEmpty = (...values) =>
 const emailKey = (value) => clean(value).toLowerCase();
 const pickFirstNonEmpty = (source = {}, keys = []) =>
   firstNonEmpty(...keys.map((key) => source?.[key]));
+const normalizeStatusText = (value) =>
+  clean(value)
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+const NON_TEACHING_STATUS_ALIASES = {
+  draft: NON_TEACHING_STATUS.DRAFT,
+  submitted: NON_TEACHING_STATUS.PENDING_RO_REVIEW,
+  "pending ro review": NON_TEACHING_STATUS.PENDING_RO_REVIEW,
+  "pending reporting officer review": NON_TEACHING_STATUS.PENDING_RO_REVIEW,
+  "reporting officer reviewed": NON_TEACHING_STATUS.RO_REVIEWED,
+  "ro reviewed": NON_TEACHING_STATUS.RO_REVIEWED,
+  "pending registrar review": NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW,
+  "registrar reviewed": NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
+  "vc approved": NON_TEACHING_STATUS.VC_APPROVED,
+  "vc reviewed": NON_TEACHING_STATUS.VC_APPROVED,
+  reviewed: NON_TEACHING_STATUS.VC_APPROVED,
+};
+export const normalizeNonTeachingStatus = (status) =>
+  NON_TEACHING_STATUS_ALIASES[normalizeStatusText(status)] || clean(status);
 const isTruthyFlag = (value) => {
   if (value === true || value === 1) return true;
   const normalized = clean(value).toLowerCase();
@@ -251,7 +274,7 @@ export const normalizeNonTeachingForm = (
     docs: form.docs || base.docs,
   };
 
-  merged.status = form.status || base.status;
+  merged.status = normalizeNonTeachingStatus(form.status || base.status);
   merged.submittedByRole = normalizeNonTeachingRole(
     form.submittedByRole,
     normalizeNonTeachingRole(role, role),
@@ -383,14 +406,14 @@ export const statusAfterSelfSubmit = (role, source = {}) => {
   if (normalizedRole === "registrar")
     return NON_TEACHING_STATUS.REGISTRAR_REVIEWED;
   if (normalizedRole === "reporting_officer")
-    return NON_TEACHING_STATUS.RO_REVIEWED;
+    return NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW;
   if (
     normalizedRole === "non_teaching_staff" &&
     nonTeachingReportsToRegistrar(source)
   ) {
-    return NON_TEACHING_STATUS.RO_REVIEWED;
+    return NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW;
   }
-  return NON_TEACHING_STATUS.SUBMITTED;
+  return NON_TEACHING_STATUS.PENDING_RO_REVIEW;
 };
 
 export const reviewerStatus = (role) => {
@@ -406,10 +429,29 @@ export const reviewerStatus = (role) => {
 export const expectedPendingStatus = (role) => {
   const normalizedRole = normalizeNonTeachingRole(role, role);
   if (normalizedRole === "reporting_officer")
-    return NON_TEACHING_STATUS.SUBMITTED;
-  if (normalizedRole === "registrar") return NON_TEACHING_STATUS.RO_REVIEWED;
+    return NON_TEACHING_STATUS.PENDING_RO_REVIEW;
+  if (normalizedRole === "registrar")
+    return NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW;
   if (normalizedRole === "vc") return NON_TEACHING_STATUS.REGISTRAR_REVIEWED;
   return NON_TEACHING_STATUS.DRAFT;
+};
+
+export const expectedPendingStatuses = (role) => {
+  const normalizedRole = normalizeNonTeachingRole(role, role);
+  if (normalizedRole === "registrar") {
+    return [
+      NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW,
+      NON_TEACHING_STATUS.RO_REVIEWED,
+    ];
+  }
+  return [expectedPendingStatus(normalizedRole)];
+};
+
+export const isPendingForNonTeachingReviewer = (statusOrItem = {}, role) => {
+  const status = typeof statusOrItem === "string"
+    ? statusOrItem
+    : statusOrItem.status || statusOrItem.form?.status;
+  return expectedPendingStatuses(role).includes(normalizeNonTeachingStatus(status));
 };
 
 export const nonTeachingReviewFlow = (itemOrForm = {}) => {
@@ -473,7 +515,7 @@ export const canReviewNonTeachingItem = (item = {}, reviewerRole) => {
 };
 
 export const isNonTeachingReviewComplete = (item = {}) =>
-  item.status === NON_TEACHING_STATUS.VC_APPROVED || n(item.vcTotal) > 0;
+  normalizeNonTeachingStatus(item.status) === NON_TEACHING_STATUS.VC_APPROVED || n(item.vcTotal) > 0;
 
 const validateMarks = (form, authority) => {
   for (const { key, label, max } of SELF_ITEMS) {
@@ -532,7 +574,7 @@ export const loadNonTeachingAppraisal = async ({
     if (!data) return null;
     return {
       ...data,
-      form: normalizeNonTeachingForm(data.payload, profile, role),
+      form: normalizeNonTeachingForm(data.payload, { ...profile, ...data }, role),
     };
   } catch {
     return null;
@@ -562,7 +604,7 @@ export const saveNonTeachingDraft = async ({
   });
   return {
     ...data,
-    form: normalizeNonTeachingForm(data?.payload, profile, normalizedRole),
+    form: normalizeNonTeachingForm(data?.payload, { ...profile, ...data }, normalizedRole),
   };
 };
 
@@ -605,7 +647,7 @@ export const submitNonTeachingSelfAppraisal = async ({
 
   return {
     ...data,
-    form: normalizeNonTeachingForm(data?.payload, profile, normalizedRole),
+    form: normalizeNonTeachingForm(data?.payload, { ...profile, ...data }, normalizedRole),
   };
 };
 
@@ -688,7 +730,7 @@ const normalizeNonTeachingQueueItem = (item = {}) => {
   ));
   const ay = academicYear(firstNonEmpty(item.academicYear, item.academic_year, form.info?.ay));
   const name = firstNonEmpty(item.name, item.full_name, item.fullName, form.info?.name, staffEmail);
-  const status = firstNonEmpty(item.status, form.status, NON_TEACHING_STATUS.DRAFT);
+  const status = normalizeNonTeachingStatus(firstNonEmpty(item.status, form.status, NON_TEACHING_STATUS.DRAFT));
   const selfTotals = calculateNonTeachingTotals(form, "self");
   const roTotals = calculateNonTeachingTotals(form, "reporting_officer");
   const registrarTotals = calculateNonTeachingTotals(form, "registrar");
@@ -729,21 +771,26 @@ const normalizeNonTeachingQueueItem = (item = {}) => {
 
 const nonTeachingStatusIndex = (status) => [
   NON_TEACHING_STATUS.DRAFT,
-  NON_TEACHING_STATUS.SUBMITTED,
+  NON_TEACHING_STATUS.PENDING_RO_REVIEW,
+  NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW,
   NON_TEACHING_STATUS.RO_REVIEWED,
   NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
   NON_TEACHING_STATUS.VC_APPROVED,
-].indexOf(status);
+].indexOf(normalizeNonTeachingStatus(status));
 
 const nonTeachingReachedReviewer = (item = {}, reviewerRole) => {
-  const expectedIndex = nonTeachingStatusIndex(expectedPendingStatus(reviewerRole));
+  const expectedIndex = Math.min(
+    ...expectedPendingStatuses(reviewerRole)
+      .map(nonTeachingStatusIndex)
+      .filter((index) => index >= 0),
+  );
   const currentIndex = nonTeachingStatusIndex(item.status);
   return expectedIndex >= 0 && currentIndex >= expectedIndex;
 };
 
 const isSubmittedNonTeachingQueueItem = (item = {}) => {
   const currentIndex = nonTeachingStatusIndex(item.status);
-  const submittedIndex = nonTeachingStatusIndex(NON_TEACHING_STATUS.SUBMITTED);
+  const submittedIndex = nonTeachingStatusIndex(NON_TEACHING_STATUS.PENDING_RO_REVIEW);
   return currentIndex >= submittedIndex ||
     Boolean(clean(firstNonEmpty(
       item.submittedOn,
@@ -815,10 +862,10 @@ export const submitNonTeachingReview = async ({
 } = {}) => {
   const role = normalizeNonTeachingRole(reviewerRole, reviewerRole);
   const status = reviewerStatus(role);
-  const expectedStatus = expectedPendingStatus(role);
-  const currentStatus = item?.status || form?.status;
+  const pendingStatuses = expectedPendingStatuses(role);
+  const currentStatus = normalizeNonTeachingStatus(item?.status || form?.status);
 
-  if (currentStatus !== expectedStatus && currentStatus !== status) {
+  if (!pendingStatuses.includes(currentStatus) && currentStatus !== status) {
     throw new Error(
       `This appraisal is not pending ${nonTeachingRoleLabel(role)} review.`,
     );

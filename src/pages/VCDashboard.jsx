@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { fetchSavedAppraisal } from "../services/appraisalPersistence";
-import { fetchNonTeachingQueueForRole, expectedPendingStatus, isNonTeachingReviewComplete } from "../services/nonTeachingWorkflow";
+import { fetchNonTeachingQueueForRole, isPendingForNonTeachingReviewer, isNonTeachingReviewComplete } from "../services/nonTeachingWorkflow";
 import { ACR_DETAIL_POINTS, MAX_SCORES, APP_INFO, createAcrRows } from "../constants/formConfig";
 
 import { DEAN_TRACKS, UNIVERSITY_SCHOOLS, normalizeHierarchyText } from "../constants/universityHierarchy";
@@ -1144,7 +1144,7 @@ function NonTeachingCard({ item, onReview }) {
 }
 
 function NonTeachingPanel({ items, onReview }) {
-  const pending = items.filter((item) => item.status === expectedPendingStatus("vc")).length;
+  const pending = items.filter((item) => isPendingForNonTeachingReviewer(item, "vc")).length;
   const reviewed = items.filter(isNonTeachingReviewComplete).length;
 
   return (
