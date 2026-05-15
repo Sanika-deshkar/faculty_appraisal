@@ -68,11 +68,15 @@ export const departmentHasHod = (school, department) => {
 
 export const getReviewChain = (profile = {}) => {
   const role = normalizeRoleForWorkflow(profile.appraisal_role || profile.role);
+  const reportsToRegistrar = profile.reports_to_registrar === true ||
+    profile.reportsToRegistrar === true ||
+    String(profile.reports_to_registrar || profile.reportsToRegistrar || "").trim().toLowerCase() === "true";
 
   if (role === "vc") return [];
   if (role === "registrar") return ["vc"];
   if (role === "reporting_officer") return ["registrar", "vc"];
-  if (role === "non_teaching_staff") return ["reporting_officer", "registrar", "vc"];
+  if (role === "non_teaching_staff")
+    return reportsToRegistrar ? ["registrar", "vc"] : ["reporting_officer", "registrar", "vc"];
   if (role === "center_head") return ["vc"];
   if (role === "dean") return ["vc"];
   if (role === "director") return ["dean", "vc"];
@@ -175,7 +179,10 @@ export const canAuthorityReviewProfile = (reviewerProfile = {}, subjectProfile =
   }
 
   if (reviewerRole === "reporting_officer") {
-    return subjectRole === "non_teaching_staff";
+    const reportsToRegistrar = subjectProfile.reports_to_registrar === true ||
+      subjectProfile.reportsToRegistrar === true ||
+      String(subjectProfile.reports_to_registrar || subjectProfile.reportsToRegistrar || "").trim().toLowerCase() === "true";
+    return subjectRole === "non_teaching_staff" && !reportsToRegistrar;
   }
 
   if (isNonTeachingRole(reviewerRole) || isNonTeachingRole(subjectRole)) {
@@ -218,5 +225,9 @@ export const profileFromsessionStorage = () => ({
   department: sessionStorage.getItem("department") || "",
   designation: sessionStorage.getItem("designation") || "",
   employee_id: sessionStorage.getItem("employeeId") || "",
+  reports_to_registrar: sessionStorage.getItem("reports_to_registrar") === "true" ||
+    sessionStorage.getItem("reportsToRegistrar") === "true",
+  reportsToRegistrar: sessionStorage.getItem("reports_to_registrar") === "true" ||
+    sessionStorage.getItem("reportsToRegistrar") === "true",
 });
 

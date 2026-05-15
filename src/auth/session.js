@@ -56,6 +56,12 @@ export const schoolHasHod = (school) => {
 const firstValue = (...values) =>
   values.find((value) => String(value ?? "").trim() !== "") || "";
 
+const boolFlag = (...values) => {
+  const value = firstValue(...values);
+  if (value === true || value === 1) return true;
+  return ["true", "1", "yes", "y"].includes(String(value || "").trim().toLowerCase());
+};
+
 const deanDivisionValue = (value) => {
   const normalized = normalizeHierarchyText(value);
   if (normalized === "engineering") return DEAN_TRACKS.ENGINEERING;
@@ -94,6 +100,7 @@ export const buildProfilePayload = (formData, academicYear = "2025-2026") => {
     phone: String(formData.phone || "").trim() || null,
     academic_year: academicYear,
     appraisal_role: role,
+    reports_to_registrar: nonTeachingRole && boolFlag(formData.reports_to_registrar, formData.reportsToRegistrar),
   };
 };
 
@@ -110,6 +117,12 @@ export const storeUserSession = ({ token, profile = {}, fallbackEmail = "" }) =>
       ? canonicalDepartmentValue(firstValue(safeProfile.department))
       : firstValue(safeProfile.department);
   const normalizedDepartment = nonTeachingRole || !isCisrSchool(school) ? department : "";
+  const reportsToRegistrar = role === "non_teaching_staff" && boolFlag(
+    safeProfile.reports_to_registrar,
+    safeProfile.reportsToRegistrar,
+    safeProfile.direct_to_registrar,
+    safeProfile.directToRegistrar,
+  );
 
   if (token) {
     sessionStorage.setItem("accessToken", token);
@@ -125,11 +138,13 @@ export const storeUserSession = ({ token, profile = {}, fallbackEmail = "" }) =>
   sessionStorage.setItem("qualification", firstValue(safeProfile.qualification));
   sessionStorage.setItem("experience", firstValue(safeProfile.teaching_experience));
   sessionStorage.setItem("phone", firstValue(safeProfile.phone));
+  sessionStorage.setItem("reports_to_registrar", reportsToRegistrar ? "true" : "false");
+  sessionStorage.setItem("reportsToRegistrar", reportsToRegistrar ? "true" : "false");
 
   const hasHod = departmentHasHod(school, normalizedDepartment);
   sessionStorage.setItem("hasHod", hasHod ? "true" : "false");
   sessionStorage.setItem("hasHOD", hasHod ? "true" : "false");
 
-  return { email, role, school, department: normalizedDepartment };
+  return { email, role, school, department: normalizedDepartment, reports_to_registrar: reportsToRegistrar };
 };
 

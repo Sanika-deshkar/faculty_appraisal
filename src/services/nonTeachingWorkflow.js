@@ -290,6 +290,12 @@ export const normalizeNonTeachingForm = (
     });
   merged.reports_to_registrar = reportsToRegistrar;
   merged.reportsToRegistrar = reportsToRegistrar;
+  if (
+    reportsToRegistrar &&
+    merged.status === NON_TEACHING_STATUS.PENDING_RO_REVIEW
+  ) {
+    merged.status = NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW;
+  }
   merged.info.ay = academicYear(merged.info.ay || profile.academic_year);
   merged.info.email = emailKey(
     merged.info.email || profile.email || sessionStorage.getItem("username"),
@@ -730,7 +736,7 @@ const normalizeNonTeachingQueueItem = (item = {}) => {
   ));
   const ay = academicYear(firstNonEmpty(item.academicYear, item.academic_year, form.info?.ay));
   const name = firstNonEmpty(item.name, item.full_name, item.fullName, form.info?.name, staffEmail);
-  const status = normalizeNonTeachingStatus(firstNonEmpty(item.status, form.status, NON_TEACHING_STATUS.DRAFT));
+  let status = normalizeNonTeachingStatus(firstNonEmpty(item.status, form.status, NON_TEACHING_STATUS.DRAFT));
   const selfTotals = calculateNonTeachingTotals(form, "self");
   const roTotals = calculateNonTeachingTotals(form, "reporting_officer");
   const registrarTotals = calculateNonTeachingTotals(form, "registrar");
@@ -740,6 +746,12 @@ const normalizeNonTeachingQueueItem = (item = {}) => {
     form,
     payload: item.payload,
   });
+  if (
+    reportsToRegistrar &&
+    status === NON_TEACHING_STATUS.PENDING_RO_REVIEW
+  ) {
+    status = NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW;
+  }
 
   return {
     ...item,

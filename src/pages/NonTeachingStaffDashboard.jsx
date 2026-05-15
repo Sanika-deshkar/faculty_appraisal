@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { storeUserSession } from "../auth/session";
 import { APP_INFO } from "../constants/formConfig";
 import { normalizeNonTeachingRole } from "../constants/nonTeachingHierarchy";
 import { api } from "../services/api";
+import { getMe } from "../services/authService";
 import { isAllowedAttachmentFile, isFilled } from "../utils/appraisalFormUtils";
 import {
   NON_TEACHING_MAX,
@@ -462,7 +464,14 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
     let active = true;
     const loadForm = async () => {
       try {
-        const profile = profileFromsessionStorage();
+        let profile = profileFromsessionStorage();
+        try {
+          const latestProfile = await getMe();
+          storeUserSession({ profile: latestProfile });
+          profile = profileFromsessionStorage();
+        } catch (profileErr) {
+          console.warn("Could not refresh non-teaching profile:", profileErr?.message || profileErr);
+        }
         const saved = await loadNonTeachingAppraisal({
           email: profile.email,
           academicYear: APP_INFO.DEFAULT_AY,
