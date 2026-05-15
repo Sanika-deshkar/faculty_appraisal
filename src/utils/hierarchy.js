@@ -123,6 +123,10 @@ export const pendingStatusFor = (role) => `Pending ${roleLabel(role)} Review`;
 export const reviewedStatusFor = (role) => `${roleLabel(role)} Reviewed`;
 export const rejectedStatusFor = (role) => `${roleLabel(role)} Rejected`;
 export const isRejectedStatus = (status) => normalizeText(status).includes("rejected");
+export const isAppraisalFinalisedByVc = (item = {}) => {
+  const status = normalizeText(item?.declaration?.status || item?.declarationStatus || item?.declaration_status || "");
+  return status === "reviewed";
+};
 export const reviewStatusForDecision = (role, decision = "approved") =>
   decision === "rejected" ? rejectedStatusFor(role) : reviewedStatusFor(role);
 

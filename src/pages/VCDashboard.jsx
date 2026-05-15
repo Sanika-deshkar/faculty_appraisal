@@ -7,7 +7,7 @@ import { ACR_DETAIL_POINTS, MAX_SCORES, APP_INFO, createAcrRows } from "../const
 
 import { DEAN_TRACKS, UNIVERSITY_SCHOOLS, normalizeHierarchyText } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
-import { getSchoolKey, reviewedStatusFor, profileFromsessionStorage, visiblePreviousReviewRoles } from "../utils/hierarchy";
+import { getSchoolKey, profileFromsessionStorage, visiblePreviousReviewRoles, isAppraisalFinalisedByVc } from "../utils/hierarchy";
 import { buildReviewRemarks, openFullFormReport } from "../utils/fullFormReport";
 import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
@@ -710,7 +710,10 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
   const [remarks, setRemarks] = useState(person.vcRemarks || "");
   const [sectionView, setSectionView] = useState("partA");
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
-  const reviewLocked = readOnly || isVcReviewed(person);
+  const finalisedByVc = isAppraisalFinalisedByVc(person);
+  const [editingFinalised, setEditingFinalised] = useState(false);
+  const finalisedReadOnly = finalisedByVc && !editingFinalised;
+  const reviewLocked = (readOnly && !finalisedByVc) || finalisedReadOnly;
 
   const calculatedScores = calcVCScore(person, vcData);
   const partA = reviewLocked && n(person.vcPartA) > 0 ? n(person.vcPartA) : calculatedScores.partA;
@@ -829,6 +832,14 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
           </button>
         ))}
       </div>
+      {finalisedReadOnly && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+          <button onClick={() => { setEditingFinalised(true); setReviewConfirmed(false); }}
+            style={{ padding: "10px 28px", background: "#4c1d95", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
+            Edit Form
+          </button>
+        </div>
+      )}
 
       {(sectionView === "partA" || sectionView === "partB") && (
         <fieldset disabled={reviewLocked} style={{ border: "none", padding: 0, margin: 0 }}>
@@ -922,7 +933,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
             <button onClick={() => onSubmit(person.id, { partA, partB, total }, remarks, personMode, buildVcSectionScores(person, vcData), reviewConfirmed)}
               disabled={!reviewConfirmed || !remarks.trim()}
               style={{ padding: "10px 28px", background: (reviewConfirmed && remarks.trim()) ? "#4c1d95" : "#64748b", color: "#fff", border: "none", borderRadius: 7, cursor: (reviewConfirmed && remarks.trim()) ? "pointer" : "not-allowed", fontWeight: 700, fontSize: 13, fontFamily: "inherit" }}>
-              🎓 Confirm &amp; Sign Appraisal
+              {finalisedByVc ? "Edit & Resubmit" : "Confirm & Sign Appraisal"}
             </button>
             )}
           </div>
@@ -1305,6 +1316,7 @@ export default function VCDashboard() {
     const sourceList = personMode === "dean" ? deanList : personMode === "director" ? dirList : personMode === "hod" ? hodList : personMode === "center_head" ? centerHeadList : facList;
     const item = sourceList.find(entry => entry.id === id);
     if (!item) return;
+    const wasFinalised = isAppraisalFinalisedByVc(item);
     try {
       await submitWorkflowReview({
         subjectEmail: item.email,
@@ -1318,7 +1330,7 @@ export default function VCDashboard() {
         subjectProfile: item,
       });
       const upd = (list) => list.map(p => p.id === id
-        ? { ...p, ...sectionScores, innovVc: sectionScores?.innovativeTeaching?.vc ?? p.innovVc, status: "Reviewed", workflowStatus: reviewedStatusFor("vc"), vcPartA: scores.partA, vcPartB: scores.partB, vcTotal: scores.total, vcRemarks: remarks }
+        ? { ...p, ...sectionScores, innovVc: sectionScores?.innovativeTeaching?.vc ?? p.innovVc, status: "Reviewed", workflowStatus: "Reviewed", declaration: { ...(p.declaration || {}), status: "Reviewed" }, vcPartA: scores.partA, vcPartB: scores.partB, vcTotal: scores.total, vcRemarks: remarks }
         : p);
       if (personMode === "dean") setDeanList(upd);
       else if (personMode === "director") setDirList(upd);
@@ -1326,7 +1338,7 @@ export default function VCDashboard() {
       else if (personMode === "center_head") setCenterHeadList(upd);
       else if (personMode === "faculty") setFacList(upd);
       setReviewing(null);
-      alert("VC final approval submitted.");
+      alert(wasFinalised ? "VC review updated." : "VC final approval submitted.");
     } catch (err) {
       console.error("Could not submit VC review:", err);
       alert(`Unable to submit VC review.\n\n${err.message}`);
@@ -1355,8 +1367,9 @@ export default function VCDashboard() {
       const docs = data?.payload?.docs || data?.docs || {};
       const reviewSummary = vcReviewSummaryFrom(person, data, data?.payload);
       const mergedForm = preserveSavedReviewScores(form, person);
+      const declaration = data?.declaration || person.declaration || null;
       setReviewing({
-        person: { ...person, ...mergedForm, ...reviewSummary, docs, academicYear, academic_year: academicYear },
+        person: { ...person, ...mergedForm, ...reviewSummary, docs, academicYear, academic_year: academicYear, declaration, status: declaration?.status || data?.status || person.status, workflowStatus: declaration?.status || data?.workflowStatus || person.workflowStatus },
         personMode,
       });
     } catch (err) {

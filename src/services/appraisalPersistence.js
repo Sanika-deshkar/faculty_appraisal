@@ -1057,6 +1057,7 @@ const normalizeFetchedForm = (form = {}) => {
 const normalizeFetchedAppraisal = (data = {}) => {
   const reviews = reviewsFromAppraisalResponse(data);
   const payload = data.payload ? { ...data.payload } : null;
+  const declaration = data.declaration || payload?.declaration || null;
   const payloadForm = payload?.form ? attachSubmittedScoreSummary(
     mergeReviewScoresIntoForm(normalizeFetchedForm(payload.form), reviews),
     data,
@@ -1078,6 +1079,9 @@ const normalizeFetchedAppraisal = (data = {}) => {
 
   return {
     ...directData,
+    declaration,
+    status: declaration?.status || data.status || directData.status,
+    workflowStatus: declaration?.status || data.workflowStatus || data.workflow_status || directData.workflowStatus,
     ...(directForm ? { form: directForm } : {}),
     ...(payload ? { payload: { ...payload, ...(payloadForm ? { form: payloadForm } : {}) } } : {}),
   };

@@ -33,7 +33,7 @@ import {
   toggleInnovativeMethod,
   validateCompleteRows,
 } from "../utils/appraisalFormUtils";
-import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles, workflowValidationError } from "../utils/hierarchy";
+import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles, workflowValidationError, isAppraisalFinalisedByVc } from "../utils/hierarchy";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 
 const ACCENT = "#9d174d";
@@ -932,6 +932,10 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
   const subjectProfile = { school: person?.school || form.info?.school, department: person?.department, appraisal_role: person?.appraisalRole };
   const visiblePreviousRoles = visiblePreviousReviewRoles(reviewerRole, subjectProfile);
   const schoolDisplayName = designArtsSchoolName(person, form);
+  const finalisedByVc = isAppraisalFinalisedByVc(person);
+  const [editingFinalised, setEditingFinalised] = useState(false);
+  const finalisedVcReadOnly = reviewerRole === "vc" && finalisedByVc && !editingFinalised;
+  const panelReadOnly = reviewerRole === "vc" ? finalisedVcReadOnly : (readOnly || finalisedByVc);
 
   const reviewerForm = useMemo(() => {
     const merged = { ...form };
@@ -946,7 +950,7 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
   }, [form, reviewData, reviewerRole]);
   const facultyTotals = calculateDesignArtsTotals(form, "score");
   const totals = calculateDesignArtsTotals(reviewerForm, reviewerRole);
-  const reviewCompleted = readOnly || isReviewerReviewComplete(person, reviewerRole);
+  const reviewCompleted = panelReadOnly || isReviewerReviewComplete(person, reviewerRole);
   const savedReviewerTotalKeys = [`${reviewerRole}PartA`, `${reviewerRole}PartB`, `${reviewerRole}Total`];
   const hasSavedReviewerTotals = savedReviewerTotalKeys.some((key) => String(person?.[key] ?? "").trim() !== "");
   const reviewerSummaryTotals = reviewCompleted && hasSavedReviewerTotals ? {
@@ -1029,6 +1033,18 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <SectionSelector value={sectionView} onChange={setSectionView} label="Review Section" />
       </div>
+      {finalisedVcReadOnly && (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={() => { setEditingFinalised(true); setConfirmed(false); }} style={smallButton("#4c1d95")}>
+            Edit Form
+          </button>
+        </div>
+      )}
+      {finalisedByVc && reviewerRole !== "vc" && (
+        <div style={{ background: "#ecfdf5", border: "1px solid #86efac", color: "#065f46", borderRadius: 8, padding: "10px 12px", fontSize: 12, fontWeight: 700 }}>
+          This appraisal has been finalised by the VC.
+        </div>
+      )}
       {(sectionView === "partA" || sectionView === "partB") && (
         <DesignArtsForm
           form={form}
@@ -1036,7 +1052,7 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
           docs={docs}
           setDocs={setDocs}
           mode="review"
-          locked={readOnly}
+          locked={panelReadOnly}
           reviewerRole={reviewerRole}
           reviewData={reviewData}
           setReviewData={setReviewData}
@@ -1050,9 +1066,9 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
           <SummaryBox totals={reviewerSummaryTotals} maxScores={totals.maxScores} roleScoreLabel={`${roleLabel(reviewerRole)} score for the ${schoolDisplayName} appraisal form.`} />
           <label style={{ display: "grid", gap: 6, fontWeight: 800, color: "#134e4a", fontSize: 13 }}>
             {reviewerRole === "vc" ? "Vice Chancellor Remarks and Grade" : `${roleLabel(reviewerRole)} Remarks`}
-            <textarea value={remarks} readOnly={readOnly} onChange={(event) => setRemarks(event.target.value)} rows={5} style={{ border: "1px solid #99f6e4", borderRadius: 7, padding: 10, fontFamily: "inherit", resize: "vertical" }} />
+            <textarea value={remarks} readOnly={panelReadOnly} onChange={(event) => setRemarks(event.target.value)} rows={5} style={{ border: "1px solid #99f6e4", borderRadius: 7, padding: 10, fontFamily: "inherit", resize: "vertical" }} />
           </label>
-          {!readOnly && <AccuracyCheckbox checked={confirmed} onChange={setConfirmed} />}
+          {!panelReadOnly && <AccuracyCheckbox checked={confirmed} onChange={setConfirmed} />}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
             <button onClick={onBack} style={smallButton("#64748b")}>Close</button>
             {showReport && (
@@ -1060,13 +1076,13 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
                 Generate Report
               </button>
             )}
-            {!readOnly && (
+            {!panelReadOnly && (
               <button
                 onClick={() => onSubmit(person.id, { partA: totals.partA, partB: totals.partB, total: totals.total }, remarks, buildDesignArtsSectionScores(form, reviewData, reviewerRole), confirmed)}
                 disabled={!confirmed || !remarks.trim()}
                 style={smallButton((confirmed && remarks.trim()) ? "#059669" : "#94a3b8")}
               >
-                Submit {roleLabel(reviewerRole)} Review
+                {reviewerRole === "vc" && finalisedByVc ? "Edit & Resubmit" : `Submit ${roleLabel(reviewerRole)} Review`}
               </button>
             )}
           </div>
@@ -1552,7 +1568,8 @@ export default function DesignArtsDashboard({ fixedRole }) {
                               const submittedForm = data?.payload?.form || data?.form || {};
                               const submittedDocs = data?.payload?.docs || data?.docs || {};
                               const mergedForm = preserveSavedReviewScores(submittedForm, item);
-                              setReviewing({ ...item, ...mergedForm, docs: submittedDocs });
+                              const declaration = data?.declaration || item.declaration || null;
+                              setReviewing({ ...item, ...mergedForm, docs: submittedDocs, declaration, status: declaration?.status || data?.status || item.status, workflowStatus: declaration?.status || data?.workflowStatus || item.workflowStatus });
                             } catch (err) {
                               alert(`Unable to open submitted form.\n\n${err.message}`);
                             } finally {

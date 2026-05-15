@@ -6,7 +6,7 @@ import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, saveAp
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, scoreRemaining, societyRowLocked, societyRowScore, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
-import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel } from "../utils/hierarchy";
+import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel, isAppraisalFinalisedByVc } from "../utils/hierarchy";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 
@@ -974,7 +974,8 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false, reviewerLabe
   const [remarks, setRemarks] = useState(faculty.hodRemarks || "");
   const [sectionView, setSectionView] = useState("partA");
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
-  const reviewLocked = readOnly || faculty.status === "Reviewed" || /(?:HOD|Center Head)\s*(Reviewed|Rejected)/i.test(faculty.status || "") || n(faculty.hodTotal) > 0 || String(faculty.hodRemarks || "").trim() !== "";
+  const finalisedByVc = isAppraisalFinalisedByVc(faculty);
+  const reviewLocked = finalisedByVc || readOnly || faculty.status === "Reviewed" || /(?:HOD|Center Head)\s*(Reviewed|Rejected)/i.test(faculty.status || "") || n(faculty.hodTotal) > 0 || String(faculty.hodRemarks || "").trim() !== "";
 
   // Compute HOD total from hodData
   const calcHodScore = () => {
@@ -1076,6 +1077,11 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false, reviewerLabe
           </div>
         </div>
       </div>
+      {finalisedByVc && (
+        <div style={{ background: "#ecfdf5", border: "1px solid #86efac", color: "#065f46", borderRadius: 8, padding: "10px 12px", fontSize: 12, fontWeight: 700, marginBottom: 14 }}>
+          This appraisal has been finalised by the VC.
+        </div>
+      )}
 
       {/* Section switcher */}
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
@@ -3229,7 +3235,8 @@ export default function HODDashboard({
                             const form = data?.payload?.form || data?.form || {};
                             const docs = data?.payload?.docs || data?.docs || {};
                             const mergedForm = preserveSavedReviewScores(form, faculty);
-                            setReviewingFaculty({ ...faculty, ...mergedForm, docs });
+                            const declaration = data?.declaration || faculty.declaration || null;
+                            setReviewingFaculty({ ...faculty, ...mergedForm, docs, declaration, status: declaration?.status || data?.status || faculty.status, workflowStatus: declaration?.status || data?.workflowStatus || faculty.workflowStatus });
                           } catch (err) {
                             alert(`Unable to open submitted form.\n\n${err.message}`);
                           } finally {

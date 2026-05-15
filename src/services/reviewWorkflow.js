@@ -370,6 +370,9 @@ export const submitWorkflowReview = async ({
   };
   const endpointUrl = `/appraisal-remarks/${endpoint}/${encodeURIComponent(subjectEmail)}`;
   const forwarding = workflowForwardingFor(role, subjectProfile || {});
+  if (role === "vc") {
+    return await api.put(endpointUrl, basePayload) || {};
+  }
 
   let result;
   try {

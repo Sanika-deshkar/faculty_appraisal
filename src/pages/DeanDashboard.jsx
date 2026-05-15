@@ -7,7 +7,7 @@ import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
 import { INNOVATIVE_METHODS, SCORE_LIMITS, clampScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, scoreRemaining, societyRowLocked, societyRowScore, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
 import { DEAN_TRACKS, getSchoolKey, getSchoolsByDeanTrack } from "../constants/universityHierarchy";
-import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel } from "../utils/hierarchy";
+import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel, isAppraisalFinalisedByVc } from "../utils/hierarchy";
 import { generateStandardReport } from "../utils/fullFormReport";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
@@ -1587,7 +1587,8 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
   const [deanData, setDeanData] = useState({});
   const [sectionView, setSectionView] = useState("partA");
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
-  const reviewLocked = readOnly || approval?.status === "Reviewed" || /Dean\s*(Reviewed|Approved|Rejected)/i.test(approval?.status || "");
+  const finalisedByVc = isAppraisalFinalisedByVc(approval);
+  const reviewLocked = finalisedByVc || readOnly || approval?.status === "Reviewed" || /Dean\s*(Reviewed|Approved|Rejected)/i.test(approval?.status || "");
   const sectionScores = deanScorePayload(approval, deanData);
   const deanScores = deanScoreTotals(sectionScores);
   const hasSavedDeanScores = ["deanPartA", "deanPartB", "deanTotal"].some((key) => String(approval?.[key] ?? "").trim() !== "");
@@ -1628,6 +1629,11 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
           </div>
         ))}
       </div>
+      {finalisedByVc && (
+        <div style={{ background: "#ecfdf5", border: "1px solid #86efac", color: "#065f46", borderRadius: 8, padding: "10px 12px", fontSize: 12, fontWeight: 700, marginBottom: 14 }}>
+          This appraisal has been finalised by the VC.
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
         {[["partA", "Part A"], ["partB", "Part B"], ["summary", "Summary"]].map(([id, label]) => (
@@ -3598,7 +3604,8 @@ export default function DeanDashboard() {
                             const form = data?.payload?.form || data?.form || {};
                             const docs = data?.payload?.docs || data?.docs || {};
                             const mergedForm = preserveSavedReviewScores(form, faculty);
-                            setReviewingApproval({ ...faculty, ...mergedForm, docs });
+                            const declaration = data?.declaration || faculty.declaration || null;
+                            setReviewingApproval({ ...faculty, ...mergedForm, docs, declaration, status: declaration?.status || data?.status || faculty.status, workflowStatus: declaration?.status || data?.workflowStatus || faculty.workflowStatus });
                           } catch (err) {
                             alert(`Unable to open submitted form.\n\n${err.message}`);
                           } finally {
