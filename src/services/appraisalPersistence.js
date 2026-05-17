@@ -57,7 +57,11 @@ const applySnapshotToSetters = (snapshotPayload, setters) => {
 
   Object.entries(SNAPSHOT_SETTERS).forEach(([formKey, setterKey]) => {
     if (Object.prototype.hasOwnProperty.call(snapshotForm, formKey)) {
-      setters[setterKey]?.(snapshotForm[formKey]);
+      if (formKey === "info") {
+        setters[setterKey]?.((current = {}) => normalizeInfo(snapshotForm[formKey], current, snapshotForm, snapshotPayload));
+      } else {
+        setters[setterKey]?.(snapshotForm[formKey]);
+      }
     }
   });
 
@@ -264,6 +268,44 @@ const hasSubmittedFormData = (form = {}) =>
 
 const firstPresent = (...values) =>
   values.find((value) => value !== undefined && value !== null && String(value).trim() !== "");
+
+const infoFromProfileSources = (...sources) => {
+  const profileSources = sources.flatMap((source) => [
+    source,
+    source?.info,
+    source?.profile,
+    source?.faculty,
+    source?.facultyProfile,
+    source?.submitterProfile,
+    source?.payload?.submitterProfile,
+  ]).filter(Boolean);
+
+  const pick = (...keys) => firstPresent(
+    ...profileSources.flatMap((source) => keys.map((key) => source?.[key])),
+  );
+
+  return {
+    name: pick("name", "full_name", "fullName", "faculty_name", "facultyName"),
+    qual: pick("qual", "qualification", "educational_qualifications", "educationalQualifications"),
+    desig: pick("desig", "designation", "present_designation", "presentDesignation"),
+    school: pick("school", "schoolName", "department", "departmentName"),
+    experience: pick("experience", "teaching_experience", "teachingExperience"),
+    ay: pick("ay", "academic_year", "academicYear"),
+  };
+};
+
+const normalizeInfo = (info = {}, ...fallbackSources) => {
+  const fallback = infoFromProfileSources(...fallbackSources);
+  return {
+    ...info,
+    name: firstPresent(info.name, info.full_name, info.fullName, fallback.name) || "",
+    qual: firstPresent(info.qual, info.qualification, info.educational_qualifications, info.educationalQualifications, fallback.qual) || "",
+    desig: firstPresent(info.desig, info.designation, info.present_designation, info.presentDesignation, fallback.desig) || "",
+    school: firstPresent(info.school, info.schoolName, info.department, info.departmentName, fallback.school) || "",
+    experience: firstPresent(info.experience, info.teaching_experience, info.teachingExperience, fallback.experience, info.expTotal) || "",
+    ay: firstPresent(info.ay, info.academic_year, info.academicYear, fallback.ay) || "",
+  };
+};
 
 const parseMaybeJson = (value) => {
   if (typeof value !== "string") return value;
@@ -854,6 +896,7 @@ const normalizeInnovativeReviewScoreAliases = (normalized) => {
 const normalizeFetchedForm = (form = {}) => {
   if (!form || typeof form !== "object") return form;
   const normalized = { ...form };
+  normalized.info = normalizeInfo(normalized.info || {}, normalized);
 
   normalizeSectionRows(normalized, "lectures", [
     "teaching_process",
@@ -1064,19 +1107,23 @@ const normalizeFetchedAppraisal = (data = {}) => {
   const reviews = reviewsFromAppraisalResponse(data);
   const payload = data.payload ? { ...data.payload } : null;
   const declaration = data.declaration || payload?.declaration || null;
+  const withResponseInfo = (form = {}, ...sources) => ({
+    ...form,
+    info: normalizeInfo(form.info || {}, form, ...sources),
+  });
   const payloadForm = payload?.form ? attachSubmittedScoreSummary(
-    mergeReviewScoresIntoForm(normalizeFetchedForm(payload.form), reviews),
+    mergeReviewScoresIntoForm(withResponseInfo(normalizeFetchedForm(payload.form), payload, data), reviews),
     data,
     payload,
     payload.totals,
   ) : null;
   const directForm = data.form ? attachSubmittedScoreSummary(
-    mergeReviewScoresIntoForm(normalizeFetchedForm(data.form), reviews),
+    mergeReviewScoresIntoForm(withResponseInfo(normalizeFetchedForm(data.form), data, payload), reviews),
     data,
     data.totals,
   ) : null;
   const directData = attachSubmittedScoreSummary(
-    mergeReviewScoresIntoForm(normalizeFetchedForm(data), reviews),
+    mergeReviewScoresIntoForm(withResponseInfo(normalizeFetchedForm(data), data, payload), reviews),
     data,
     data.totals,
     payload,

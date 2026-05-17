@@ -104,6 +104,7 @@ const emptyDesignArtsForm = () => ({
     name: sessionStorage.getItem("name") || "",
     qual: sessionStorage.getItem("qualification") || "",
     desig: sessionStorage.getItem("designation") || "",
+    experience: sessionStorage.getItem("experience") || "",
     ay: sessionStorage.getItem("academicYear") || "2025-2026",
     school: sessionStorage.getItem("school") || sessionStorage.getItem("schoolName") || "",
   },

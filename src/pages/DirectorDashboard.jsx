@@ -1320,9 +1320,10 @@ export default function DirectorDashboard() {
   // ── HOD's own appraisal form state ──
   const [info, setInfo] = useState({
     name: sessionStorage.getItem("name") || "",
-    qual: "",
+    qual: sessionStorage.getItem("qualification") || "",
     desig: sessionStorage.getItem("role") === "director" ? "Director" : "",
     school: sessionStorage.getItem("school") || sessionStorage.getItem("department") || "",
+    experience: sessionStorage.getItem("experience") || "",
     expDyp: "",
     expPrev: "",
     expTotal: "",
@@ -3381,7 +3382,7 @@ export default function DirectorDashboard() {
                           Paper Publication in Scopus indexed conference: 10/paper<br />
                           Invited lectures / Resource Person: 10/session<br />
                           Conference attended: 5/conference<br />
-                          Organized FDP of one week duration or more (Maxi. 2): 5/FDP<br />
+                          Organized FDP of one week duration or more / Conference/Symposium/workshop  (Maxi. 2 can be claimed)<br />
                           Industrial training of minimum 3 days duration: 5 marks<br />
                           <em>* Paper presented in Seminars/Conferences and also published as full paper in Conference Proceedings will be counted only once.</em>
                         </td>

@@ -85,6 +85,7 @@ const emptyMediaForm = () => ({
     name: sessionStorage.getItem("name") || "",
     qual: sessionStorage.getItem("qualification") || "",
     desig: sessionStorage.getItem("designation") || "",
+    experience: sessionStorage.getItem("experience") || "",
     ay: sessionStorage.getItem("academicYear") || "2025-2026",
     school: sessionStorage.getItem("school") || "SoMCS - School of Media & Communication Studies",
   },
@@ -1955,7 +1956,7 @@ export default function MediaCommDashboard({ fixedRole }) {
                           Paper Publication in Scopus indexed conference: 10/paper<br />
                           Invited lectures / Resource Person: 10/session<br />
                           Conference attended: 5/conference<br />
-                          Organized FDP of one week duration or more (Maxi. 2): 5/FDP<br />
+                          Organized FDP of one week duration or more / Conference/Symposium/workshop  (Maxi. 2 can be claimed)<br />
                           Industrial training of minimum 3 days duration: 5 marks<br />
                           <em>* Paper presented in Seminars/Conferences and also published as full paper in Conference Proceedings will be counted only once.</em>
                         </td>

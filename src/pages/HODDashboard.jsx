@@ -21,6 +21,22 @@ const grade = (score, max) => {
   if (p >= 40) return { label: "Satisfactory", color: "#d97706", bg: "#fef3c7" };
   return { label: "Needs Improvement", color: "#dc2626", bg: "#fee2e2" };
 };
+const reportValue = (value) => String(value ?? "").trim() || "&nbsp;";
+const reportQualification = (info = {}) => reportValue(info.qual || info.qualification || sessionStorage.getItem("qualification"));
+const reportExperience = (info = {}) => {
+  const single = [info.experience, info.teaching_experience, info.teachingExperience, info.expTotal, sessionStorage.getItem("experience")]
+    .find((value) => String(value ?? "").trim() !== "");
+  if (single) {
+    const text = String(single).trim();
+    return /year/i.test(text) ? text : `${text} years`;
+  }
+  const parts = [
+    ["DYPIU", info.expDyp],
+    ["Previous", info.expPrev],
+    ["Total", info.expTotal],
+  ].filter(([, value]) => String(value ?? "").trim() !== "");
+  return parts.length ? `${parts.map(([label, value]) => `${label}: ${String(value).trim()}`).join(" / ")} years` : "&nbsp;";
+};
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 function Avatar({ initials, color = "#6366f1", size = 40 }) {
@@ -1215,9 +1231,10 @@ export default function HODDashboard({
   // ── HOD's own appraisal form state ──
   const [info, setInfo] = useState({
     name: sessionStorage.getItem("name") || "",
-    qual: "",
+    qual: sessionStorage.getItem("qualification") || "",
     desig: sessionStorage.getItem("role") === reviewerRole ? reviewerDesignation : "",
     school: sessionStorage.getItem("school") || sessionStorage.getItem("department") || "",
+    experience: sessionStorage.getItem("experience") || "",
     expDyp: "",
     expPrev: "",
     expTotal: "",
@@ -1720,10 +1737,10 @@ export default function HODDashboard({
 
     <table>
       <tr><td class="b" style="width:35%">Name of Faculty</td><td>${info.name || "&nbsp;"}</td></tr>
-      <tr><td class="b">Educational Qualifications</td><td>${info.qual || "&nbsp;"}</td></tr>
+      <tr><td class="b">Educational Qualifications</td><td>${reportQualification(info)}</td></tr>
       <tr><td class="b">Present Designation</td><td>${info.desig || "&nbsp;"}</td></tr>
       <tr><td class="b">School / Department</td><td>${info.school || "&nbsp;"}</td></tr>
-      <tr><td class="b">Experience at DYPIU / Previous / Total</td><td>${info.expDyp || "&nbsp;"} / ${info.expPrev || "&nbsp;"} / ${info.expTotal || "&nbsp;"} years</td></tr>
+      <tr><td class="b">Experience</td><td>${reportExperience(info)}</td></tr>
     </table>
 
     <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART A — Teaching Process &amp; Academic Activities</h3>
@@ -3504,7 +3521,7 @@ export default function HODDashboard({
                           Paper Publication in Scopus indexed conference: 10/paper<br />
                           Invited lectures / Resource Person: 10/session<br />
                           Conference attended: 5/conference<br />
-                          Organized FDP of one week duration or more (Maxi. 2): 5/FDP<br />
+                          Organized FDP of one week duration or more / Conference/Symposium/workshop  (Maxi. 2 can be claimed)<br />
                           Industrial training of minimum 3 days duration: 5 marks<br />
                           <em>* Paper presented in Seminars/Conferences and also published as full paper in Conference Proceedings will be counted only once.</em>
                         </td>

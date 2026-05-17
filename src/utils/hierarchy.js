@@ -224,6 +224,9 @@ export const profileFromsessionStorage = () => ({
   school: sessionStorage.getItem("school") || "",
   department: sessionStorage.getItem("department") || "",
   designation: sessionStorage.getItem("designation") || "",
+  qualification: sessionStorage.getItem("qualification") || "",
+  teaching_experience: sessionStorage.getItem("experience") || "",
+  experience: sessionStorage.getItem("experience") || "",
   employee_id: sessionStorage.getItem("employeeId") || "",
   reports_to_registrar: sessionStorage.getItem("reports_to_registrar") === "true" ||
     sessionStorage.getItem("reportsToRegistrar") === "true",
