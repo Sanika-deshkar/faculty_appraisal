@@ -845,11 +845,20 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
   const [remarks, setRemarks] = useState(role === "vc" ? item.form?.vcRemarks : role === "registrar" ? item.form?.registrarRemarks : item.form?.roRemarks);
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const locked = readOnly || !isPendingForNonTeachingReviewer(item, role);
+  const finalisedByVc = role === "vc" && (
+    normalizeNonTeachingStatus(item.status) === NON_TEACHING_STATUS.VC_APPROVED ||
+    n(item.vcTotal) > 0
+  );
+  const [editingFinalised, setEditingFinalised] = useState(false);
+  const locked = finalisedByVc
+    ? !editingFinalised
+    : readOnly || !isPendingForNonTeachingReviewer(item, role);
   const accent = roleAccent(role);
   const visibleRoles = visibleNonTeachingReviewRoles(role, item);
   const selfTotals = calculateNonTeachingTotals(form, "self");
   const totals = calculateNonTeachingTotals(form, role === "vc" ? "vc" : role);
+  const authorityScoreLabel = role === "vc" ? "Vice Chancellor Score" : `${nonTeachingRoleLabel(role)} Score`;
+  const remarksLabel = role === "vc" ? "Vice Chancellor Remarks and Grade" : "Remarks";
 
   const handleSubmit = async () => {
     if (!confirmed) {
@@ -866,7 +875,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
       alert(err.message);
       return;
     }
-    if (!window.confirm(`Submit ${nonTeachingRoleLabel(role)} review?`)) return;
+    if (!window.confirm(finalisedByVc ? "Edit and resubmit Vice Chancellor review?" : `Submit ${nonTeachingRoleLabel(role)} review?`)) return;
 
     setSubmitting(true);
     try {
@@ -876,7 +885,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
         reviewerRole: role,
         remarks,
       });
-      alert(`${nonTeachingRoleLabel(role)} review submitted.`);
+      alert(finalisedByVc ? "Vice Chancellor review resubmitted." : `${nonTeachingRoleLabel(role)} review submitted.`);
       onSubmitted?.(updated);
     } catch (err) {
       console.error("Could not submit non-teaching review:", err);
@@ -932,6 +941,21 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
         ))}
       </div>
 
+      {finalisedByVc && locked && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+          <button
+            type="button"
+            onClick={() => {
+              setEditingFinalised(true);
+              setConfirmed(false);
+            }}
+            style={{ padding: "10px 28px", background: accent, color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 800, fontSize: 13, fontFamily: "inherit" }}
+          >
+            Edit Form
+          </button>
+        </div>
+      )}
+
       <fieldset disabled={locked} style={{ border: "none", padding: 0, margin: 0 }}>
         {tab === "partA" && <AuthorityPartA form={form} setForm={setForm} reviewerRole={role} readOnly={locked} visibleRoles={visibleRoles} />}
         {tab === "partB" && <AuthorityPartB form={form} setForm={setForm} reviewerRole={role} readOnly={locked} visibleRoles={visibleRoles} />}
@@ -956,7 +980,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
             ))}
           </div>
 
-          <div style={{ color: "#334155", fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>{nonTeachingRoleLabel(role)} Score</div>
+          <div style={{ color: "#334155", fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>{authorityScoreLabel}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14 }}>
             {[
               ["Part A", totals.partA, NON_TEACHING_MAX.partA],
@@ -970,7 +994,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
             ))}
           </div>
 
-          <label style={{ fontSize: 12, color: "#334155", fontWeight: 800, display: "block", marginBottom: 6 }}>Remarks</label>
+          <label style={{ fontSize: 12, color: "#334155", fontWeight: 800, display: "block", marginBottom: 6 }}>{remarksLabel}</label>
           <TextArea value={remarks} onChange={setRemarks} readOnly={locked} rows={4} placeholder="Enter review remarks and recommendations..." />
 
           {!locked && (
@@ -987,7 +1011,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
             )}
             {!locked && (
               <button type="button" onClick={handleSubmit} disabled={!confirmed || !remarks.trim() || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: (confirmed && remarks.trim()) ? accent : "#94a3b8", color: "#fff", cursor: confirmed && remarks.trim() && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "inherit" }}>
-                {submitting ? "Submitting..." : "Confirm & Submit"}
+                {submitting ? "Submitting..." : finalisedByVc ? "Edit & Resubmit" : "Confirm & Submit"}
               </button>
             )}
           </div>

@@ -107,6 +107,10 @@ const clampOptionalRating = (value) => {
 };
 const firstNonEmpty = (...values) =>
   values.find((value) => clean(value) !== "") || "";
+const firstPositiveNumber = (...values) => {
+  const found = values.find((value) => n(value) > 0);
+  return found === undefined ? 0 : n(found);
+};
 const emailKey = (value) => clean(value).toLowerCase();
 const pickFirstNonEmpty = (source = {}, keys = []) =>
   firstNonEmpty(...keys.map((key) => source?.[key]));
@@ -753,6 +757,7 @@ export const decorateNonTeachingRow = (row, profile = {}) => {
     normalizeNonTeachingRole(form.submittedByRole, "non_teaching_staff"),
   );
   const name = profile.full_name || form.info?.name || row.staff_email;
+  const selfTotals = calculateNonTeachingTotals(form, "self");
   const roTotals = calculateNonTeachingTotals(form, "reporting_officer");
   const registrarTotals = calculateNonTeachingTotals(form, "registrar");
   const vcTotals = calculateNonTeachingTotals(form, "vc");
@@ -791,10 +796,10 @@ export const decorateNonTeachingRow = (row, profile = {}) => {
     submittedOn: row.submitted_at
       ? new Date(row.submitted_at).toLocaleDateString()
       : "",
-    selfTotal: n(row.self_total),
-    roTotal: n(row.ro_total || roTotals.total),
-    registrarTotal: n(row.registrar_total || registrarTotals.total),
-    vcTotal: n(row.vc_total || vcTotals.total),
+    selfTotal: firstPositiveNumber(row.self_total, row.selfTotal, selfTotals.total),
+    roTotal: firstPositiveNumber(row.ro_total, row.roTotal, roTotals.total),
+    registrarTotal: firstPositiveNumber(row.registrar_total, row.registrarTotal, registrarTotals.total),
+    vcTotal: firstPositiveNumber(row.vc_total, row.vcTotal, vcTotals.total),
     declaration: row,
   };
 };
@@ -859,10 +864,10 @@ const normalizeNonTeachingQueueItem = (item = {}) => {
     avatarColor: item.avatarColor ||
       (role === "registrar" ? "#7c3aed" : role === "reporting_officer" ? "#0891b2" : "#1d4ed8"),
     status,
-    selfTotal: n(firstNonEmpty(item.selfTotal, item.self_total, selfTotals.total)),
-    roTotal: n(firstNonEmpty(item.roTotal, item.ro_total, roTotals.total)),
-    registrarTotal: n(firstNonEmpty(item.registrarTotal, item.registrar_total, registrarTotals.total)),
-    vcTotal: n(firstNonEmpty(item.vcTotal, item.vc_total, vcTotals.total)),
+    selfTotal: firstPositiveNumber(item.selfTotal, item.self_total, selfTotals.total),
+    roTotal: firstPositiveNumber(item.roTotal, item.ro_total, roTotals.total),
+    registrarTotal: firstPositiveNumber(item.registrarTotal, item.registrar_total, registrarTotals.total),
+    vcTotal: firstPositiveNumber(item.vcTotal, item.vc_total, vcTotals.total),
   };
 };
 
@@ -1085,12 +1090,12 @@ export const openNonTeachingReport = ({
       remarksLabel: "Registrar",
     },
     vc: {
-      label: "VC",
+      label: "Vice Chancellor",
       total: totals.vc.total,
       partA: (key) => reportForm[key]?.vcMarks,
       partB: (row, index) => row[`p${index}_vc`],
       remarks: reportForm.vcRemarks,
-      remarksLabel: "VC",
+      remarksLabel: "Vice Chancellor",
     },
   };
   const docsFor = (key) =>
