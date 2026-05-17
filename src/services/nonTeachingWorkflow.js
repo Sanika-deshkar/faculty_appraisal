@@ -498,8 +498,7 @@ export const visibleNonTeachingReviewRoles = (role, itemOrForm = {}) => {
   const flow = nonTeachingReviewFlow(itemOrForm);
   if (normalizedRole === "vc") return flow;
   if (normalizedRole === "registrar") {
-    const index = flow.indexOf("registrar");
-    return index >= 0 ? flow.slice(0, index + 1) : ["self"];
+    return flow.includes("registrar") ? ["self", "registrar"] : ["self"];
   }
   if (normalizedRole === "reporting_officer") {
     const index = flow.indexOf("ro");

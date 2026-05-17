@@ -390,7 +390,7 @@ function SelfAppraisalTable({ form, setForm, readOnly, accent }) {
   );
 }
 
-function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitting, locked, confirmed, setConfirmed, accent }) {
+function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitting, locked, confirmed, setConfirmed, accent, showReport = true }) {
   const self = calculateNonTeachingTotals(form, "self");
   const selfMax = NON_TEACHING_MAX.partA;
   const scoreCards = [["Self Claimed", self.total, ACCENT]];
@@ -441,9 +441,11 @@ function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitt
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
-        <button type="button" onClick={onReport} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#f1f5f9", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>
-          Generate Report
-        </button>
+        {showReport && (
+          <button type="button" onClick={onReport} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#f1f5f9", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>
+            Generate Report
+          </button>
+        )}
         {!locked && (
           <button type="button" onClick={onSubmit} disabled={!confirmed || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: confirmed ? accent : "#94a3b8", color: "#fff", cursor: confirmed && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "inherit" }}>
             {submitting ? "Submitting..." : `Submit to ${nextReviewer}`}
@@ -669,6 +671,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
               confirmed={confirmed}
               setConfirmed={setConfirmed}
               accent={accent}
+              showReport={normalizedRole !== "registrar"}
             />
           )}
         </>
@@ -985,7 +988,9 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
             <button type="button" onClick={onBack} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#f1f5f9", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>{locked ? "Close" : "Cancel"}</button>
-            <button type="button" onClick={handleReport} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#e2e8f0", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>Generate Report</button>
+            {role !== "registrar" && (
+              <button type="button" onClick={handleReport} style={{ padding: "9px 18px", border: "none", borderRadius: 7, background: "#e2e8f0", color: "#475569", cursor: "pointer", fontWeight: 800, fontFamily: "inherit" }}>Generate Report</button>
+            )}
             {!locked && (
               <button type="button" onClick={handleSubmit} disabled={!confirmed || !remarks.trim() || submitting} style={{ padding: "10px 24px", border: "none", borderRadius: 7, background: (confirmed && remarks.trim()) ? accent : "#94a3b8", color: "#fff", cursor: confirmed && remarks.trim() && !submitting ? "pointer" : "not-allowed", fontWeight: 800, fontFamily: "inherit" }}>
                 {submitting ? "Submitting..." : "Confirm & Submit"}
