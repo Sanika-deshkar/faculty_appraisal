@@ -151,10 +151,10 @@ export default function Login() {
 
         <div style={s.overlay} />
 
-        {/* ── Wide Card ── */}
+        {/* - Wide Card - */}
         <div style={s.card}>
 
-          {/* ════ LEFT ════ */}
+          {/* = LEFT = */}
           <div style={s.left}>
 
             <h1 style={s.uniName}>
@@ -165,13 +165,13 @@ export default function Login() {
             </h1>
 
             <p style={s.desc}>
-              To Create a vibrant learning environment – fostering innovation and creativity,
+              To Create a vibrant learning environment - fostering innovation and creativity,
               experiential learning, which is inspired by research, and focuses on regionally,
               nationally and globally relevant areas.
             </p>
           </div>
 
-          {/* ════ RIGHT: Login panel ════ */}
+          {/* = RIGHT: Login panel = */}
           <div style={s.right}>
             <h2 style={s.panelTitle}>Welcome! Please login to continue.</h2>
 
@@ -206,14 +206,14 @@ export default function Login() {
                 tabIndex={-1}
                 aria-label={showPw ? "Hide password" : "Show password"}
               >
-                {showPw ? "" : "👁"}
+                {showPw ? "Hide" : "Show"}
               </button>
             </div>
 
             <div style={{ marginBottom: 16 }} />
 
             <button className="dyp-btn" onClick={handleLogin} disabled={loading}>
-              {loading ? "Signing in…" : "Login"}
+              {loading ? "Signing in..." : "Login"}
             </button>
 
             <button className="dyp-forgot" onClick={handleForgotPassword} disabled={resetLoading}>
@@ -228,7 +228,7 @@ export default function Login() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// - Styles -
 const s = {
   topLeftLogo: {
     position: "absolute",
@@ -365,4 +365,3 @@ const s = {
     lineHeight: 1.5,
   },
 };
-

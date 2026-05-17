@@ -12,9 +12,9 @@ const FALLBACK = "Something went wrong. Please try again.";
 /**
  * Returns the user-facing message from an API error.
  * Handles all shapes the backend can return:
- *   { user_message, detail }          — standard API error
- *   { success: false, errors: {...} } — feedback form field errors
- *   network / timeout errors          — no response object
+ *   { user_message, detail }          - standard API error
+ *   { success: false, errors: {...} } - feedback form field errors
+ *   network / timeout errors          - no response object
  */
 export function extractError(err) {
   if (!err) return FALLBACK;
@@ -24,7 +24,7 @@ export function extractError(err) {
 
   const data = err?.response?.data;
   if (!data) {
-    // Network failure, CORS block, or timeout — no response from server
+    // Network failure, CORS block, or timeout - no response from server
     if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
       return "The request timed out. Please check your connection and try again.";
     }

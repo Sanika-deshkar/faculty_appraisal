@@ -156,7 +156,7 @@ export default function ResetPassword() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// - Styles -
 const s = {
   topLeftLogo: {
     position: "absolute",

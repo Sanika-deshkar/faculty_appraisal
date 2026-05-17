@@ -145,7 +145,7 @@ export default function Signup() {
     }
 
     if (!isValidEmployeeId(formData.employeeId)) {
-      setError("Employee ID must be 2–30 characters and contain only letters, numbers, /, - or _.");
+      setError("Employee ID must be 2-30 characters and contain only letters, numbers, /, - or _.");
       return;
     }
 
@@ -284,7 +284,7 @@ export default function Signup() {
   .dyp-btn:disabled { opacity: 0.65; cursor: not-allowed; }
 `}</style>
 
-      {/* ── Top bar ── */}
+      {/* - Top bar - */}
       <div style={s.topBar}>
         <div style={s.logoWrap}>
           <img src="/image.png" alt="University Logo" style={s.uniLogo} />
@@ -296,7 +296,7 @@ export default function Signup() {
         <img src="/IQAS.png" alt="IQAC Logo" style={s.iqacLogo} />
       </div>
 
-      {/* ── Form container ── */}
+      {/* - Form container - */}
       <div style={s.container}>
         <div style={s.card} className="fa-scale-in">
           <div style={s.right}>
@@ -422,7 +422,7 @@ export default function Signup() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// - Styles -
 const s = {
   page: {
     minHeight: "100vh",
@@ -431,7 +431,7 @@ const s = {
     color: "#1e293b",
   },
 
-  /* ── Top bar ── */
+  /* - Top bar - */
   topBar: {
     background: "#0f172a",
     padding: "12px 32px",
@@ -465,7 +465,7 @@ const s = {
     height: 46,
   },
 
-  /* ── Form container ── */
+  /* - Form container - */
   container: {
     maxWidth: 760,
     margin: "0 auto",
@@ -482,7 +482,7 @@ const s = {
     padding: "32px 36px",
   },
 
-  /* ── Card header ── */
+  /* - Card header - */
   panelTitle: {
     fontSize: 22,
     fontWeight: 800,

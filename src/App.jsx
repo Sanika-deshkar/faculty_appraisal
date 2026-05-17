@@ -13,8 +13,8 @@ const FacultyProfile = lazy(() => import("./pages/FacultyProfile"));
 const EditProfile  = lazy(() => import("./pages/EditProfile"));
 const RoleDashboard = lazy(() => import("./pages/RoleDashboard"));
 
-// ─── Shared loading screen ────────────────────────────────────────────────────
-function PageLoader({ message = "Loading…" }) {
+// - Shared loading screen -
+function PageLoader({ message = "Loading..." }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", color: "#64748b", fontSize: 14 }} className="fa-fade-in">
       {message}
@@ -22,7 +22,7 @@ function PageLoader({ message = "Loading…" }) {
   );
 }
 
-// ─── Profile Loader ───────────────────────────────────────────────────────────
+// - Profile Loader -
 function ProfileLoader() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -67,7 +67,7 @@ function ProfileLoader() {
   }
 
   if (!user) {
-    return <PageLoader message="Loading profile…" />;
+    return <PageLoader message="Loading profile..." />;
   }
 
   return (
@@ -78,7 +78,7 @@ function ProfileLoader() {
   );
 }
 
-// ─── App Routes ───────────────────────────────────────────────────────────────
+// - App Routes -
 export default function App() {
   useEffect(() => {
     const isNumberInput = (target) => target?.tagName === "INPUT" && target?.type === "number";

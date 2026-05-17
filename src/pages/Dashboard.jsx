@@ -1700,7 +1700,7 @@ export default function HODDashboard() {
       <td style="width:20%;text-align:left"><img class="logo" src="${logoSrc}" alt="DYPIU" /></td>
       <td style="text-align:center">
         <h1>D Y PATIL INTERNATIONAL UNIVERSITY, AKURDI, PUNE</h1>
-        <h2>Faculty Appraisal Form — Academic Year ${info.ay || ""}</h2>
+        <h2>Faculty Appraisal Form - Academic Year ${info.ay || ""}</h2>
       </td>
       <td style="width:20%"></td>
     </tr></table>
@@ -1713,7 +1713,7 @@ export default function HODDashboard() {
       <tr><td class="b">Experience</td><td>${reportExperience(info)}</td></tr>
     </table>
 
-    <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART A — Teaching Process &amp; Academic Activities</h3>
+    <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART A - Teaching Process &amp; Academic Activities</h3>
 
     <h3>(i) Lectures / Tutorials / Practicals &nbsp;(Max 50)</h3>
     <table>
@@ -1806,7 +1806,7 @@ export default function HODDashboard() {
     </table>
 
     <div class="pb"></div>
-    <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART B — Research &amp; Academic Contributions</h3>
+    <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART B - Research &amp; Academic Contributions</h3>
 
     <h3>1) Published Papers in Journals &nbsp;(Max 120)</h3>
     <table>
@@ -1830,7 +1830,7 @@ export default function HODDashboard() {
     </table>
 
     ${sectionApplicability.research !== "notApplicable" ? `
-    <h3>4a) Research Guidance — PhD / PG &nbsp;(Max 30)</h3>
+    <h3>4a) Research Guidance - PhD / PG &nbsp;(Max 30)</h3>
     <table>
       <tr><th>SN</th><th>Degree</th><th>Name of Student</th><th>Thesis / Status</th><th>API Score</th></tr>
       ${research.map((r, i) => `<tr><td class="c">${i + 1}</td><td class="c">${r.degree || '&nbsp;'}</td><td>${r.name || '&nbsp;'}</td><td>${r.thesis || '&nbsp;'}</td><td class="c">${r.degree || r.name || r.thesis || r.score ? researchGuidanceScore(r).toFixed(1) : ""}</td></tr>`).join('')}
@@ -1901,10 +1901,10 @@ export default function HODDashboard() {
     </table>
 
     <div class="pb"></div>
-    <h3 style="text-align:center;font-size:13px">SUMMARY OF API SCORES — AY ${info.ay || ""}</h3>
+    <h3 style="text-align:center;font-size:13px">SUMMARY OF API SCORES - AY ${info.ay || ""}</h3>
     <table class="st">
       <tr><th>Sr.No.</th><th>Criteria</th><th>Max Score</th><th>Faculty Score</th></tr>
-      <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part A — Teaching Process</td></tr>
+      <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part A - Teaching Process</td></tr>
       <tr><td class="c">A</td><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">100</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
       <tr><td class="c">B</td><td>Students' Feedback</td><td class="c">10</td><td class="c">${stuFeedbackScore.toFixed(1)}</td></tr>
       <tr><td class="c">C</td><td>Departmental Activities</td><td class="c">20</td><td class="c">${deptScore.toFixed(1)}</td></tr>
@@ -1913,7 +1913,7 @@ export default function HODDashboard() {
       <tr><td class="c">F</td><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
       <tr><td class="c">G</td><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
       <tr class="tr"><td colspan="2" class="c b">Part A Total</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
-      <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part B — Research and Academic Contribution</td></tr>
+      <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part B - Research and Academic Contribution</td></tr>
       <tr><td class="c">1</td><td>Research papers / journal publication</td><td class="c">120</td><td class="c">${journalScore.toFixed(1)}</td></tr>
       <tr><td class="c">2</td><td>Books authored / edited / book chapter</td><td class="c">50</td><td class="c">${bookScore.toFixed(1)}</td></tr>
       <tr><td class="c">3</td><td>ICT Teaching Learning Pedagogy</td><td class="c">20</td><td class="c">${ictScore.toFixed(1)}</td></tr>
@@ -1972,8 +1972,8 @@ export default function HODDashboard() {
     win.print();
   };
   const navItems = [
-    { id: "myAppraisal", icon: "👤", label: "My Appraisal", sub: "View your self-appraisal form" },
-    { id: "guidelines", icon: "📋", label: "Guidelines", sub: "Faculty appraisal guidelines AY 2025-26" },
+    { id: "myAppraisal", icon: "", label: "My Appraisal", sub: "View your self-appraisal form" },
+    { id: "guidelines", icon: "", label: "Guidelines", sub: "Faculty appraisal guidelines AY 2025-26" },
   ];
   const workflowRejected = isRejectedStatus(workflowDeclaration?.status) ||
     workflowReviews.some((review) => isRejectedStatus(review.status));
@@ -3112,7 +3112,7 @@ export default function HODDashboard() {
               <div style={{ background: "#fff", borderRadius: 9, padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 16 }}>
                 <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800, color: "#0f172a" }}>D Y PATIL INTERNATIONAL UNIVERSITY</h2>
                 <div style={{ color: "#64748b", fontSize: 13 }}>Akurdi, Pune</div>
-                <h3 style={{ margin: "12px 0 0", fontSize: 15, color: "#1e293b" }}>{guidelinesTab === "form" ? "Guidelines for Faculty Appraisal Form — A.Y. 2025-2026" : "Grading Scheme for Faculty Appraisal"}</h3>
+                <h3 style={{ margin: "12px 0 0", fontSize: 15, color: "#1e293b" }}>{guidelinesTab === "form" ? "Guidelines for Faculty Appraisal Form - A.Y. 2025-2026" : "Grading Scheme for Faculty Appraisal"}</h3>
               </div>
               {guidelinesTab === "form" && (<>
                 <SC title="General Notes" accent="#0f172a">
@@ -3134,7 +3134,7 @@ export default function HODDashboard() {
                     <li>e. Out-reach activity / Contribution to Society (Maximum Point 10)</li>
                   </ul>
                 </SC>
-                <SC title="PART A — Teaching & Academic Activities (Maximum Marks 200)" accent="#6366f1">
+                <SC title="PART A - Teaching & Academic Activities (Maximum Marks 200)" accent="#6366f1">
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                     <thead>
                       <tr>
@@ -3147,19 +3147,19 @@ export default function HODDashboard() {
                       <tr>
                         <td style={TDC}>(i)</td>
                         <td style={TD}>
-                          <strong>Lectures, seminars, tutorials, practical, contact classes</strong> — based on verifiable records (JUNO record).<br />
+                          <strong>Lectures, seminars, tutorials, practical, contact classes</strong> - based on verifiable records (JUNO record).<br />
                           No score should be assigned if a teacher has taken less than 70% of the assigned classes.<br />
                           Score will be 50 if teacher has taken 100% assigned classes to particular subject as specified by University.<br />
                           If a teacher has taken classes less than the allotted hours but above 80% limit of total, then 2 points will be deducted from 50 for each less hour of classes.<br />
-                          <em>Maximum score of 50 if there is 100% performance | 91–99: 95% of 50 | 81–89: 85% | 70–79: 75%</em><br />
-                          <em>Note: For School of Applied Arts and Crafts, School of Design — 40 Marks can be claimed.</em>
+                          <em>Maximum score of 50 if there is 100% performance | 91-99: 95% of 50 | 81-89: 85% | 70-79: 75%</em><br />
+                          <em>Note: For School of Applied Arts and Crafts, School of Design - 40 Marks can be claimed.</em>
                         </td>
                         <td style={TDC}>50</td>
                       </tr>
                       <tr style={{ background: "#f8fafc" }}>
                         <td style={TDC}>(ii)</td>
                         <td style={TD}>
-                          <strong>Course file of subject</strong> — All points covered as per IQAC index, full marks. Proportionate marking to percentage completion applicable up to 60% completion.<br />
+                          <strong>Course file of subject</strong> - All points covered as per IQAC index, full marks. Proportionate marking to percentage completion applicable up to 60% completion.<br />
                           <table style={{ marginTop: 6, borderCollapse: "collapse", fontSize: 11 }}>
                             <thead><tr><th style={TH}>Sr No</th><th style={TH}>% Completion</th><th style={TH}>Score</th></tr></thead>
                             <tbody>
@@ -3168,7 +3168,7 @@ export default function HODDashboard() {
                               ))}
                             </tbody>
                           </table>
-                          <em>Less than 60% — no score claimed.</em>
+                          <em>Less than 60% - no score claimed.</em>
                         </td>
                         <td style={TDC}>20</td>
                       </tr>
@@ -3194,7 +3194,7 @@ export default function HODDashboard() {
                         <td style={TD}>
                           <strong>Guided Students Project</strong> (New schools or if there is no project batch allotted can mention as NA)<br />
                           Project guided: 3/group | Industrial collaboration/Sponsorship (Max 5 marks) | Project outcome: events/competitions (Max 5 marks)<br />
-                          <em>Note: For School of Applied Arts and Crafts, School of Design — 20 Marks can be claimed.</em><br />
+                          <em>Note: For School of Applied Arts and Crafts, School of Design - 20 Marks can be claimed.</em><br />
                           Guided students project other than curriculum: Project apart from curriculum: 5 | Industrial collaboration/Sponsorship: 5 | Any Award for project (Max 5 marks): 5
                         </td>
                         <td style={TDC}>10</td>
@@ -3217,7 +3217,7 @@ export default function HODDashboard() {
                         <td style={TDC}>C &amp; D</td>
                         <td style={TD}>
                           <strong>Department / School / University Activities (Max 20 / 30)</strong><br />
-                          <em>Department/School Level (Max 20):</em> Short-term one-time activity: 3 marks | Semester/Term-based (3–6 months): 5 marks | Academic Year activity (&gt;6 months): 10 marks<br />
+                          <em>Department/School Level (Max 20):</em> Short-term one-time activity: 3 marks | Semester/Term-based (3-6 months): 5 marks | Academic Year activity (&gt;6 months): 10 marks<br />
                           <em>University Level (Max 30):</em> Short-term one-time activity: 10 marks | Semester/Term-based: 20 marks | Academic Year activity: 30 marks
                         </td>
                         <td style={TDC}>20 / 30</td>
@@ -3248,8 +3248,8 @@ export default function HODDashboard() {
                           <strong>Annual Confidential Report (Maximum Point 25)</strong><br />
                           1. Self-motivation (5): List activities/initiatives other than regular load/duties.<br />
                           2. Punctuality (5): Number of late marks, punctuality in lecture/practical, timely completion of daily report, absentee without intimation.<br />
-                          3. Target based work (5): List tasks allotted, timely completion of allotted work — observed by HOD.<br />
-                          4. Effectiveness (5): Work done without errors &amp; least follow-up — observed by HOD.<br />
+                          3. Target based work (5): List tasks allotted, timely completion of allotted work - observed by HOD.<br />
+                          4. Effectiveness (5): Work done without errors &amp; least follow-up - observed by HOD.<br />
                           5. Obedience (5): To be observed by HOD and Director.
                         </td>
                         <td style={TDC}>25</td>
@@ -3257,7 +3257,7 @@ export default function HODDashboard() {
                     </tbody>
                   </table>
                 </SC>
-                <SC title="PART B — Research & Academic Contributions (Maximum Marks 375)" accent="#7c3aed">
+                <SC title="PART B - Research & Academic Contributions (Maximum Marks 375)" accent="#7c3aed">
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                     <thead>
                       <tr>
@@ -3272,11 +3272,11 @@ export default function HODDashboard() {
                         <td style={TDC}>1</td>
                         <td style={TD}><strong>Research Papers (Published in Journals)</strong><br /><em>(With institute affiliation, Maxi. 4 papers can be claimed)</em></td>
                         <td style={TD}>
-                          Refereed Journals — SCI/SCIE/WoS Q1 &amp; Q2: 30/publication + Impact factor score<br />
-                          Refereed Journals — Scopus Q3, Q4: 15/publication + Impact factor score<br />
+                          Refereed Journals - SCI/SCIE/WoS Q1 &amp; Q2: 30/publication + Impact factor score<br />
+                          Refereed Journals - Scopus Q3, Q4: 15/publication + Impact factor score<br />
                           UGC care listed: 10/publication<br />
-                          Submitted and under review: 5/publication | Submitted and rejected after 1–2 reviews: 10/publication (max 2 in this category)<br />
-                          <strong>Instructions:</strong> Multiple DYPIU authors: 70% first author, 30% each co-author. Additional marks for Impact Factor: up to 5 → 3 marks; 5–10 → 5 marks; above 10 → 10 marks. Joint/collaborative publication: full marks.
+                          Submitted and under review: 5/publication | Submitted and rejected after 1-2 reviews: 10/publication (max 2 in this category)<br />
+                          <strong>Instructions:</strong> Multiple DYPIU authors: 70% first author, 30% each co-author. Additional marks for Impact Factor: up to 5 gives 3 marks; 5-10 gives 5 marks; above 10 gives 10 marks. Joint/collaborative publication: full marks.
                         </td>
                         <td style={TDC}>80 / 120</td>
                       </tr>
@@ -3297,7 +3297,7 @@ export default function HODDashboard() {
                         <td style={TD}>
                           (a) Development of Innovative pedagogy which does not exist globally: 5<br />
                           (b) MOOCs / Course Builder / Coursera Course: 5/course<br />
-                          (c) E-Content (available online publicly) — video lecture, blog, website etc.: 5<br />
+                          (c) E-Content (available online publicly) - video lecture, blog, website etc.: 5<br />
                           <em>Note: SoMCS max 30; SoD &amp; SAA max 50; Other schools max 20.</em>
                         </td>
                         <td style={TDC}>20 / 30 / 50</td>
@@ -3306,10 +3306,10 @@ export default function HODDashboard() {
                         <td style={TDC}>4</td>
                         <td style={TD}><strong>Research Guidance (Maxi. marks 75)</strong></td>
                         <td style={TD}>
-                          (a) Research Guidance (Max 30, if applicable): PhD — 20 for degree awarded, 10 for thesis submitted; PG degree awarded to batch candidate. Joint supervision: 70% supervisor, 30% co-supervisor (7 marks each).<br />
-                          (b) Research Projects Completed (Maxi. 15): Internal Project — Grant received 100% marks.<br />
-                          (c) Research Projects Ongoing (Maxi. 30): &gt;10 lakhs → 15 marks; &lt;10 lakhs → 10 marks.<br />
-                          Consultancy/Testing/Training: up to ₹50k → 3; ₹51k–2L → 5; ₹2L–5L → 10; ₹5L–10L → 15; above ₹10L → 15+3/per 5L.<br />
+                          (a) Research Guidance (Max 30, if applicable): PhD - 20 for degree awarded, 10 for thesis submitted; PG degree awarded to batch candidate. Joint supervision: 70% supervisor, 30% co-supervisor (7 marks each).<br />
+                          (b) Research Projects Completed (Maxi. 15): Internal Project - Grant received 100% marks.<br />
+                          (c) Research Projects Ongoing (Maxi. 30): &gt;10 lakhs gives 15 marks; &lt;10 lakhs gives 10 marks.<br />
+                          Consultancy/Testing/Training: up to Rs50k gives 3; Rs51k-2L gives 5; Rs2L-5L gives 10; Rs5L-10L gives 15; above Rs10L gives 15+3/per 5L.<br />
                           <em>Note: If no PG/PhD students enrolled, max marks deducted from denominator.</em>
                         </td>
                         <td style={TDC}>75</td>
@@ -3343,7 +3343,7 @@ export default function HODDashboard() {
                         <td style={TDC}>7</td>
                         <td style={TD}><strong>Other research and development activities (Maxi. 20 marks)</strong></td>
                         <td style={TD}>
-                          (i) Research proposal submitted: &gt;20 Lacs → 10 marks; &lt;20 Lacs → 5 marks<br />
+                          (i) Research proposal submitted: &gt;20 Lacs gives 10 marks; &lt;20 Lacs gives 5 marks<br />
                           (ii) Product development in Lab/commercialized (Maximum 10)<br />
                           <em>Note: SAA &amp; SoD max 10; SoMCS max 30; Other schools max 20.</em>
                         </td>
@@ -3375,7 +3375,7 @@ export default function HODDashboard() {
                     </thead>
                     <tbody>
                       {[
-                        ["", "Part A — 360 Degree Feedback", "", "", ""],
+                        ["", "Part A - 360 Degree Feedback", "", "", ""],
                         ["A", "Teaching Process (i+ii+iii+iv+v)", "100", "100", "100"],
                         ["B", "Students' Feedback", "10", "10", "10"],
                         ["C", "Departmental Activities", "20", "20", "20"],
@@ -3384,7 +3384,7 @@ export default function HODDashboard() {
                         ["F", "Industry Connect", "5", "5", "5"],
                         ["G", "Annual Confidential Report", "25", "25", "25"],
                         ["", "Marks obtained in Part A", "200", "200", "200"],
-                        ["", "Part B — Research and Academic Contribution", "", "", ""],
+                        ["", "Part B - Research and Academic Contribution", "", "", ""],
                         ["1", "Research papers / journal publication", "80", "120", "120"],
                         ["2", "Books authored / edited / book chapter", "60", "60", "50"],
                         ["3", "ICT, Teaching learning Pedagogy", "50", "30", "20"],

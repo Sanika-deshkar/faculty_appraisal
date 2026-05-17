@@ -15,7 +15,7 @@ export const UNIVERSITY_SCHOOLS = [
   {
     code: "SoCSEA",
     name: "School of Computer Science, Engineering & Applications",
-    label: "SoCSEA — School of Computer Science, Engineering & Applications",
+    label: "SoCSEA - School of Computer Science, Engineering & Applications",
     deanTrack: DEAN_TRACKS.ENGINEERING,
     hodDepartments: [],
     aliases: [
@@ -29,7 +29,7 @@ export const UNIVERSITY_SCHOOLS = [
   {
     code: "SoBB",
     name: "School of Bio-Engineering & Bio Science",
-    label: "SoBB — School of Bio-Engineering & Bio Science",
+    label: "SoBB - School of Bio-Engineering & Bio Science",
     deanTrack: DEAN_TRACKS.ENGINEERING,
     hodDepartments: [],
     aliases: ["sobb", "bio-engineering", "bio engineering", "bio science"],
@@ -37,7 +37,7 @@ export const UNIVERSITY_SCHOOLS = [
   {
     code: "SoCE",
     name: "School of Continual Education",
-    label: "SoCE — School of Continual Education",
+    label: "SoCE - School of Continual Education",
     deanTrack: DEAN_TRACKS.ENGINEERING,
     hodDepartments: [],
     aliases: ["soce", "continual education"],
@@ -45,7 +45,7 @@ export const UNIVERSITY_SCHOOLS = [
   {
     code: "SoEMR",
     name: "School of Engineering Management & Research",
-    label: "SoEMR — School of Engineering Management & Research",
+    label: "SoEMR - School of Engineering Management & Research",
     deanTrack: DEAN_TRACKS.ENGINEERING,
     hodDepartments: SOEMR_DEPARTMENTS,
     aliases: ["soemr", "engineering management", "engineering management research"],
@@ -53,7 +53,7 @@ export const UNIVERSITY_SCHOOLS = [
   {
     code: "SoCM",
     name: "School of Commerce & Management",
-    label: "SoCM — School of Commerce & Management",
+    label: "SoCM - School of Commerce & Management",
     deanTrack: DEAN_TRACKS.NON_ENGINEERING,
     hodDepartments: [],
     aliases: ["socm", "soc", "commerce", "commerce management", "management"],
@@ -61,7 +61,7 @@ export const UNIVERSITY_SCHOOLS = [
   {
     code: "SoMCS",
     name: "School of Media & Communication Studies",
-    label: "SoMCS — School of Media & Communication Studies",
+    label: "SoMCS - School of Media & Communication Studies",
     deanTrack: DEAN_TRACKS.NON_ENGINEERING,
     hodDepartments: [],
     aliases: ["somcs", "media", "communication studies"],
@@ -69,7 +69,7 @@ export const UNIVERSITY_SCHOOLS = [
   {
     code: "SoD",
     name: "School of Design",
-    label: "SoD — School of Design",
+    label: "SoD - School of Design",
     deanTrack: DEAN_TRACKS.NON_ENGINEERING,
     hodDepartments: [],
     aliases: ["sod", "ciod", "school of design", "design"],
@@ -77,7 +77,7 @@ export const UNIVERSITY_SCHOOLS = [
   {
     code: "SoAA",
     name: "School of Applied Arts",
-    label: "SoAA — School of Applied Arts",
+    label: "SoAA - School of Applied Arts",
     deanTrack: DEAN_TRACKS.NON_ENGINEERING,
     hodDepartments: [],
     aliases: ["soaa", "applied arts"],
@@ -85,7 +85,7 @@ export const UNIVERSITY_SCHOOLS = [
   {
     code: "CISR",
     name: "Center for Interdisciplinary Studies and Research",
-    label: "CISR — Center for Interdisciplinary Studies and Research",
+    label: "CISR - Center for Interdisciplinary Studies and Research",
     deanTrack: DEAN_TRACKS.DIRECT_VC,
     hodDepartments: [],
     aliases: [
@@ -117,7 +117,7 @@ export const normalizeHierarchyText = (value) =>
   String(value || "")
     .toLowerCase()
     .replace(/&/g, "and")
-    .replace(/—/g, " ")
+    .replace(/-/g, " ")
     .replace(/-/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();

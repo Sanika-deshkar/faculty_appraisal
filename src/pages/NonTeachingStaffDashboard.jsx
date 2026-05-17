@@ -75,7 +75,7 @@ const flowTextFor = (form, role) =>
     submittedByRole: role,
   })
     .map((stage) => flowLabels[stage] || stage)
-    .join(" -> ");
+    .join(" to ");
 
 function Avatar({ name, color = ACCENT, size = 38 }) {
   return (
@@ -307,7 +307,7 @@ function WorkflowTracker({ status, role, form }) {
           return (
             <div key={stage.id} style={{ flex: 1, minHeight: 62, border: "1px solid #e2e8f0", borderRadius: 8, background: done ? "#f0fdf4" : active ? "#eff6ff" : "#f8fafc", padding: "10px 8px", textAlign: "center" }}>
               <div style={{ margin: "0 auto 6px", width: 24, height: 24, borderRadius: "50%", background: done ? "#10b981" : active ? ACCENT : "#cbd5e1", color: "#fff", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 800 }}>
-                {done ? "✓" : stages.indexOf(stage) + 1}
+                {done ? "Done" : stages.indexOf(stage) + 1}
               </div>
               <div style={{ color: done ? "#166534" : active ? ACCENT : "#64748b", fontSize: 10, fontWeight: 800 }}>{stage.label}</div>
             </div>

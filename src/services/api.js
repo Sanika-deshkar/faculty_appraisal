@@ -28,7 +28,7 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // Normalize every API error so err.message is always a user-safe string.
-// Priority: user_message → detail → generic fallback.
+// Priority: user_message to detail to generic fallback.
 // 401 clears the session and redirects to /login automatically.
 apiClient.interceptors.response.use(
   (response) => response,

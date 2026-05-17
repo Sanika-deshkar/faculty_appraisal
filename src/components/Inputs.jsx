@@ -1,4 +1,4 @@
-// ─── HOD-editable score input ─────────────────────────────────────────────────
+// - HOD-editable score input -
 import { clampScore } from "../utils/appraisalFormUtils";
 
 export function HodInput({ val, onChange, max, disabled = false }) {

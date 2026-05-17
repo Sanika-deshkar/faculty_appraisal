@@ -103,7 +103,7 @@ export default function FacultyProfile({ user, onProceed }) {
             <div style={S.avatar}>{user.avatar}</div>
             <div style={S.avatarInfo}>
               <div style={S.avatarName}>{user.name}</div>
-              <div style={S.avatarDesig}>{edits.designation} · {user.department}</div>
+              <div style={S.avatarDesig}>{edits.designation} - {user.department}</div>
               <div style={S.avatarId}>{user.employeeId}</div>
             </div>
           </div>
@@ -112,7 +112,7 @@ export default function FacultyProfile({ user, onProceed }) {
 
           {/* Frozen fields */}
           <div style={{ marginBottom: 10 }}>
-            <div style={S.sectionHeading}>Account Information <span style={S.frozenBadge}>🔒 Read-only</span></div>
+            <div style={S.sectionHeading}>Account Information <span style={S.frozenBadge}> Read-only</span></div>
             <div style={S.editGrid}>
               {[
                 ["Employee ID",      user.employeeId],
@@ -124,7 +124,7 @@ export default function FacultyProfile({ user, onProceed }) {
               ].map(([label, value]) => (
                 <div key={label} style={S.fieldWrap}>
                   <label style={S.fieldLabel}>{label}</label>
-                  <div style={S.frozenInput}>{value || "—"}</div>
+                  <div style={S.frozenInput}>{value || "-"}</div>
                 </div>
               ))}
             </div>
@@ -216,7 +216,7 @@ export default function FacultyProfile({ user, onProceed }) {
               cursor: (confirmed && !saving) ? "pointer" : "not-allowed",
             }}
           >
-            {saving ? "Saving…" : "Proceed to Appraisal Dashboard →"}
+            {saving ? "Saving..." : "Proceed to Appraisal Dashboard"}
           </button>
 
           {!confirmed && (
@@ -233,7 +233,7 @@ export default function FacultyProfile({ user, onProceed }) {
   );
 }
 
-// ── Styles ─────────────────────────────────────────────────────────────────
+// - Styles -
 const S = {
   page: {
     minHeight: "100vh",

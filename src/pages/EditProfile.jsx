@@ -19,7 +19,7 @@ import {
   sanitizeText, filterNumeric, filterPhone,
 } from "../utils/validation";
 
-// ─── Pseudo-class styles (hover / focus) injected once on mount ───────────────
+// - Pseudo-class styles (hover / focus) injected once on mount -
 const EP_CSS = `
   .ep-inp { transition: border-color .15s, box-shadow .15s; }
   .ep-inp:hover:not(:disabled) { border-color: #93c5fd; }
@@ -42,7 +42,7 @@ function CssInjector() {
   return null;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// - Constants -
 const ROLE_LABEL = {
   faculty: "Faculty",
   hod: "Head of Department",
@@ -72,7 +72,7 @@ const STAFF_TYPE_LABEL = { teaching: "Teaching", non_teaching: "Non-Teaching" };
 const initialsFromName = (name = "") =>
   String(name || "U").trim().split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "U";
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// - Sub-components -
 function SectionHead({ title, badge, badgeColor = "#64748b", badgeBack = "#f1f5f9" }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22, paddingBottom: 16, borderBottom: "1px solid #f1f5f9" }}>
@@ -89,7 +89,7 @@ function FrozenField({ label, value, wide }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 5, ...(wide ? { gridColumn: "1 / -1" } : {}) }}>
       <span style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
       <div style={{ minHeight: 40, display: "flex", alignItems: "center", background: "#f9fafb", border: "1.5px solid #e5e7eb", borderRadius: 8, padding: "0 13px", fontSize: 13, color: value ? "#4b5563" : "#c4c9d4" }}>
-        {value || "—"}
+        {value || "-"}
       </div>
     </div>
   );
@@ -108,7 +108,7 @@ function InputField({ label, required, hint, wide, children }) {
   );
 }
 
-// ─── Shared style tokens ──────────────────────────────────────────────────────
+// - Shared style tokens -
 const CARD = {
   background: "#fff",
   border: "1px solid #e5e7eb",
@@ -130,7 +130,7 @@ const INP = {
   background: "#fff",
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// - Main Component -
 export default function EditProfile() {
   const navigate = useNavigate();
   const initialRole = normalizeRole(sessionStorage.getItem("role"), "faculty");
@@ -189,7 +189,7 @@ export default function EditProfile() {
     setMessage("");
 
     if (!formData.employeeId.trim()) { setError("Employee ID is required."); return; }
-    if (!isValidEmployeeId(formData.employeeId)) { setError("Employee ID must be 2–30 characters and contain only letters, numbers, /, - or _."); return; }
+    if (!isValidEmployeeId(formData.employeeId)) { setError("Employee ID must be 2-30 characters and contain only letters, numbers, /, - or _."); return; }
     if (!formData.designation.trim()) { setError("Designation is required."); return; }
     if (formData.experience && !isValidExperience(formData.experience)) { setError("Experience must be a number between 0 and 80."); return; }
     if (formData.phone && !isValidPhone(formData.phone)) { setError("Please enter a valid phone number."); return; }
@@ -236,7 +236,7 @@ export default function EditProfile() {
     <div style={{ minHeight: "100vh", background: "#fff", fontFamily: "inherit", color: "#0f172a" }}>
       <CssInjector />
 
-      {/* ── Sticky white navbar ─────────────────────────────────────────────── */}
+      {/* - Sticky white navbar - */}
       <nav style={{ position: "sticky", top: 0, zIndex: 40, background: "#fff", borderBottom: "1px solid #e5e7eb", boxShadow: "0 1px 4px rgba(15,23,42,.06)" }}>
         <div style={{ maxWidth: 840, margin: "0 auto", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Brand */}
@@ -259,10 +259,10 @@ export default function EditProfile() {
         </div>
       </nav>
 
-      {/* ── Main content ────────────────────────────────────────────────────── */}
+      {/* - Main content - */}
       <main style={{ maxWidth: 840, margin: "0 auto", padding: "40px 24px 80px" }}>
 
-        {/* ── Profile hero ──────────────────────────────────────────────────── */}
+        {/* - Profile hero - */}
         <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 36 }}>
           {/* Avatar */}
           <div style={{ position: "relative", flexShrink: 0 }}>
@@ -300,7 +300,7 @@ export default function EditProfile() {
 
         <form onSubmit={handleSubmit}>
 
-          {/* ── Alerts ──────────────────────────────────────────────────────── */}
+          {/* - Alerts - */}
           {error && (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "#fff5f5", color: "#991b1b", border: "1px solid #fecaca", borderRadius: 10, padding: "13px 16px", marginBottom: 22, fontSize: 13, lineHeight: 1.5 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
@@ -314,7 +314,7 @@ export default function EditProfile() {
             </div>
           )}
 
-          {/* ── Card 1: Account Information (read-only) ─────────────────────── */}
+          {/* - Card 1: Account Information (read-only) - */}
           <div style={CARD}>
             <SectionHead title="Account Information" badge="Read-only" badgeColor="#64748b" badgeBack="#f1f5f9" />
             <div className="ep-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 18 }}>
@@ -334,11 +334,11 @@ export default function EditProfile() {
             </div>
           </div>
 
-          {/* ── Card 2: Editable Details ─────────────────────────────────────── */}
+          {/* - Card 2: Editable Details - */}
           <div style={{ ...CARD, marginTop: 20 }}>
             <SectionHead title="Personal Details" badge="Editable" badgeColor="#2563eb" badgeBack="#eff6ff" />
             <div className="ep-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 18 }}>
-              <InputField label="Employee ID" required hint="e.g. EMP001 — letters, numbers, / - _">
+              <InputField label="Employee ID" required hint="e.g. EMP001 - letters, numbers, / - _">
                 <input
                   className="ep-inp"
                   style={INP}
@@ -403,7 +403,7 @@ export default function EditProfile() {
               </InputField>
             </div>
 
-            {/* ── Actions ───────────────────────────────────────────────────── */}
+            {/* - Actions - */}
             <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10, marginTop: 30, paddingTop: 22, borderTop: "1px solid #f1f5f9" }}>
               <button
                 type="button"
@@ -422,7 +422,7 @@ export default function EditProfile() {
                 {saving ? (
                   <>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ animation: "spin 1s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-                    Saving…
+                    Saving...
                   </>
                 ) : (
                   <>

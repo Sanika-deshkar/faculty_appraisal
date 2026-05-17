@@ -5,7 +5,7 @@ import { departmentHasHod, getDeanTrack } from "../utils/hierarchy";
 import { DEAN_TRACKS, getSchoolKey, isCisrSchool, normalizeHierarchyText } from "../constants/universityHierarchy";
 import { FORM_TYPES, formTypeForSchool } from "../constants/formRouting";
 
-// Each dashboard is its own async chunk — only the one matching the user's role
+// Each dashboard is its own async chunk - only the one matching the user's role
 // is ever downloaded, cutting the initial JS payload by ~90% vs eager imports.
 const Dashboard                 = lazy(() => import("./Dashboard"));
 const HODDashboard              = lazy(() => import("./HODDashboard"));
@@ -24,7 +24,7 @@ const DesignArtsDashboard       = lazy(() => import("./DesignArtsDashboard"));
 function DashboardLoader() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit", color: "#64748b", fontSize: 14 }} className="fa-fade-in">
-      Loading dashboard…
+      Loading dashboard...
     </div>
   );
 }

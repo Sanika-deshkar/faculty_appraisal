@@ -1,4 +1,4 @@
-// ─── Validators ───────────────────────────────────────────────────────────────
+// - Validators -
 
 export const isValidEmail = (email) => {
   const v = String(email ?? '').trim();
@@ -44,7 +44,7 @@ export const isValidExperience = (exp) => {
   return /^\d{1,2}(\.\d)?$/.test(v) && parseFloat(v) >= 0 && parseFloat(v) <= 80;
 };
 
-// ─── Sanitizers ───────────────────────────────────────────────────────────────
+// - Sanitizers -
 
 export const sanitizeText = (value) =>
   String(value ?? '').trim().replace(/\s+/g, ' ');
@@ -55,7 +55,7 @@ export const normalizeEmail = (email) =>
 export const isNotEmpty = (value) =>
   String(value ?? '').trim().length > 0;
 
-// ─── Input filters (use in onChange to block invalid keystrokes) ───────────────
+// - Input filters (use in onChange to block invalid keystrokes) -
 
 // Allow only digits and one optional decimal point
 export const filterNumeric = (value) =>
