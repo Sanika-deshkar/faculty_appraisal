@@ -1,5 +1,7 @@
 ﻿import { clampScore, researchGuidanceScore, rowMaxForSection, societyRowScore, SCORE_LIMITS, projectGuidanceRowMax } from "./appraisalFormUtils";
 
+import { feedbackRowScore, feedbackSectionScore } from "./appraisalFormUtils";
+
 const n = (value) => parseFloat(value) || 0;
 
 export const safeHtml = (value) => String(value ?? "")
@@ -88,12 +90,19 @@ const roleColumnLabel = (role, roleLabel = (value) => value) =>
 
 const displaySectionScore = (section, row, role) => {
   if (section.key === "research" && role === "score") return researchGuidanceScore(row).toFixed(1);
+  if (section.key === "feedback" && role === "score") {
+    const hasFeedback = String(row?.fb1 ?? "").trim() !== "" || String(row?.fb2 ?? "").trim() !== "";
+    return hasFeedback ? feedbackRowScore(row, section.max).toFixed(1) : "";
+  }
   if (role === "score") return clampScore(row?.[role], rowMaxForSection(section.key, row, section.max));
   return row?.[role];
 };
 
 const sectionTotalScore = (section, rows, role) => {
   if (!rows.length) return 0;
+  if (section.key === "feedback" && role === "score") {
+    return feedbackSectionScore(rows, section.max);
+  }
   if (section.key === "lectures" || section.key === "courseFile") {
     const sum = rows.reduce((acc, row) => acc + n(row?.[role] ?? row?.score ?? 0), 0);
     return clampScore(sum / rows.length, section.max);

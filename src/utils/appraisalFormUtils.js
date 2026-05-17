@@ -336,6 +336,10 @@ const docPrefixForSectionLabel = (label = "") => {
   return "";
 };
 
+const isAverageScoredSectionLabel = (labelText = "") =>
+  labelText.includes("course file") ||
+  (labelText.includes("lectures") && labelText.includes("tutorials") && labelText.includes("practicals"));
+
 export const validateCompleteRows = (sections = [], defaultDocs) => {
   const errors = [];
 
@@ -375,11 +379,13 @@ export const validateCompleteRows = (sections = [], defaultDocs) => {
     });
 
     if (maxScore && rows.length && !isB8Section) {
-      const total = rows.reduce((sum, row, index) => {
-        const maxForRow = rowMaxValue(inferredRowMax, row, index);
-        const score = maxForRow ? clampScore(row?.[scoreField], maxForRow) : toNumber(row?.[scoreField]);
-        return sum + score;
-      }, 0);
+      const total = isAverageScoredSectionLabel(labelText)
+        ? averageSectionScore(rows, maxScore, scoreField)
+        : rows.reduce((sum, row, index) => {
+            const maxForRow = rowMaxValue(inferredRowMax, row, index);
+            const score = maxForRow ? clampScore(row?.[scoreField], maxForRow) : toNumber(row?.[scoreField]);
+            return sum + score;
+          }, 0);
       if (total > toNumber(maxScore)) {
         errors.push(`${label}: total score cannot exceed ${maxScore}.`);
       }
