@@ -24,10 +24,10 @@ const NON_ENGINEERING_SCHOOL_VALUES = NON_ENGINEERING_SCHOOLS.flatMap((school) =
 const NON_ENGINEERING_SCHOOL_CODES = NON_ENGINEERING_SCHOOLS.map((school) =>school.code);
 const SCHOOL_VISUALS = {
  SoCM: { icon: "CM", color: "#14b8a6", bg: "#ecfeff" },
- SoMCS: { icon: "?", color: "#6366f1", bg: "#eef2ff" },
+ SoMCS: { icon: "MC", color: "#6366f1", bg: "#eef2ff" },
  SoD: { icon: "DS", color: "#ec4899", bg: "#fdf2f8" },
  CioD: { icon: "DS", color: "#ec4899", bg: "#fdf2f8" },
- SoAA: { icon: "?", color: "#7c3aed", bg: "#f3e8ff" },
+ SoAA: { icon: "AA", color: "#7c3aed", bg: "#f3e8ff" },
 };
 
 // --- Helpers ------------------------------------------------------------------
@@ -202,11 +202,11 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
  {files.map((f, idx) =>(
 <div key={idx} style={{ display: "flex", alignItems: "center", gap: 4, background: "#f0f9ff", border: "1px solid #0ea5e9", borderRadius: 4, padding: "2px 6px" }}>
 <span style={{ fontSize: 10, color: "#1e293b", flex: 1, overflow: "hidden", textOverflow: "ellipsis" }} title={f.name}>{f.name}</span>
- {!readOnly &&<button onClick={() =>removeFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 10, cursor: "pointer" }}>?</button>}
+ {!readOnly &&<button onClick={() =>removeFile(idx)} style={{ background: "none", border: "none", color: "#dc2626", fontSize: 10, cursor: "pointer" }}>x</button>}
 </div>
  ))}
 <div style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 6px", border: "1px dashed #cbd5e1", borderRadius: 4, background: "#f8fafc" }} onClick={() =>!readOnly && ref.current.click()}>
-<span style={{ fontSize: 10, color: "#64748b" }}>?? Attach</span>
+<span style={{ fontSize: 10, color: "#64748b" }}>Attach</span>
 <input ref={ref} type="file" multiple accept="image/*,.pdf,application/pdf" style={{ display: "none" }} disabled={readOnly} onChange={(e) =>handleFiles(e.target.files)} />
 </div>
 </div>
@@ -219,7 +219,7 @@ function ViewCell({ id, docs }) {
 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
  {files.map((f, idx) =>(
 <a key={idx} href={f.url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#3b82f6", fontSize: 10, textDecoration: "none", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap" }} title={f.name}>
- ?? {f.name.length >12 ? f.name.slice(0, 12) + "..." : f.name}
+ {f.name.length >12 ? f.name.slice(0, 12) + "..." : f.name}
 </a>
  ))}
 </div>
@@ -261,7 +261,7 @@ function ViewDocsCell({ docKey, docs }) {
 <a key={i} href={f.url} target="_blank" rel="noreferrer"
  style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "#0ea5e9", fontSize: 10, textDecoration: "none", background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 4, padding: "2px 7px", whiteSpace: "nowrap" }}
  title={f.name}>
- ?? {f.name.length >16 ? f.name.slice(0, 16) + "..." : f.name}
+ {f.name.length >16 ? f.name.slice(0, 16) + "..." : f.name}
 </a>
  ))}
 </div>
@@ -1011,7 +1011,7 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
 <div style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: "100%" }}>
  {/* Header */}
 <div style={{ background: "#0f172a", padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, marginBottom: 16, borderRadius: 10 }}>
-<button onClick={onBack} style={{ background: "#1e293b", border: "none", color: "#94a3b8", cursor: "pointer", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontFamily: "inherit" }}>? Back</button>
+<button onClick={onBack} style={{ background: "#1e293b", border: "none", color: "#94a3b8", cursor: "pointer", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontFamily: "inherit" }}>Back</button>
 <Avatar initials={faculty.avatar} color={faculty.avatarColor} size={40} />
 <div style={{ flex: 1 }}>
 <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 15 }}>{faculty.name}</div>
@@ -1668,7 +1668,7 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
  return (
 <div style={{ background: "#fff", borderRadius: 14, padding: "24px", boxShadow: "0 18px 45px rgba(15,23,42,0.18)", minHeight: "100%" }}>
 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
-<button onClick={onBack} style={{ border: "none", background: "#e2e8f0", color: "#0f172a", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>? Back</button>
+<button onClick={onBack} style={{ border: "none", background: "#e2e8f0", color: "#0f172a", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>Back</button>
 <div>
 <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>{titleMap[approvalType]}</div>
 <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>{approval.name} - {approval.designation}</div>
@@ -3524,8 +3524,8 @@ export default function NonEngineeringDeanDashboard() {
 <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 11 }}>{NON_ENGINEERING_SCHOOLS.length} Non-Engineering Schools - AY {info.ay}</p>
 </div>
 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-<div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#fef3c7", color: "#92400e" }}>? {pendingCount} Pending</div>
-<div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#d1fae5", color: "#065f46" }}>? {reviewedCount} Reviewed</div>
+<div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#fef3c7", color: "#92400e" }}>{pendingCount} Pending</div>
+<div style={{ fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, background: "#d1fae5", color: "#065f46" }}>{reviewedCount} Reviewed</div>
 <AppraisalHeaderImage />
 </div>
 </div>
@@ -3673,7 +3673,6 @@ export default function NonEngineeringDeanDashboard() {
 
  {filtered.length === 0 && (
 <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
-<div style={{ fontSize: 32, marginBottom: 8 }}>?</div>
 <div style={{ fontWeight: 700, color: "#0f172a" }}>All caught up!</div>
 <div style={{ color: "#64748b", fontSize: 12 }}>No records match the selected school / status filter.</div>
 </div>
