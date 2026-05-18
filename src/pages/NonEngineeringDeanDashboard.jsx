@@ -1748,7 +1748,7 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
 </>
  )}
 
- {!reviewLocked && (
+ {sectionView === "summary" && !reviewLocked && (
 <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 14, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: "pointer" }}>
 <input
  type="checkbox"
@@ -1760,12 +1760,14 @@ function ApprovalReviewPanel({ approval, approvalType, onBack, onSubmit, readOnl
 </label>
  )}
 
+ {sectionView === "summary" && (
 <div style={{ display: "flex", gap: 12 }}>
 <button onClick={onBack} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "1px solid #cbd5e1", background: "#f8fafc", color: "#475569", fontWeight: 700, cursor: "pointer" }}>{reviewLocked ? "Close" : "Cancel"}</button>
  {!reviewLocked && (
 <button onClick={() =>onSubmit(approval.id, deanScores, remarks, sectionScores, reviewConfirmed)} disabled={!reviewConfirmed || !remarks.trim()} style={{ flex: 1, padding: "12px 16px", borderRadius: 10, border: "none", background: (reviewConfirmed && remarks.trim()) ? "#0f172a" : "#64748b", color: "#f8fafc", fontWeight: 700, cursor: (reviewConfirmed && remarks.trim()) ? "pointer" : "not-allowed" }}>Approve & Forward</button>
  )}
 </div>
+ )}
 </div>
  );
 }
