@@ -583,7 +583,7 @@ export const generateStandardReport = async ({
   ${quals.map((q,i)=>`<tr><td class="c">${i+1}</td><td>${q.label||'&nbsp;'}</td><td class="c">${q.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="2" class="c b">Total Score (Max 10)</td><td class="c">${quals.reduce((a,q)=>a+n(q.score),0).toFixed(1)}</td></tr></table>
   <h3>B. Students' Feedback (Max 10)</h3>
-  <table><tr><th>SN</th><th>Course Code/Name</th><th>First Feedback</th><th>Second Feedback</th><th>Average</th><th>API Score</th></tr>
+  <table><tr><th>SN</th><th>Course Code/Name</th><th>First Feedback(%)</th><th>Second Feedback(%)</th><th>Average</th><th>API Score</th></tr>
   ${feedback.map((f,i)=>`<tr><td class="c">${i+1}</td><td>${f.code||'&nbsp;'}</td><td class="c">${f.fb1||'&nbsp;'}</td><td class="c">${f.fb2||'&nbsp;'}</td><td class="c">${(f.fb1||f.fb2)?((n(f.fb1)+n(f.fb2))/((f.fb1?1:0)+(f.fb2?1:0)||1)).toFixed(2):'&nbsp;'}</td><td class="c">${(f.fb1||f.fb2)?(((n(f.fb1)+n(f.fb2))/((f.fb1?1:0)+(f.fb2?1:0)||1))/10).toFixed(2):'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="5" class="c b">Total (Max 10)</td><td class="c">${stuFeedbackScore.toFixed(1)}</td></tr></table>
   <h3>C. Departmental / School Activities (Max 20)</h3>

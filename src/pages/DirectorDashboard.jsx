@@ -567,8 +567,8 @@ function FacultyReviewForm({ faculty, hodData, setHodData, dirData, setDirData, 
 <SC title="B. Student Feedback (Max 10)" accent="#0ea5e9">
 <table style={T}>
 <thead><tr>
-<th style={TH}>SN</th><th style={TH}>Course</th><th style={TH}>First Feedback</th>
-<th style={TH}>Second Feedback</th><th style={TH}>Average</th>
+<th style={TH}>SN</th><th style={TH}>Course</th><th style={TH}>First Feedback(%)</th>
+<th style={TH}>Second Feedback(%)</th><th style={TH}>Average</th>
 <th style={TH}>Faculty Score</th><th style={TH_DIR}>Director Score</th>
 </tr></thead>
 <tbody>
@@ -1645,7 +1645,7 @@ export default function DirectorDashboard() {
  { label: "A(i). Lectures", rows: lectures, fields: ["sem", "code", "planned", "conducted", "score"] },
  { label: "A(ii). Course File", rows: courseFile, fields: ["course", "title", "details"] },
  { label: "A(iv). Projects", rows: projects, fields: ["label", "score"], rowMax: projectGuidanceRowMax, maxScore: 10, skip: sectionApplicability.projects === "notApplicable" },
- { label: "A(v). Qualifications", rows: quals, fields: ["label", "score"] },
+ { label: "A(v). Qualification Enhancement", rows: quals, fields: ["label", "score"] },
  { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
  { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
  { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
@@ -1688,7 +1688,7 @@ export default function DirectorDashboard() {
  { label: "A(i). Lectures", rows: lectures, fields: ["sem", "code", "planned", "conducted", "score"] },
  { label: "A(ii). Course File", rows: courseFile, fields: ["course", "title", "details"] },
  { label: "A(iv). Projects", rows: projects, fields: ["label", "score"], rowMax: projectGuidanceRowMax, maxScore: 10, skip: sectionApplicability.projects === "notApplicable" },
- { label: "A(v). Qualifications", rows: quals, fields: ["label", "score"] },
+ { label: "A(v). Qualification Enhancement", rows: quals, fields: ["label", "score"] },
  { label: "A(vi). Student Feedback", rows: feedback, fields: ["code", "fb1", "fb2"] },
  { label: "A(vii). Department Activities", rows: deptActs, fields: ["activity", "nature", "score"] },
  { label: "A(viii). University Activities", rows: uniActs, fields: ["activity", "nature", "score"] },
@@ -2157,7 +2157,7 @@ export default function DirectorDashboard() {
 
  {/* A5. Qualifications */}
 <div style={{ marginBottom: 16 }}>
-<div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(v) Qualifications - Max 10 marks</div>
+<div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(v) Qualification Enhancement - Max 10 marks</div>
 <table style={T}>
 <thead>
 <tr>
@@ -2195,8 +2195,8 @@ export default function DirectorDashboard() {
 <tr>
 <th style={{ ...TH, width: 30 }}>SN</th>
 <th style={TH}>Course Code / Name</th>
-<th style={TH}>First Feedback</th>
-<th style={TH}>Second Feedback</th>
+<th style={TH}>First Feedback(%)</th>
+<th style={TH}>Second Feedback(%)</th>
 <th style={TH}>Average</th>
 <th style={TH}>Score</th>
 </tr>

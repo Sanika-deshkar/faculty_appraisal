@@ -306,7 +306,7 @@ const VC_REPORT_PART_A_SECTIONS = [
  { key: "courseFile", title: "A(ii). Course File", max: 20, doc: "cf", fields: [["course", "Course / Paper"], ["title", "Program & Semester"], ["details", "Availability as per IQAC format"]] },
  { key: "projects", title: "A(iv). Project Guidance", max: 10, doc: "proj", fields: [["label", "Project Category"]] },
  { key: "quals", title: "A(v). Qualification Enhancement", max: 10, doc: "qual", fields: [["label", "Category"]] },
- { key: "feedback", title: "Student Feedback", max: 10, doc: "fb", fields: [["code", "Course Code / Name"], ["fb1", "First Feedback"], ["fb2", "Second Feedback"]] },
+ { key: "feedback", title: "Student Feedback", max: 10, doc: "fb", fields: [["code", "Course Code / Name"], ["fb1", "First Feedback(%)"], ["fb2", "Second Feedback(%)"]] },
  { key: "deptActs", title: "Departmental / School Activities", max: 20, doc: "dept", fields: [["activity", "Activity"], ["nature", "Nature"]] },
  { key: "uniActs", title: "University Level Activities", max: 30, doc: "uni", fields: [["activity", "Activity"], ["nature", "Nature"]] },
  { key: "society", title: "Contribution to Society", max: 10, doc: "soc", fields: [["label", "Activity"], ["details", "Details"]] },
@@ -564,7 +564,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director", sect
  {/* B Feedback */}
 <SC title="B. Student Feedback (Max 10)" accent="#7c3aed">
 <table style={T}><thead><tr>
-<th style={TH}>SN</th><th style={TH}>Course</th><th style={TH}>First Feedback</th><th style={TH}>Second Feedback</th><th style={TH}>Average</th>
+<th style={TH}>SN</th><th style={TH}>Course</th><th style={TH}>First Feedback(%)</th><th style={TH}>Second Feedback(%)</th><th style={TH}>Average</th>
  {renderScoreHeaders()}
 </tr></thead>
 <tbody>{rows(person.feedback).map((r, i) =>(
