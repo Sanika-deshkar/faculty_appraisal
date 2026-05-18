@@ -2437,7 +2437,6 @@ export default function NonEngineeringDeanDashboard() {
 <select value={guidelinesTab} onChange={e =>setGuidelinesTab(e.target.value)}
  style={{ width: "100%", border: "1px solid #334155", borderRadius: 7, padding: "7px 8px", fontSize: 12, fontFamily: "inherit", color: "#e2e8f0", background: "#0f172a", outline: "none" }}>
 <option value="form">Form Guidelines</option>
-<option value="grading">Grading Scheme</option>
 </select>
 </div>
  )}
@@ -3706,7 +3705,7 @@ export default function NonEngineeringDeanDashboard() {
 <div style={{ background: "#fff", borderRadius: 9, padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,.06)", marginBottom: 16 }}>
 <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800, color: "#0f172a" }}>D Y PATIL INTERNATIONAL UNIVERSITY</h2>
 <div style={{ color: "#64748b", fontSize: 13 }}>Akurdi, Pune</div>
-<h3 style={{ margin: "12px 0 0", fontSize: 15, color: "#1e293b" }}>{guidelinesTab === "form" ? "Guidelines for Faculty Appraisal Form - A.Y. 2025-2026" : "Grading Scheme for Faculty Appraisal"}</h3>
+<h3 style={{ margin: "12px 0 0", fontSize: 15, color: "#1e293b" }}>Guidelines for Faculty Appraisal Form - A.Y. 2025-2026</h3>
 </div>
  {guidelinesTab === "form" && (<>
 <SC title="General Notes" accent="#0f172a">
@@ -4001,62 +4000,6 @@ export default function NonEngineeringDeanDashboard() {
 </table>
 </SC>
 </>)}
- {guidelinesTab === "grading" && (
-<SC title="Grading Scheme for Faculty Appraisal" accent="#059669">
-<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 20 }}>
-<thead>
-<tr>
-<th style={TH}>Appraisal</th>
-<th style={TH}>Maximum Marks</th>
-<th style={TH}>Assistant Prof.</th>
-<th style={TH}>Associate Prof.</th>
-<th style={TH}>Professor</th>
-</tr>
-</thead>
-<tbody>
- {[["Part A", "200", "180", "180", "180"], ["Part B", "375", "150", "190", "220"]].map(([part, max, ap, asc, prof]) =>(
-<tr key={part}>
-<td style={TD}><strong>{part}</strong></td>
-<td style={TDC}>{max}</td>
-<td style={TDC}>{ap}</td>
-<td style={TDC}>{asc}</td>
-<td style={TDC}>{prof}</td>
-</tr>
- ))}
-</tbody>
-</table>
-<div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 10 }}>Grade &amp; Marks Distribution</div>
-<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-<thead>
-<tr>
-<th style={TH}>Sr No</th>
-<th style={TH}>Grade</th>
-<th style={TH}>Assistant Prof.</th>
-<th style={TH}>Associate Prof.</th>
-<th style={TH}>Professor</th>
-</tr>
-</thead>
-<tbody>
- {[
- ["1", "A+", "Above 350", "Above 380", "Above 400", "#059669", "#d1fae5"],
- ["2", "A", "331 to 340", "360 to 379", "375 to 399", "#0284c7", "#dbeafe"],
- ["3", "B++", "321 to 330", "340 to 359", "350 to 374", "#7c3aed", "#ede9fe"],
- ["4", "B+", "311 to 320", "320 to 339", "325 to 349", "#d97706", "#fef3c7"],
- ["5", "B", "300 to 310", "300 to 319", "300 to 324", "#ea580c", "#fff7ed"],
- ["6", "C", "Below 300", "Below 300", "Below 300", "#dc2626", "#fee2e2"],
- ].map(([sn, grade, ap, asc, prof, color, bg]) =>(
-<tr key={sn} style={{ background: bg }}>
-<td style={TDC}>{sn}</td>
-<td style={{ ...TDC, fontWeight: 800, color }}>{grade}</td>
-<td style={TDC}>{ap}</td>
-<td style={TDC}>{asc}</td>
-<td style={TDC}>{prof}</td>
-</tr>
- ))}
-</tbody>
-</table>
-</SC>
- )}
 </div>
 </div>
  )}
