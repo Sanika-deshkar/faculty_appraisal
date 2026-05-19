@@ -105,7 +105,7 @@ function SelfInput({ val, onChange, max }) {
  );
 }
 // --- Input & Table Controls (Self-Appraisal Mode) ------------------------------
-function TI({ val, onChange, center, placeholder, readOnly = false, numeric = false, integer = false, textOnly = false, max }) {
+function TI({ val, onChange, center, placeholder, readOnly = false, numeric = false, integer = false, textOnly = false, max, deferClampWhileTyping = false }) {
  const [textErr, setTextErr] = useState(false);
  const handleChange = (e) =>{
  if (readOnly) return;
@@ -114,7 +114,7 @@ function TI({ val, onChange, center, placeholder, readOnly = false, numeric = fa
  v = v.replace(/[^0-9]/g, "");
  } else if (numeric) {
  v = v.replace(/[^0-9.]/g, "").replace(/^\./, "0.").replace(/(\.\d*)\./g, "$1");
- if (v !== "" && max !== undefined) v = String(clampScore(v, max));
+ if (v !== "" && max !== undefined && !(deferClampWhileTyping && v.endsWith("."))) v = String(clampScore(v, max));
  }
  if (textOnly && textErr) setTextErr(false);
  onChange?.(v);
@@ -122,7 +122,9 @@ function TI({ val, onChange, center, placeholder, readOnly = false, numeric = fa
  const handleBlur = (e) =>{
  if (readOnly || !onChange) return;
  const trimmed = e.target.value.trim();
- if (trimmed !== e.target.value) onChange(trimmed);
+ if (numeric && max !== undefined && trimmed !== "") {
+ onChange(String(clampScore(trimmed, max)));
+ } else if (trimmed !== e.target.value) onChange(trimmed);
  if (textOnly && trimmed.length >0 && /^[\d\s.,+\-/\\()[\]{}]+$/.test(trimmed)) {
  setTextErr(true);
  }
@@ -2714,8 +2716,8 @@ export default function NonEngineeringDeanDashboard() {
 <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
 <td style={TDC}>{i + 1}</td>
 <td style={TD}><TI val={r.code} onChange={(v) =>setFb(i, "code", v)} textOnly /></td>
-<td style={TDC}><TI val={r.fb1} numeric onChange={(v) =>setFb(i, "fb1", v)} center max={SCORE_LIMITS.feedbackAverage} /></td>
-<td style={TDC}><TI val={r.fb2} numeric onChange={(v) =>setFb(i, "fb2", v)} center max={SCORE_LIMITS.feedbackAverage} /></td>
+<td style={TDC}><TI val={r.fb1} numeric onChange={(v) =>setFb(i, "fb1", v)} center max={SCORE_LIMITS.feedbackAverage} deferClampWhileTyping /></td>
+<td style={TDC}><TI val={r.fb2} numeric onChange={(v) =>setFb(i, "fb2", v)} center max={SCORE_LIMITS.feedbackAverage} deferClampWhileTyping /></td>
 <td style={{ ...TDC, fontWeight: 700, color: "#0ea5e9" }}>{r.fb1 || r.fb2 ? feedbackAverage(r).toFixed(2) : ""}</td>
 <td style={TDS}>{r.fb1 || r.fb2 ? feedbackRowScore(r, 10).toFixed(1) : ""}</td>
 </tr>

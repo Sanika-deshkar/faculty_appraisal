@@ -309,7 +309,7 @@ function StatusBadge({ status }) {
  return<span style={{ display: "inline-flex", alignItems: "center", borderRadius: 20, padding: "4px 10px", background: bg, color, fontSize: 11, fontWeight: 800 }}>{status || "Pending Review"}</span>;
 }
 
-function TI({ value, onChange, readOnly = false, center = false, type = "text", textOnly = false, max }) {
+function TI({ value, onChange, readOnly = false, center = false, type = "text", textOnly = false, max, deferClampWhileTyping = false }) {
  const numeric = type === "number";
  const integer = type === "integer";
  const [textErr, setTextErr] = useState(false);
@@ -320,7 +320,7 @@ function TI({ value, onChange, readOnly = false, center = false, type = "text", 
  v = v.replace(/[^0-9]/g, "");
  } else if (numeric) {
  v = v.replace(/[^0-9.]/g, "").replace(/^\./, "0.").replace(/(\.\d*)\./g, "$1");
- if (v !== "" && max !== undefined) v = String(clampScore(v, max));
+ if (v !== "" && max !== undefined && !(deferClampWhileTyping && v.endsWith("."))) v = String(clampScore(v, max));
  }
  if (textOnly && textErr) setTextErr(false);
  onChange?.(v);
@@ -328,7 +328,9 @@ function TI({ value, onChange, readOnly = false, center = false, type = "text", 
  const handleBlur = (event) =>{
  if (readOnly || !onChange) return;
  const trimmed = event.target.value.trim();
- if (trimmed !== event.target.value) onChange(trimmed);
+ if (numeric && max !== undefined && trimmed !== "") {
+ onChange(String(clampScore(trimmed, max)));
+ } else if (trimmed !== event.target.value) onChange(trimmed);
  if (textOnly && trimmed.length >0 && /^[\d\s.,+\-/\\()[\]{}]+$/.test(trimmed)) setTextErr(true);
  };
  return (
@@ -634,7 +636,7 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
 </select>
  ) : (
 <>
-<TI value={row[key]} type={NUMERIC_KEYS.has(key) ? "number" : "text"} center={section.key === "courseFile" && key === "title"} max={key === "fb1" || key === "fb2" ? SCORE_LIMITS.feedbackAverage : undefined} textOnly={TEXT_ONLY_KEYS.has(key) && !(section.key === "courseFile" && key === "title")} readOnly={!editableSelf || readOnlyField || notApplicable || selfLocked || socRowLocked} onChange={(value) =>updateRow(index, key, value)} />
+<TI value={row[key]} type={NUMERIC_KEYS.has(key) ? "number" : "text"} center={section.key === "courseFile" && key === "title"} max={key === "fb1" || key === "fb2" ? SCORE_LIMITS.feedbackAverage : undefined} deferClampWhileTyping={key === "fb1" || key === "fb2"} textOnly={TEXT_ONLY_KEYS.has(key) && !(section.key === "courseFile" && key === "title")} readOnly={!editableSelf || readOnlyField || notApplicable || selfLocked || socRowLocked} onChange={(value) =>updateRow(index, key, value)} />
  {section.key === "acr" && key === "label" && ACR_DETAIL_POINTS[row[key]] && (
 <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>
  {ACR_DETAIL_POINTS[row[key]].map((point) =><li key={point}>{point}</li>)}
