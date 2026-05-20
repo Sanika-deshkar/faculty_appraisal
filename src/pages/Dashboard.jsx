@@ -1973,12 +1973,12 @@ export default function HODDashboard() {
       </tbody>
     </table>` : ""}
 
+  <script>window.addEventListener('load', function(){ window.focus(); window.print(); });</script>
   </body>
   </html>`;
 
     win.document.write(html);
     win.document.close();
-    win.print();
   };
   const navItems = [
     { id: "myAppraisal", icon: "", label: "My Appraisal", sub: "View your self-appraisal form" },
