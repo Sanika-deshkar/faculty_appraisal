@@ -383,12 +383,12 @@ export const openFullFormReport = async ({
     submittedAt: declaration?.submitted_at || "",
     reviewChain,
   })}
+<script>window.addEventListener('load', function(){ window.focus(); window.print(); });</script>
 </body>
 </html>`;
 
   win.document.write(html);
   win.document.close();
-  win.print();
 };
 
 export const generateMediaCommReport = async ({
@@ -500,11 +500,11 @@ export const generateMediaCommReport = async ({
     submittedAt: declaration?.submitted_at || "",
     reviewChain,
   })}
+<script>window.addEventListener('load', function(){ window.focus(); window.print(); });</script>
 </body>
 </html>`;
   win.document.write(html);
   win.document.close();
-  win.print();
 };
 
 export const generateStandardReport = async ({
@@ -701,9 +701,9 @@ export const generateStandardReport = async ({
     submittedAt: declaration?.submitted_at || "",
     reviewChain,
   })}
+  <script>window.addEventListener('load', function(){ window.focus(); window.print(); });</script>
   </body></html>`;
   win.document.write(html);
   win.document.close();
-  win.print();
 };
 
