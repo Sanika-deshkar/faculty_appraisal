@@ -3,6 +3,10 @@
 import { feedbackRowScore, feedbackSectionScore } from "./appraisalFormUtils";
 
 const n = (value) => parseFloat(value) || 0;
+const percentOf = (score, max) => {
+  const maximum = n(max);
+  return maximum > 0 ? ((n(score) / maximum) * 100).toFixed(2) : "0.00";
+};
 
 export const safeHtml = (value) => String(value ?? "")
   .replace(/&/g, "&amp;")
@@ -312,6 +316,9 @@ export const openFullFormReport = async ({
   } catch { /* use URL fallback */ }
 
   const info = form.info || {};
+  const partAPercentage = percentOf(totals.partA, maxScores.partA);
+  const partBPercentage = percentOf(totals.partB, maxScores.partB);
+  const totalPercentage = percentOf(totals.total, maxScores.grand);
   const html = `<!doctype html>
 <html>
 <head>
@@ -372,8 +379,11 @@ export const openFullFormReport = async ({
     <thead><tr><th>Section</th><th>Score</th><th>Maximum</th></tr></thead>
     <tbody>
       <tr><td>Part A</td><td class="c">${n(totals.partA).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partA ?? ""))}</td></tr>
+      <tr><td>Part A Marks Obtained (%)</td><td colspan="2" class="c">${partAPercentage}%</td></tr>
       <tr><td>Part B</td><td class="c">${n(totals.partB).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partB ?? ""))}</td></tr>
+      <tr><td>Part B Marks Obtained (%)</td><td colspan="2" class="c">${partBPercentage}%</td></tr>
       <tr class="tr"><td>Grand Total</td><td class="c">${n(totals.total).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.grand ?? ""))}</td></tr>
+      <tr class="tr"><td>Marks Obtained (%)</td><td colspan="2" class="c">${totalPercentage}%</td></tr>
       ${status ? `<tr><td>Status</td><td colspan="2">${safeHtml(status)}</td></tr>` : ""}
     </tbody>
   </table>
@@ -417,6 +427,9 @@ export const generateMediaCommReport = async ({
 
   const info = form.info || {};
   const scoreRoles = ["score"];
+  const partAPercentage = percentOf(totals.partA, maxScores.partA);
+  const partBPercentage = percentOf(totals.partB, maxScores.partB);
+  const totalPercentage = percentOf(totals.total, maxScores.grand);
 
   const html = `<!doctype html>
 <html>
@@ -483,16 +496,24 @@ export const generateMediaCommReport = async ({
         : row.isGrandTotal
           ? `<tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">${safeHtml(row.label)}</td><td class="c">${safeHtml(String(row.max))}</td><td class="c">${n(row.score).toFixed(1)}</td></tr>`
           : row.isTotal
-            ? `<tr class="tr"><td colspan="2" class="c b">${safeHtml(row.label)}</td><td class="c b">${safeHtml(String(row.max))}</td><td class="c b">${n(row.score).toFixed(1)}</td></tr>`
+            ? `<tr class="tr"><td colspan="2" class="c b">${safeHtml(row.label)}</td><td class="c b">${safeHtml(String(row.max))}</td><td class="c b">${n(row.score).toFixed(1)}</td></tr>${
+              /^part a/i.test(row.label) ? `<tr class="tr"><td colspan="2" class="c b">Part A Marks Obtained (%)</td><td colspan="2" class="c b">${partAPercentage}%</td></tr>` :
+              /^part b/i.test(row.label) ? `<tr class="tr"><td colspan="2" class="c b">Part B Marks Obtained (%)</td><td colspan="2" class="c b">${partBPercentage}%</td></tr>` :
+              ""
+            }`
             : `<tr><td class="c">${safeHtml(row.id || String(i + 1))}</td><td>${safeHtml(row.label)}</td><td class="c">${safeHtml(String(row.max))}</td><td class="c">${n(row.score).toFixed(1)}</td></tr>`
     ).join("")}
+    <tr class="tr"><td colspan="2" class="c b">Marks Obtained (%)</td><td colspan="2" class="c b">${totalPercentage}%</td></tr>
   </table>` : `
   <h2>Summary</h2>
   <table class="st">
     <tr><th>Section</th><th>Score</th><th>Maximum</th></tr>
     <tr><td>Part A</td><td class="c">${n(totals.partA).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partA || ""))}</td></tr>
+    <tr><td>Part A Marks Obtained (%)</td><td colspan="2" class="c">${partAPercentage}%</td></tr>
     <tr><td>Part B</td><td class="c">${n(totals.partB).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partB || ""))}</td></tr>
+    <tr><td>Part B Marks Obtained (%)</td><td colspan="2" class="c">${partBPercentage}%</td></tr>
     <tr class="tr"><td>Grand Total</td><td class="c">${n(totals.total).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.grand || ""))}</td></tr>
+    <tr class="tr"><td>Marks Obtained (%)</td><td colspan="2" class="c">${totalPercentage}%</td></tr>
   </table>`}
   ${renderReviewRemarks(remarksSections)}
   ${buildSignaturePage({
@@ -525,6 +546,12 @@ export const generateStandardReport = async ({
   reviewChain = [],
 }) => {
   const n = (v) => parseFloat(v) || 0;
+  const applicability = sectionApplicability || {};
+  const teachingMax = applicability.projects === "notApplicable" ? 90 : 100;
+  const researchGuidanceProjectMax = applicability.research === "notApplicable" ? 45 : 75;
+  const partAPercentage = percentOf(partATotal, effectivePartAMax);
+  const partBPercentage = percentOf(partBTotal, effectivePartBMax);
+  const totalPercentage = percentOf(grandTotal, effectiveGrandMax);
   const win = window.open('', '_blank');
   if (!win) { alert("Please allow popups to generate the report."); return; }
   let logoSrc = `${window.location.origin}/image.png`;
@@ -574,7 +601,7 @@ export const generateStandardReport = async ({
   <table><tr><th>SN</th><th>Methods Used</th><th>Details</th><th>API Score</th></tr>
   ${(innovRows||[]).map((r,i)=>`<tr><td class="c">${i+1}</td><td>${r.method||r.details||'&nbsp;'}</td><td>${r.details||'&nbsp;'}</td><td class="c">${r.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="3" class="c b">Total Score (Max 10)</td><td class="c">${innovTotal.toFixed(1)}</td></tr></table>
-  ${sectionApplicability.projects==='notApplicable'?'':`<h3>(iv) Projects (Max 10)</h3>
+  ${applicability.projects==='notApplicable'?'':`<h3>(iv) Projects (Max 10)</h3>
   <table><tr><th>SN</th><th>Project Type</th><th>API Score</th></tr>
   ${projects.map((p,i)=>`<tr><td class="c">${i+1}</td><td>${p.label||'&nbsp;'}</td><td class="c">${clampScore(p.score, projectGuidanceRowMax(p))||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="2" class="c b">Total Score (Max 10)</td><td class="c">${projects.reduce((a,p)=>a+n(p.score),0).toFixed(1)}</td></tr></table>`}
@@ -595,7 +622,7 @@ export const generateStandardReport = async ({
   ${uniActs.map((u,i)=>`<tr><td class="c">${i+1}</td><td>${u.activity||'&nbsp;'}</td><td>${u.nature||'&nbsp;'}</td><td class="c">${u.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="3" class="c b">Total (Max 30)</td><td class="c">${uniScore.toFixed(1)}</td></tr></table>
   <h3>E. Contribution to Society (Max 10)</h3>
-  ${sectionApplicability.society==='notApplicable'?'<p><em>Not Applicable</em></p>':`<table><tr><th>SN</th><th>Activity</th><th>Details</th><th>API Score</th></tr>
+  ${applicability.society==='notApplicable'?'<p><em>Not Applicable</em></p>':`<table><tr><th>SN</th><th>Activity</th><th>Details</th><th>API Score</th></tr>
   ${society.map((s,i)=>`<tr><td class="c">${i+1}</td><td>${s.label||'&nbsp;'}</td><td>${s.details||'&nbsp;'}</td><td class="c">${societyRowScore(s)}</td></tr>`).join('')}
   <tr class="tr"><td colspan="3" class="c b">Total (Max 10)</td><td class="c">${societyScore.toFixed(1)}</td></tr></table>`}
   <h3>F. Industry Connect Activity (Max 5)</h3>
@@ -608,14 +635,15 @@ export const generateStandardReport = async ({
   <tr class="tr"><td colspan="2" class="c b">Total (Max 25)</td><td class="c">${acrScore.toFixed(1)}</td></tr></table>
   <table class="st">
     <tr><th>Part A Summary</th><th>Max</th><th>Faculty Score</th></tr>
-    <tr><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">100</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
+    <tr><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">${teachingMax}</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
     <tr><td>Students' Feedback</td><td class="c">10</td><td class="c">${stuFeedbackScore.toFixed(1)}</td></tr>
     <tr><td>Departmental Activities</td><td class="c">20</td><td class="c">${deptScore.toFixed(1)}</td></tr>
     <tr><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
-    <tr><td>Contribution to Society</td><td class="c">${sectionApplicability.society==='notApplicable'?'N/A':'10'}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
+    <tr><td>Contribution to Society</td><td class="c">${applicability.society==='notApplicable'?'N/A':'10'}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
     <tr><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
     <tr><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
     <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
+    <tr class="tr"><td class="b">PART A MARKS OBTAINED (%)</td><td colspan="2" class="c b">${partAPercentage}%</td></tr>
   </table>
   <div class="pb"></div>
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART B - Research &amp; Academic Contributions</h3>
@@ -631,7 +659,7 @@ export const generateStandardReport = async ({
   <table><tr><th>SN</th><th>Title</th><th>Short Description</th><th>Type / Link</th><th>Quadrants</th><th>API Score</th></tr>
   ${ict.map((r,i)=>`<tr><td class="c">${i+1}</td><td>${r.title||'&nbsp;'}</td><td>${r.desc||'&nbsp;'}</td><td>${r.type||'&nbsp;'}</td><td class="c">${r.quad||'&nbsp;'}</td><td class="c">${r.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="5" class="c b">Total (Max 20)</td><td class="c">${ictScore.toFixed(1)}</td></tr></table>
-  ${sectionApplicability.research==='notApplicable'?'':`<h3>4a) Research Guidance - PhD / PG (Max 30)</h3>
+  ${applicability.research==='notApplicable'?'':`<h3>4a) Research Guidance - PhD / PG (Max 30)</h3>
   <table><tr><th>SN</th><th>Degree</th><th>Name of Student</th><th>Thesis / Status</th><th>API Score</th></tr>
   ${research.map((r,i)=>`<tr><td class="c">${i+1}</td><td class="c">${r.degree||'&nbsp;'}</td><td>${r.name||'&nbsp;'}</td><td>${r.thesis||'&nbsp;'}</td><td class="c">${rgs(r).toFixed(1)}</td></tr>`).join('')}
   <tr class="tr"><td colspan="4" class="c b">Total (Max 30)</td><td class="c">${researchScore.toFixed(1)}</td></tr></table>`}
@@ -676,25 +704,28 @@ export const generateStandardReport = async ({
   <table class="st">
     <tr><th>Sr.No.</th><th>Criteria</th><th>Max Score</th><th>Faculty Score</th></tr>
     <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part A - Teaching Process</td></tr>
-    <tr><td class="c">A</td><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">100</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
+    <tr><td class="c">A</td><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">${teachingMax}</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
     <tr><td class="c">B</td><td>Students' Feedback</td><td class="c">10</td><td class="c">${stuFeedbackScore.toFixed(1)}</td></tr>
     <tr><td class="c">C</td><td>Departmental Activities</td><td class="c">20</td><td class="c">${deptScore.toFixed(1)}</td></tr>
     <tr><td class="c">D</td><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
-    <tr><td class="c">E</td><td>Contribution to Society</td><td class="c">10</td><td class="c">${societyScore.toFixed(1)}</td></tr>
+    <tr><td class="c">E</td><td>Contribution to Society</td><td class="c">${applicability.society==='notApplicable'?'N/A':'10'}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
     <tr><td class="c">F</td><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
     <tr><td class="c">G</td><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
     <tr class="tr"><td colspan="2" class="c b">Part A Total</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
+    <tr class="tr"><td colspan="2" class="c b">Part A Marks Obtained (%)</td><td colspan="2" class="c b">${partAPercentage}%</td></tr>
     <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part B - Research and Academic Contribution</td></tr>
     <tr><td class="c">1</td><td>Research papers / journal publication</td><td class="c">120</td><td class="c">${journalScore.toFixed(1)}</td></tr>
     <tr><td class="c">2</td><td>Books authored / edited / book chapter</td><td class="c">50</td><td class="c">${bookScore.toFixed(1)}</td></tr>
     <tr><td class="c">3</td><td>ICT Teaching Learning Pedagogy</td><td class="c">20</td><td class="c">${ictScore.toFixed(1)}</td></tr>
-    <tr><td class="c">4</td><td>Research guidance / projects / consultancy</td><td class="c">75</td><td class="c">${(researchScore+projectBScore+externalProjectScore).toFixed(1)}</td></tr>
+    <tr><td class="c">4</td><td>Research guidance / projects / consultancy</td><td class="c">${researchGuidanceProjectMax}</td><td class="c">${(researchScore+projectBScore+externalProjectScore).toFixed(1)}</td></tr>
     <tr><td class="c">5</td><td>Patents, Awards, Fellowship</td><td class="c">50</td><td class="c">${(patentScore+awardScore).toFixed(1)}</td></tr>
     <tr><td class="c">6</td><td>Conferences / paper presentations</td><td class="c">30</td><td class="c">${confScore.toFixed(1)}</td></tr>
     <tr><td class="c">7</td><td>Research proposals / product development</td><td class="c">20</td><td class="c">${(proposalScore+productScore).toFixed(1)}</td></tr>
     <tr><td class="c">8</td><td>Self Development (FDP / Industrial Training)</td><td class="c">10</td><td class="c">${(fdpScore+trainScore).toFixed(1)}</td></tr>
     <tr class="tr"><td colspan="2" class="c b">Part B Total</td><td class="c b">${effectivePartBMax}</td><td class="c b">${partBTotal.toFixed(1)}</td></tr>
+    <tr class="tr"><td colspan="2" class="c b">Part B Marks Obtained (%)</td><td colspan="2" class="c b">${partBPercentage}%</td></tr>
     <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${effectiveGrandMax}</td><td class="c">${grandTotal.toFixed(1)}</td></tr>
+    <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Marks Obtained (%)</td><td colspan="2" class="c">${totalPercentage}%</td></tr>
   </table>
   ${buildSignaturePage({
     facultyName: info.name || "",

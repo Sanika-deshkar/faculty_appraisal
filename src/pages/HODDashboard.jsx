@@ -1505,6 +1505,7 @@ export default function HODDashboard({
  const societyScore = sectionApplicability.society === "notApplicable" ? 0 : clampScore(society.reduce((total, row) =>total + societyRowScore(row), 0), 10);
  const industryScore = sumSectionScore(industry, 5);
  const acrScore = sumSectionScore(acr, 25, "score", SCORE_LIMITS.acrRow);
+ const teachingMax = sectionApplicability.projects === "notApplicable" ? 90 : 100;
  const effectivePartAMax = effectiveMaxScore(200, sectionApplicability, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]);
  const partATotal = clampScore(teachingRaw + stuFeedbackScore + deptScore + uniScore + societyScore + industryScore + acrScore, effectivePartAMax);
 
@@ -1522,10 +1523,14 @@ export default function HODDashboard({
  const fdpScore = fdps.reduce((s, r) =>s + clampScore(parseFloat(r.score) || 0, SCORE_LIMITS.fdpRow), 0);
  const trainScore = training.reduce((s, r) =>s + clampScore(parseFloat(r.score) || 0, SCORE_LIMITS.fdpRow), 0);
  const b8Score = clampScore(fdpScore + trainScore, 10);
+ const researchGuidanceProjectMax = sectionApplicability.research === "notApplicable" ? 45 : 75;
  const effectivePartBMax = effectiveMaxScore(375, sectionApplicability, [{ key: "research", max: 30 }]);
  const effectiveGrandMax = effectivePartAMax + effectivePartBMax;
  const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + b8Score, effectivePartBMax);
  const grandTotal = clampScore(partATotal + partBTotal, effectiveGrandMax);
+ const partAMarksPercentage = effectivePartAMax >0 ? ((partATotal / effectivePartAMax) * 100).toFixed(2) : "0.00";
+ const partBMarksPercentage = effectivePartBMax >0 ? ((partBTotal / effectivePartBMax) * 100).toFixed(2) : "0.00";
+ const totalMarksPercentage = effectiveGrandMax >0 ? ((grandTotal / effectiveGrandMax) * 100).toFixed(2) : "0.00";
 
  const gradeFunc = () =>{
  const p = pct(grandTotal, effectiveGrandMax);
@@ -1669,7 +1674,7 @@ export default function HODDashboard({
  await saveAppraisalDraftSection({
  facultyEmail: userEmail,
  academicYear: info.ay,
- totals: { partATotal, partBTotal, grandTotal },
+ totals: { partATotal, partBTotal, grandTotal, effectivePartAMax, effectivePartBMax, effectiveGrandMax },
  form: buildSelfDraftForm(nextStatus),
  docs,
  submitterProfile: profileFromsessionStorage(),
@@ -1724,7 +1729,7 @@ export default function HODDashboard({
  await submitAppraisal({
  facultyEmail: userEmail,
  academicYear: info.ay,
- totals: { partATotal, partBTotal, grandTotal },
+ totals: { partATotal, partBTotal, grandTotal, effectivePartAMax, effectivePartBMax, effectiveGrandMax },
  form: buildSelfDraftForm(),
  docs,
  submitterProfile,
@@ -1877,7 +1882,7 @@ export default function HODDashboard({
 
 <table class="st">
 <tr><th>Part A Summary</th><th>Max</th><th>Faculty Score</th></tr>
-<tr><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">100</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
+<tr><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">${teachingMax}</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
 <tr><td>Students' Feedback</td><td class="c">10</td><td class="c">${stuFeedbackScore.toFixed(1)}</td></tr>
 <tr><td>Departmental Activities</td><td class="c">20</td><td class="c">${deptScore.toFixed(1)}</td></tr>
 <tr><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
@@ -1885,6 +1890,7 @@ export default function HODDashboard({
 <tr><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
 <tr><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
 <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
+<tr class="tr"><td class="b">PART A MARKS OBTAINED (%)</td><td colspan="2" class="c b">${partAMarksPercentage}%</td></tr>
 </table>
 
 <div class="pb"></div>
@@ -1987,7 +1993,7 @@ export default function HODDashboard({
 <table class="st">
 <tr><th>Sr.No.</th><th>Criteria</th><th>Max Score</th><th>Faculty Score</th></tr>
 <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part A - Teaching Process</td></tr>
-<tr><td class="c">A</td><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">100</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
+<tr><td class="c">A</td><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">${teachingMax}</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
 <tr><td class="c">B</td><td>Students' Feedback</td><td class="c">10</td><td class="c">${stuFeedbackScore.toFixed(1)}</td></tr>
 <tr><td class="c">C</td><td>Departmental Activities</td><td class="c">20</td><td class="c">${deptScore.toFixed(1)}</td></tr>
 <tr><td class="c">D</td><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
@@ -1995,17 +2001,20 @@ export default function HODDashboard({
 <tr><td class="c">F</td><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
 <tr><td class="c">G</td><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
 <tr class="tr"><td colspan="2" class="c b">Part A Total</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
+<tr class="tr"><td colspan="2" class="c b">Part A Marks Obtained (%)</td><td colspan="2" class="c b">${partAMarksPercentage}%</td></tr>
 <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part B - Research and Academic Contribution</td></tr>
 <tr><td class="c">1</td><td>Research papers / journal publication</td><td class="c">120</td><td class="c">${journalScore.toFixed(1)}</td></tr>
 <tr><td class="c">2</td><td>Books authored / edited / book chapter</td><td class="c">50</td><td class="c">${bookScore.toFixed(1)}</td></tr>
 <tr><td class="c">3</td><td>ICT Teaching Learning Pedagogy</td><td class="c">20</td><td class="c">${ictScore.toFixed(1)}</td></tr>
-<tr><td class="c">4</td><td>Research guidance / projects / consultancy</td><td class="c">75</td><td class="c">${(researchScore + projectBScore + externalProjectScore).toFixed(1)}</td></tr>
+<tr><td class="c">4</td><td>Research guidance / projects / consultancy</td><td class="c">${researchGuidanceProjectMax}</td><td class="c">${(researchScore + projectBScore + externalProjectScore).toFixed(1)}</td></tr>
 <tr><td class="c">5</td><td>Patents, Awards, Fellowship</td><td class="c">50</td><td class="c">${(patentScore + awardScore).toFixed(1)}</td></tr>
 <tr><td class="c">6</td><td>Conferences / paper presentations</td><td class="c">30</td><td class="c">${confScore.toFixed(1)}</td></tr>
 <tr><td class="c">7</td><td>Research proposals / product development</td><td class="c">20</td><td class="c">${(proposalScore + productScore).toFixed(1)}</td></tr>
 <tr><td class="c">8</td><td>Self Development (FDP / Industrial Training)</td><td class="c">10</td><td class="c">${(fdpScore + trainScore).toFixed(1)}</td></tr>
 <tr class="tr"><td colspan="2" class="c b">Part B Total</td><td class="c b">${effectivePartBMax}</td><td class="c b">${partBTotal.toFixed(1)}</td></tr>
+<tr class="tr"><td colspan="2" class="c b">Part B Marks Obtained (%)</td><td colspan="2" class="c b">${partBMarksPercentage}%</td></tr>
 <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${effectiveGrandMax}</td><td class="c">${grandTotal.toFixed(1)}</td></tr>
+<tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Marks Obtained (%)</td><td colspan="2" class="c">${totalMarksPercentage}%</td></tr>
 </table>
 
 <h3 style="text-align:center;font-size:14px;background:#d9d9d9;padding:6px;margin-top:16px">DECLARATION BY FACULTY</h3>

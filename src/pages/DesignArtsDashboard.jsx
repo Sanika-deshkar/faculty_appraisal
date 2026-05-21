@@ -234,17 +234,28 @@ const calculateDesignArtsTotals = (form, scoreKey = "score") =>{
  return { partA, partB, total: clampScore(partA + partB, maxScores.grand), maxScores };
 };
 
+const effectivePartMax = (baseMax, applicability = {}, sections = []) =>
+ effectiveMaxScore(baseMax, applicability, sections.filter((section) =>section.key !== "fdps" && section.key !== "training"));
+
+const effectivePartBMax = (baseMax, applicability = {}) =>{
+ const withoutB8 = effectivePartMax(baseMax, applicability, PART_B_SECTIONS);
+ return applicability.fdps === "notApplicable" && applicability.training === "notApplicable"
+ ? Math.max(0, withoutB8 - 20)
+ : withoutB8;
+};
+
 const getDesignArtsEffectiveMaxScores = (form = {}) =>{
  const applicability = form.sectionApplicability || {};
- const partA = effectiveMaxScore(PART_A_MAX, applicability, [
- PART_A_SECTIONS.find((section) =>section.key === "projects"),
- PART_A_SECTIONS.find((section) =>section.key === "society"),
- ].filter(Boolean));
- const partB = effectiveMaxScore(PART_B_MAX, applicability, [
- PART_B_SECTIONS.find((section) =>section.key === "research"),
- ].filter(Boolean));
+ const partA = effectivePartMax(PART_A_MAX, applicability, PART_A_SECTIONS);
+ const partB = effectivePartBMax(PART_B_MAX, applicability);
  return { partA, partB, grand: partA + partB };
 };
+
+const summaryRowIfApplicable = (applicability = {}, key, row) =>
+ applicability[key] === "notApplicable" ? [] : [row];
+
+const b8SummaryRowIfApplicable = (applicability = {}, row) =>
+ applicability.fdps === "notApplicable" && applicability.training === "notApplicable" ? [] : [row];
 
 const ensureIds = (rows) =>Array.isArray(rows) ? rows.map((row) =>(row._id ? row : { ...row, _id: uid() })) : rows;
 
@@ -1067,30 +1078,30 @@ export function DesignArtsAuthorityReviewPanel({ person, reviewerRole, onBack, o
  }),
  detailedSummaryRows: [
  { isHeader: true, label: "Part A - Teaching Process & Academic Activities" },
- { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 40, score: lecScore },
- { id: "A(ii)", label: "Course File", max: 20, score: cfScore },
+ ...summaryRowIfApplicable(applicability, "lectures", { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 40, score: lecScore }),
+ ...summaryRowIfApplicable(applicability, "courseFile", { id: "A(ii)", label: "Course File", max: 20, score: cfScore }),
  { id: "A(iii)", label: "Innovative Teaching-Learning Methodologies", max: 10, score: innovScore },
- ...(applicability.projects !== "notApplicable" ? [{ id: "A(iv)", label: "Project Guidance", max: 20, score: rowSum("projects", 20) }] : []),
- { id: "A(v)", label: "Qualification Enhancement", max: 10, score: rowSum("quals", 10) },
- { id: "A(vi)", label: "Students' Feedback", max: 10, score: feedbackSectionScore(reviewerForm.feedback || [], 10) },
- { id: "A(vii)", label: "Departmental / School Activities", max: 20, score: rowSum("deptActs", 20) },
- { id: "A(viii)", label: "University Level Activities", max: 30, score: rowSum("uniActs", 30) },
- { id: "A(ix)", label: "Contribution to Society", max: 10, score: rowSum("society", 10) },
- { id: "A(x)", label: "Industry Connect", max: 5, score: rowSum("industry", 5) },
- { id: "A(xi)", label: "Annual Confidential Report (ACR)", max: 25, score: rowSum("acr", 25) },
+ ...summaryRowIfApplicable(applicability, "projects", { id: "A(iv)", label: "Project Guidance", max: 20, score: rowSum("projects", 20) }),
+ ...summaryRowIfApplicable(applicability, "quals", { id: "A(v)", label: "Qualification Enhancement", max: 10, score: rowSum("quals", 10) }),
+ ...summaryRowIfApplicable(applicability, "feedback", { id: "A(vi)", label: "Students' Feedback", max: 10, score: feedbackSectionScore(reviewerForm.feedback || [], 10) }),
+ ...summaryRowIfApplicable(applicability, "deptActs", { id: "A(vii)", label: "Departmental / School Activities", max: 20, score: rowSum("deptActs", 20) }),
+ ...summaryRowIfApplicable(applicability, "uniActs", { id: "A(viii)", label: "University Level Activities", max: 30, score: rowSum("uniActs", 30) }),
+ ...summaryRowIfApplicable(applicability, "society", { id: "A(ix)", label: "Contribution to Society", max: 10, score: rowSum("society", 10) }),
+ ...summaryRowIfApplicable(applicability, "industry", { id: "A(x)", label: "Industry Connect", max: 5, score: rowSum("industry", 5) }),
+ ...summaryRowIfApplicable(applicability, "acr", { id: "A(xi)", label: "Annual Confidential Report (ACR)", max: 25, score: rowSum("acr", 25) }),
  { isTotal: true, label: "Part A Total", max: maxScores.partA, score: partATotal },
  { isHeader: true, label: "Part B - Research & Academic Contributions" },
- { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: rowSum("journals", 80) },
- { id: "B2", label: "Articles / Chapters in Books", max: 60, score: rowSum("books", 60) },
- { id: "B3", label: "ICT Mediated Teaching-Learning Pedagogy", max: 50, score: rowSum("ict", 50) },
- ...(applicability.research !== "notApplicable" ? [{ id: "B4(a)", label: "Research Guidance - PhD / PG", max: 30, score: rowSum("research", 30) }] : []),
- { id: "B4(b)", label: "Internal Research Projects", max: 15, score: rowSum("internalProjects", 15) },
- { id: "B4(c)", label: "External Research / Consultancy Projects", max: 30, score: rowSum("externalProjects", 30) },
- { id: "B5(a)", label: "IPR / Copyright / Patent", max: 40, score: rowSum("ipr", 40) },
- { id: "B5(b)", label: "Research Awards", max: 10, score: rowSum("awards", 10) },
- { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: rowSum("confs", 30) },
- { id: "B7", label: "Research Proposals", max: 10, score: rowSum("proposals", 10) },
- { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score },
+ ...summaryRowIfApplicable(applicability, "journals", { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: rowSum("journals", 80) }),
+ ...summaryRowIfApplicable(applicability, "books", { id: "B2", label: "Articles / Chapters in Books", max: 60, score: rowSum("books", 60) }),
+ ...summaryRowIfApplicable(applicability, "ict", { id: "B3", label: "ICT Mediated Teaching-Learning Pedagogy", max: 50, score: rowSum("ict", 50) }),
+ ...summaryRowIfApplicable(applicability, "research", { id: "B4(a)", label: "Research Guidance - PhD / PG", max: 30, score: rowSum("research", 30) }),
+ ...summaryRowIfApplicable(applicability, "internalProjects", { id: "B4(b)", label: "Internal Research Projects", max: 15, score: rowSum("internalProjects", 15) }),
+ ...summaryRowIfApplicable(applicability, "externalProjects", { id: "B4(c)", label: "External Research / Consultancy Projects", max: 30, score: rowSum("externalProjects", 30) }),
+ ...summaryRowIfApplicable(applicability, "ipr", { id: "B5(a)", label: "IPR / Copyright / Patent", max: 40, score: rowSum("ipr", 40) }),
+ ...summaryRowIfApplicable(applicability, "awards", { id: "B5(b)", label: "Research Awards", max: 10, score: rowSum("awards", 10) }),
+ ...summaryRowIfApplicable(applicability, "confs", { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: rowSum("confs", 30) }),
+ ...summaryRowIfApplicable(applicability, "proposals", { id: "B7", label: "Research Proposals", max: 10, score: rowSum("proposals", 10) }),
+ ...b8SummaryRowIfApplicable(applicability, { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score }),
  { isTotal: true, label: "Part B Total", max: maxScores.partB, score: partBTotal },
  { isGrandTotal: true, label: "Grand Total (Part A + Part B)", max: maxScores.grand, score: grandTotal },
  ],
@@ -1285,7 +1296,14 @@ export default function DesignArtsDashboard({ fixedRole }) {
  academicYear,
  form: formToSave,
  docs,
- totals: { partATotal: totals.partA, partBTotal: totals.partB, grandTotal: totals.total },
+ totals: {
+ partATotal: totals.partA,
+ partBTotal: totals.partB,
+ grandTotal: totals.total,
+ effectivePartAMax: totals.maxScores.partA,
+ effectivePartBMax: totals.maxScores.partB,
+ effectiveGrandMax: totals.maxScores.grand,
+ },
  submitterProfile: { ...profile, school: currentSchoolValue, appraisal_role: role },
  sectionSaveStatus: nextStatus,
  });
@@ -1330,7 +1348,14 @@ export default function DesignArtsDashboard({ fixedRole }) {
  await submitAppraisal({
  facultyEmail: userEmail,
  academicYear,
- totals: { partATotal: totals.partA, partBTotal: totals.partB, grandTotal: totals.total },
+ totals: {
+ partATotal: totals.partA,
+ partBTotal: totals.partB,
+ grandTotal: totals.total,
+ effectivePartAMax: totals.maxScores.partA,
+ effectivePartBMax: totals.maxScores.partB,
+ effectiveGrandMax: totals.maxScores.grand,
+ },
  form: normalizedForm,
  docs,
  submitterProfile,
@@ -1405,30 +1430,30 @@ export default function DesignArtsDashboard({ fixedRole }) {
  })),
  detailedSummaryRows: [
  { isHeader: true, label: "Part A - Teaching Process & Academic Activities" },
- { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 40, score: lecScore },
- { id: "A(ii)", label: "Course File", max: 20, score: cfScore },
+ ...summaryRowIfApplicable(applicability, "lectures", { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 40, score: lecScore }),
+ ...summaryRowIfApplicable(applicability, "courseFile", { id: "A(ii)", label: "Course File", max: 20, score: cfScore }),
  { id: "A(iii)", label: "Innovative Teaching-Learning Methodologies", max: 10, score: innovScore },
- ...(applicability.projects !== "notApplicable" ? [{ id: "A(iv)", label: "Project Guidance", max: 20, score: rowSum("projects", 20) }] : []),
- { id: "A(v)", label: "Qualification Enhancement", max: 10, score: rowSum("quals", 10) },
- { id: "A(vi)", label: "Students' Feedback", max: 10, score: feedbackSectionScore(form.feedback || [], 10) },
- { id: "A(vii)", label: "Departmental / School Activities", max: 20, score: rowSum("deptActs", 20) },
- { id: "A(viii)", label: "University Level Activities", max: 30, score: rowSum("uniActs", 30) },
- { id: "A(ix)", label: "Contribution to Society", max: 10, score: rowSum("society", 10) },
- { id: "A(x)", label: "Industry Connect", max: 5, score: rowSum("industry", 5) },
- { id: "A(xi)", label: "Annual Confidential Report (ACR)", max: 25, score: rowSum("acr", 25) },
+ ...summaryRowIfApplicable(applicability, "projects", { id: "A(iv)", label: "Project Guidance", max: 20, score: rowSum("projects", 20) }),
+ ...summaryRowIfApplicable(applicability, "quals", { id: "A(v)", label: "Qualification Enhancement", max: 10, score: rowSum("quals", 10) }),
+ ...summaryRowIfApplicable(applicability, "feedback", { id: "A(vi)", label: "Students' Feedback", max: 10, score: feedbackSectionScore(form.feedback || [], 10) }),
+ ...summaryRowIfApplicable(applicability, "deptActs", { id: "A(vii)", label: "Departmental / School Activities", max: 20, score: rowSum("deptActs", 20) }),
+ ...summaryRowIfApplicable(applicability, "uniActs", { id: "A(viii)", label: "University Level Activities", max: 30, score: rowSum("uniActs", 30) }),
+ ...summaryRowIfApplicable(applicability, "society", { id: "A(ix)", label: "Contribution to Society", max: 10, score: rowSum("society", 10) }),
+ ...summaryRowIfApplicable(applicability, "industry", { id: "A(x)", label: "Industry Connect", max: 5, score: rowSum("industry", 5) }),
+ ...summaryRowIfApplicable(applicability, "acr", { id: "A(xi)", label: "Annual Confidential Report (ACR)", max: 25, score: rowSum("acr", 25) }),
  { isTotal: true, label: "Part A Total", max: maxScores.partA, score: partATotal },
  { isHeader: true, label: "Part B - Research & Academic Contributions" },
- { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: rowSum("journals", 80) },
- { id: "B2", label: "Articles / Chapters in Books", max: 60, score: rowSum("books", 60) },
- { id: "B3", label: "ICT Mediated Teaching-Learning Pedagogy", max: 50, score: rowSum("ict", 50) },
- ...(applicability.research !== "notApplicable" ? [{ id: "B4(a)", label: "Research Guidance - PhD / PG", max: 30, score: rowSum("research", 30) }] : []),
- { id: "B4(b)", label: "Internal Research Projects", max: 15, score: rowSum("internalProjects", 15) },
- { id: "B4(c)", label: "External Research / Consultancy Projects", max: 30, score: rowSum("externalProjects", 30) },
- { id: "B5(a)", label: "IPR / Copyright / Patent", max: 40, score: rowSum("ipr", 40) },
- { id: "B5(b)", label: "Research Awards", max: 10, score: rowSum("awards", 10) },
- { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: rowSum("confs", 30) },
- { id: "B7", label: "Research Proposals", max: 10, score: rowSum("proposals", 10) },
- { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score },
+ ...summaryRowIfApplicable(applicability, "journals", { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: rowSum("journals", 80) }),
+ ...summaryRowIfApplicable(applicability, "books", { id: "B2", label: "Articles / Chapters in Books", max: 60, score: rowSum("books", 60) }),
+ ...summaryRowIfApplicable(applicability, "ict", { id: "B3", label: "ICT Mediated Teaching-Learning Pedagogy", max: 50, score: rowSum("ict", 50) }),
+ ...summaryRowIfApplicable(applicability, "research", { id: "B4(a)", label: "Research Guidance - PhD / PG", max: 30, score: rowSum("research", 30) }),
+ ...summaryRowIfApplicable(applicability, "internalProjects", { id: "B4(b)", label: "Internal Research Projects", max: 15, score: rowSum("internalProjects", 15) }),
+ ...summaryRowIfApplicable(applicability, "externalProjects", { id: "B4(c)", label: "External Research / Consultancy Projects", max: 30, score: rowSum("externalProjects", 30) }),
+ ...summaryRowIfApplicable(applicability, "ipr", { id: "B5(a)", label: "IPR / Copyright / Patent", max: 40, score: rowSum("ipr", 40) }),
+ ...summaryRowIfApplicable(applicability, "awards", { id: "B5(b)", label: "Research Awards", max: 10, score: rowSum("awards", 10) }),
+ ...summaryRowIfApplicable(applicability, "confs", { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: rowSum("confs", 30) }),
+ ...summaryRowIfApplicable(applicability, "proposals", { id: "B7", label: "Research Proposals", max: 10, score: rowSum("proposals", 10) }),
+ ...b8SummaryRowIfApplicable(applicability, { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score }),
  { isTotal: true, label: "Part B Total", max: maxScores.partB, score: partBTotal },
  { isGrandTotal: true, label: "Grand Total (Part A + Part B)", max: maxScores.grand, score: grandTotal },
  ],

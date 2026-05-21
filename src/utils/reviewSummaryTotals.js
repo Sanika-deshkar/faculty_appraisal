@@ -15,6 +15,15 @@ const numericFrom = (sources, keys, fallback = 0) => {
 const sectionApplicabilityFrom = (sources) =>
   sources.find((source = {}) => source?.sectionApplicability)?.sectionApplicability || {};
 
+const effectiveMaxFromApplicability = (baseMax, applicability = {}, sections = []) =>
+  Math.max(
+    0,
+    n(baseMax) - sections.reduce(
+      (total, section) => applicability?.[section.key] === "notApplicable" ? total + n(section.max) : total,
+      0,
+    ),
+  );
+
 const parseMaybeJson = (value) => {
   if (typeof value !== "string") return value;
   const trimmed = value.trim();
@@ -173,9 +182,9 @@ export const standardSubmittedScoreSummary = (subject = {}, fallback = {}) => {
 
   const sectionApplicability = sectionApplicabilityFrom(sources);
   const inferredPartAMax = n(fallback.partAMax ?? fallback.effectivePartAMax) ||
-    (sectionApplicability.projects === "notApplicable" ? 190 : 200);
+    effectiveMaxFromApplicability(200, sectionApplicability, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]);
   const inferredPartBMax = n(fallback.partBMax ?? fallback.effectivePartBMax) ||
-    (sectionApplicability.research === "notApplicable" ? 345 : 375);
+    effectiveMaxFromApplicability(375, sectionApplicability, [{ key: "research", max: 30 }]);
 
   const partAMax = numericFrom(sources, [
     "partAMax", "part_a_max", "effectivePartAMax", "effective_part_a_max", "maxPartA",

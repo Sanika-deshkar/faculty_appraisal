@@ -1758,7 +1758,7 @@ export default function DirectorDashboard() {
  await saveAppraisalDraftSection({
  facultyEmail: userEmail,
  academicYear: info.ay,
- totals: { partATotal, partBTotal, grandTotal },
+ totals: { partATotal, partBTotal, grandTotal, effectivePartAMax, effectivePartBMax, effectiveGrandMax },
  form: buildSelfDraftForm(nextStatus),
  docs,
  submitterProfile: profileFromsessionStorage(),
@@ -1813,7 +1813,7 @@ export default function DirectorDashboard() {
  await submitAppraisal({
  facultyEmail: userEmail,
  academicYear: info.ay,
- totals: { partATotal, partBTotal, grandTotal },
+ totals: { partATotal, partBTotal, grandTotal, effectivePartAMax, effectivePartBMax, effectiveGrandMax },
  form: buildSelfDraftForm(),
  docs,
  submitterProfile,

@@ -226,17 +226,28 @@ const calculateMediaTotals = (form, scoreKey = "score") =>{
  return { partA, partB, total: clampScore(partA + partB, maxScores.grand), maxScores };
 };
 
+const effectivePartMax = (baseMax, applicability = {}, sections = []) =>
+ effectiveMaxScore(baseMax, applicability, sections.filter((section) =>section.key !== "fdps" && section.key !== "training"));
+
+const effectivePartBMax = (baseMax, applicability = {}) =>{
+ const withoutB8 = effectivePartMax(baseMax, applicability, PART_B_SECTIONS);
+ return applicability.fdps === "notApplicable" && applicability.training === "notApplicable"
+ ? Math.max(0, withoutB8 - 20)
+ : withoutB8;
+};
+
 const getMediaEffectiveMaxScores = (form = {}) =>{
  const applicability = form.sectionApplicability || {};
- const partA = effectiveMaxScore(PART_A_MAX, applicability, [
- PART_A_SECTIONS.find((section) =>section.key === "projects"),
- PART_A_SECTIONS.find((section) =>section.key === "society"),
- ].filter(Boolean));
- const partB = effectiveMaxScore(PART_B_MAX, applicability, [
- PART_B_SECTIONS.find((section) =>section.key === "research"),
- ].filter(Boolean));
+ const partA = effectivePartMax(PART_A_MAX, applicability, PART_A_SECTIONS);
+ const partB = effectivePartBMax(PART_B_MAX, applicability);
  return { partA, partB, grand: partA + partB };
 };
+
+const summaryRowIfApplicable = (applicability = {}, key, row) =>
+ applicability[key] === "notApplicable" ? [] : [row];
+
+const b8SummaryRowIfApplicable = (applicability = {}, row) =>
+ applicability.fdps === "notApplicable" && applicability.training === "notApplicable" ? [] : [row];
 
 const mergeForm = (base, incoming = {}) =>({
  ...base,
@@ -1173,30 +1184,30 @@ export function MediaCommAuthorityReviewPanel({ person, reviewerRole, onBack, on
  }),
  detailedSummaryRows: [
  { isHeader: true, label: "Part A - Teaching Process & Academic Activities" },
- { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 50, score: lecScore },
- { id: "A(ii)", label: "Course File", max: 20, score: cfScore },
+ ...summaryRowIfApplicable(applicability, "lectures", { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 50, score: lecScore }),
+ ...summaryRowIfApplicable(applicability, "courseFile", { id: "A(ii)", label: "Course File", max: 20, score: cfScore }),
  { id: "A(iii)", label: "Innovative Teaching-Learning Methodologies", max: 10, score: innovScore },
- ...(applicability.projects !== "notApplicable" ? [{ id: "A(iv)", label: "Project Guidance", max: 10, score: projScore }] : []),
- { id: "A(v)", label: "Qualification Enhancement", max: 10, score: qualScore },
- { id: "A(vi)", label: "Students' Feedback", max: 10, score: fbScore },
- { id: "A(vii)", label: "Departmental / School Activities", max: 20, score: deptScore },
- { id: "A(viii)", label: "University Level Activities", max: 30, score: uniScore },
- { id: "A(ix)", label: "Contribution to Society", max: 10, score: socScore },
- { id: "A(x)", label: "Annual Confidential Report (ACR)", max: 25, score: acrScore },
+ ...summaryRowIfApplicable(applicability, "projects", { id: "A(iv)", label: "Project Guidance", max: 10, score: projScore }),
+ ...summaryRowIfApplicable(applicability, "quals", { id: "A(v)", label: "Qualification Enhancement", max: 10, score: qualScore }),
+ ...summaryRowIfApplicable(applicability, "feedback", { id: "A(vi)", label: "Students' Feedback", max: 10, score: fbScore }),
+ ...summaryRowIfApplicable(applicability, "deptActs", { id: "A(vii)", label: "Departmental / School Activities", max: 20, score: deptScore }),
+ ...summaryRowIfApplicable(applicability, "uniActs", { id: "A(viii)", label: "University Level Activities", max: 30, score: uniScore }),
+ ...summaryRowIfApplicable(applicability, "society", { id: "A(ix)", label: "Contribution to Society", max: 10, score: socScore }),
+ ...summaryRowIfApplicable(applicability, "acr", { id: "A(x)", label: "Annual Confidential Report (ACR)", max: 25, score: acrScore }),
  { isTotal: true, label: "Part A Total", max: maxScores.partA, score: partATotal },
  { isHeader: true, label: "Part B - Research & Academic Contributions" },
- { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: b1iScore },
- { id: "B1(ii)", label: "Popular Writings, Film & Documentary", max: 40, score: b1iiScore },
- { id: "B2", label: "Articles / Chapters in Books", max: 60, score: b2Score },
- { id: "B3", label: "ICT Mediated Teaching-Learning Pedagogy / New Curricula", max: 30, score: b3Score },
- ...(applicability.research !== "notApplicable" ? [{ id: "B4(a)", label: "Research Guidance - PhD / PG", max: 30, score: b4aScore }] : []),
- { id: "B4(b)", label: "Internal Research Projects", max: 15, score: b4bScore },
- { id: "B4(c)", label: "External Research Projects", max: 30, score: b4cScore },
- { id: "B5", label: "Research Awards", max: 10, score: b5Score },
- { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: b6Score },
- { id: "B7(a)", label: "Research Proposals", max: 10, score: b7aScore },
- { id: "B7(b)", label: "Products Developed / Used", max: 20, score: b7bScore },
- { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score },
+ ...summaryRowIfApplicable(applicability, "journals", { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: b1iScore }),
+ ...summaryRowIfApplicable(applicability, "popularWritings", { id: "B1(ii)", label: "Popular Writings, Film & Documentary", max: 40, score: b1iiScore }),
+ ...summaryRowIfApplicable(applicability, "books", { id: "B2", label: "Articles / Chapters in Books", max: 60, score: b2Score }),
+ ...summaryRowIfApplicable(applicability, "ict", { id: "B3", label: "ICT Mediated Teaching-Learning Pedagogy / New Curricula", max: 30, score: b3Score }),
+ ...summaryRowIfApplicable(applicability, "research", { id: "B4(a)", label: "Research Guidance - PhD / PG", max: 30, score: b4aScore }),
+ ...summaryRowIfApplicable(applicability, "internalProjects", { id: "B4(b)", label: "Internal Research Projects", max: 15, score: b4bScore }),
+ ...summaryRowIfApplicable(applicability, "externalProjects", { id: "B4(c)", label: "External Research Projects", max: 30, score: b4cScore }),
+ ...summaryRowIfApplicable(applicability, "awards", { id: "B5", label: "Research Awards", max: 10, score: b5Score }),
+ ...summaryRowIfApplicable(applicability, "confs", { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: b6Score }),
+ ...summaryRowIfApplicable(applicability, "proposals", { id: "B7(a)", label: "Research Proposals", max: 10, score: b7aScore }),
+ ...summaryRowIfApplicable(applicability, "products", { id: "B7(b)", label: "Products Developed / Used", max: 20, score: b7bScore }),
+ ...b8SummaryRowIfApplicable(applicability, { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score }),
  { isTotal: true, label: "Part B Total", max: maxScores.partB, score: partBTotal },
  { isGrandTotal: true, label: "Grand Total (Part A + Part B)", max: maxScores.grand, score: grandTotal },
  ],
@@ -1379,7 +1390,14 @@ export default function MediaCommDashboard({ fixedRole }) {
  academicYear,
  form: { ...form, sectionSaveStatus: nextStatus },
  docs,
- totals: { partATotal: totals.partA, partBTotal: totals.partB, grandTotal: totals.total },
+ totals: {
+ partATotal: totals.partA,
+ partBTotal: totals.partB,
+ grandTotal: totals.total,
+ effectivePartAMax: totals.maxScores.partA,
+ effectivePartBMax: totals.maxScores.partB,
+ effectiveGrandMax: totals.maxScores.grand,
+ },
  submitterProfile: { ...profile, appraisal_role: role },
  sectionSaveStatus: nextStatus,
  });
@@ -1421,7 +1439,14 @@ export default function MediaCommDashboard({ fixedRole }) {
  await submitAppraisal({
  facultyEmail: userEmail,
  academicYear,
- totals: { partATotal: totals.partA, partBTotal: totals.partB, grandTotal: totals.total },
+ totals: {
+ partATotal: totals.partA,
+ partBTotal: totals.partB,
+ grandTotal: totals.total,
+ effectivePartAMax: totals.maxScores.partA,
+ effectivePartBMax: totals.maxScores.partB,
+ effectiveGrandMax: totals.maxScores.grand,
+ },
  form: normalizedForm,
  docs,
  submitterProfile,
@@ -1538,30 +1563,30 @@ export default function MediaCommDashboard({ fixedRole }) {
  })),
  detailedSummaryRows: [
  { isHeader: true, label: "Part A - Teaching Process & Academic Activities" },
- { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 50, score: lecScore },
- { id: "A(ii)", label: "Course File", max: 20, score: cfScore },
+ ...summaryRowIfApplicable(applicability, "lectures", { id: "A(i)", label: "Lectures / Tutorials / Practicals", max: 50, score: lecScore }),
+ ...summaryRowIfApplicable(applicability, "courseFile", { id: "A(ii)", label: "Course File", max: 20, score: cfScore }),
  { id: "A(iii)", label: "Innovative Teaching-Learning Methodologies", max: 10, score: innovScore },
- ...(applicability.projects !== "notApplicable" ? [{ id: "A(iv)", label: "Project Guidance", max: 10, score: projScore }] : []),
- { id: "A(v)", label: "Qualification Enhancement", max: 10, score: qualScore },
- { id: "A(vi)", label: "Students' Feedback", max: 10, score: fbScore },
- { id: "A(vii)", label: "Departmental / School Activities", max: 20, score: deptScore },
- { id: "A(viii)", label: "University Level Activities", max: 30, score: uniScore },
- { id: "A(ix)", label: "Contribution to Society", max: 10, score: socScore },
- { id: "A(x)", label: "Annual Confidential Report (ACR)", max: 25, score: acrScore },
+ ...summaryRowIfApplicable(applicability, "projects", { id: "A(iv)", label: "Project Guidance", max: 10, score: projScore }),
+ ...summaryRowIfApplicable(applicability, "quals", { id: "A(v)", label: "Qualification Enhancement", max: 10, score: qualScore }),
+ ...summaryRowIfApplicable(applicability, "feedback", { id: "A(vi)", label: "Students' Feedback", max: 10, score: fbScore }),
+ ...summaryRowIfApplicable(applicability, "deptActs", { id: "A(vii)", label: "Departmental / School Activities", max: 20, score: deptScore }),
+ ...summaryRowIfApplicable(applicability, "uniActs", { id: "A(viii)", label: "University Level Activities", max: 30, score: uniScore }),
+ ...summaryRowIfApplicable(applicability, "society", { id: "A(ix)", label: "Contribution to Society", max: 10, score: socScore }),
+ ...summaryRowIfApplicable(applicability, "acr", { id: "A(x)", label: "Annual Confidential Report (ACR)", max: 25, score: acrScore }),
  { isTotal: true, label: "Part A Total", max: maxScores.partA, score: partATotal },
  { isHeader: true, label: "Part B - Research & Academic Contributions" },
- { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: b1iScore },
- { id: "B1(ii)", label: "Popular Writings, Film & Documentary", max: 40, score: b1iiScore },
- { id: "B2", label: "Articles / Chapters in Books", max: 60, score: b2Score },
- { id: "B3", label: "ICT Mediated Teaching-Learning Pedagogy / New Curricula", max: 30, score: b3Score },
- ...(applicability.research !== "notApplicable" ? [{ id: "B4(a)", label: "Research Guidance - PhD / PG", max: 30, score: b4aScore }] : []),
- { id: "B4(b)", label: "Internal Research Projects", max: 15, score: b4bScore },
- { id: "B4(c)", label: "External Research Projects", max: 30, score: b4cScore },
- { id: "B5", label: "Research Awards", max: 10, score: b5Score },
- { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: b6Score },
- { id: "B7(a)", label: "Research Proposals", max: 10, score: b7aScore },
- { id: "B7(b)", label: "Products Developed / Used", max: 20, score: b7bScore },
- { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score },
+ ...summaryRowIfApplicable(applicability, "journals", { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: b1iScore }),
+ ...summaryRowIfApplicable(applicability, "popularWritings", { id: "B1(ii)", label: "Popular Writings, Film & Documentary", max: 40, score: b1iiScore }),
+ ...summaryRowIfApplicable(applicability, "books", { id: "B2", label: "Articles / Chapters in Books", max: 60, score: b2Score }),
+ ...summaryRowIfApplicable(applicability, "ict", { id: "B3", label: "ICT Mediated Teaching-Learning Pedagogy / New Curricula", max: 30, score: b3Score }),
+ ...summaryRowIfApplicable(applicability, "research", { id: "B4(a)", label: "Research Guidance - PhD / PG", max: 30, score: b4aScore }),
+ ...summaryRowIfApplicable(applicability, "internalProjects", { id: "B4(b)", label: "Internal Research Projects", max: 15, score: b4bScore }),
+ ...summaryRowIfApplicable(applicability, "externalProjects", { id: "B4(c)", label: "External Research Projects", max: 30, score: b4cScore }),
+ ...summaryRowIfApplicable(applicability, "awards", { id: "B5", label: "Research Awards", max: 10, score: b5Score }),
+ ...summaryRowIfApplicable(applicability, "confs", { id: "B6", label: "Conferences / Seminars / Workshops", max: 30, score: b6Score }),
+ ...summaryRowIfApplicable(applicability, "proposals", { id: "B7(a)", label: "Research Proposals", max: 10, score: b7aScore }),
+ ...summaryRowIfApplicable(applicability, "products", { id: "B7(b)", label: "Products Developed / Used", max: 20, score: b7bScore }),
+ ...b8SummaryRowIfApplicable(applicability, { id: "B8", label: "FDP / Self Development + Industrial Training", max: 20, score: b8Score }),
  { isTotal: true, label: "Part B Total", max: maxScores.partB, score: partBTotal },
  { isGrandTotal: true, label: "Grand Total (Part A + Part B)", max: maxScores.grand, score: grandTotal },
  ],
@@ -1727,13 +1752,14 @@ export default function MediaCommDashboard({ fixedRole }) {
  {queue.map((item) =>{
  const initials = (item.name || "?").trim().split(/\s+/).map(w =>w[0]).join("").substring(0, 2).toUpperCase();
  const mergedItem = mergeForm(emptyMediaForm(), item);
+ const facultyTotals = calculateMediaTotals(mergedItem, "score");
  const reviewerTotals = calculateMediaTotals(mergedItem, role);
  const hasReviewerScores = reviewerTotals.partA >0 || reviewerTotals.partB >0 || reviewerTotals.total >0;
  const reviewComplete = isReviewerReviewComplete(item, role) || hasReviewerScores;
  const maxScores = {
- partA: n(item.effectivePartAMax) || PART_A_MAX,
- partB: n(item.effectivePartBMax) || PART_B_MAX,
- grand: n(item.effectiveGrandMax) || (n(item.effectivePartAMax) || PART_A_MAX) + (n(item.effectivePartBMax) || PART_B_MAX),
+ partA: n(item.effectivePartAMax) || facultyTotals.maxScores.partA,
+ partB: n(item.effectivePartBMax) || facultyTotals.maxScores.partB,
+ grand: n(item.effectiveGrandMax) || facultyTotals.maxScores.grand,
  };
  const itemTotals = {
  partA: n(item.selfPartA ?? item.partATotal),
