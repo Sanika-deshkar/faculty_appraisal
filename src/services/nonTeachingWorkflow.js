@@ -6,6 +6,12 @@ import {
 } from "../constants/nonTeachingHierarchy";
 import { profileFromsessionStorage } from "../utils/hierarchy";
 import { clampScore } from "../utils/appraisalFormUtils";
+import {
+  WORKFLOW_STATUSES,
+  normalizeApprovalWorkflow,
+  normalizeWorkflowStatus,
+  workflowSourceFrom,
+} from "../utils/workflow";
 import { api } from "./api";
 
 export const NON_TEACHING_STATUS = {
@@ -164,6 +170,45 @@ export const nonTeachingRoleLabel = (role) =>
   role === "vc"
     ? "VC"
     : NON_TEACHING_ROLE_LABELS[normalizeNonTeachingRole(role, role)] || role;
+
+const workflowDesignationForRole = (role) =>{
+  const normalizedRole = normalizeNonTeachingRole(role, role);
+  if (normalizedRole === "non_teaching_staff" || normalizedRole === "self") return "Staff";
+  if (normalizedRole === "reporting_officer" || normalizedRole === "ro") return nonTeachingRoleLabel("reporting_officer");
+  return nonTeachingRoleLabel(normalizedRole);
+};
+
+const workflowStepStatusForRole = (status, role) =>{
+  const normalizedStatus = normalizeNonTeachingStatus(status);
+  if (normalizedStatus === NON_TEACHING_STATUS.VC_APPROVED) return WORKFLOW_STATUSES.APPROVED;
+  if (role === "ro") {
+    return [
+      NON_TEACHING_STATUS.RO_REVIEWED,
+      NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW,
+      NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
+    ].includes(normalizedStatus)
+      ? WORKFLOW_STATUSES.APPROVED
+      : normalizedStatus === NON_TEACHING_STATUS.PENDING_RO_REVIEW
+        ? WORKFLOW_STATUSES.PENDING
+        : WORKFLOW_STATUSES.WAITING;
+  }
+  if (role === "registrar") {
+    return normalizedStatus === NON_TEACHING_STATUS.REGISTRAR_REVIEWED
+      ? WORKFLOW_STATUSES.APPROVED
+      : [
+          NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW,
+          NON_TEACHING_STATUS.RO_REVIEWED,
+        ].includes(normalizedStatus)
+        ? WORKFLOW_STATUSES.PENDING
+        : WORKFLOW_STATUSES.WAITING;
+  }
+  if (role === "vc") {
+    return normalizedStatus === NON_TEACHING_STATUS.REGISTRAR_REVIEWED
+      ? WORKFLOW_STATUSES.PENDING
+      : WORKFLOW_STATUSES.WAITING;
+  }
+  return WORKFLOW_STATUSES.WAITING;
+};
 
 export const createEmptyPartB = () =>
   Object.fromEntries(RATING_SECTIONS.map((section) => [section.key, {}]));
@@ -362,6 +407,7 @@ export const normalizeNonTeachingForm = (
         base.partB.regular,
     },
     docs: normalizeDocsMap(form.docs || base.docs),
+    workflow: workflowSourceFrom({ ...profile, ...form, form, payload: form }) || base.workflow,
   };
 
   merged.status = normalizeNonTeachingStatus(form.status || base.status);
@@ -550,7 +596,61 @@ export const isPendingForNonTeachingReviewer = (statusOrItem = {}, role) => {
   return expectedPendingStatuses(role).includes(normalizeNonTeachingStatus(status));
 };
 
+const roleKeyForWorkflowStep = (step = {}, index = 0, steps = []) =>{
+  const explicit = firstNonEmpty(step.roleKey, step.role_key, step.reviewerRole, step.reviewer_role, step.role);
+  const normalizedExplicit = normalizeNonTeachingRole(explicit, explicit);
+  if (normalizedExplicit === "reporting_officer") return "ro";
+  if (normalizedExplicit === "registrar") return "registrar";
+  if (normalizedExplicit === "vc") return "vc";
+
+  const normalizedDesignation = normalizeStatusText(step.designation);
+  if (normalizedDesignation.includes("reporting officer")) return "ro";
+  if (["vc", "vice chancellor"].some((value) =>normalizedDesignation.includes(value))) return "vc";
+  if (normalizedDesignation.includes("registrar")) return "registrar";
+  if (index === steps.length - 1) return "vc";
+  return index === 0 && steps.length >2 ? "ro" : "registrar";
+};
+
+export const nonTeachingWorkflowFor = (itemOrForm = {}, { includeInitial = true } = {}) =>{
+  const workflowSource = workflowSourceFrom(itemOrForm);
+  if (workflowSource) {
+    return normalizeApprovalWorkflow(workflowSource, {
+      includeInitial,
+      initialDesignation: "Staff",
+      status: firstNonEmpty(itemOrForm.status, itemOrForm.form?.status, itemOrForm.payload?.status),
+    });
+  }
+
+  const flow = nonTeachingReviewFlow({ ...itemOrForm, workflow: null });
+  const status = firstNonEmpty(itemOrForm.status, itemOrForm.form?.status, itemOrForm.payload?.status);
+  const steps = flow
+    .filter((role) =>role !== "self")
+    .map((role, index) =>({
+      stepNo: index + 1,
+      designation: workflowDesignationForRole(role),
+      status: workflowStepStatusForRole(status, role),
+      roleKey: role,
+    }));
+
+  return normalizeApprovalWorkflow({ steps, status }, { includeInitial, initialDesignation: "Staff" });
+};
+
+export const workflowDesignationForNonTeachingRole = (itemOrForm = {}, role) =>{
+  const normalizedRole = role === "self" ? "self" : normalizeNonTeachingRole(role, role);
+  const workflow = nonTeachingWorkflowFor(itemOrForm, { includeInitial: true });
+  if (normalizedRole === "self" || normalizedRole === "non_teaching_staff") return workflow.steps[0]?.designation || "Staff";
+  const approvalSteps = workflow.approvalSteps || [];
+  const match = approvalSteps.find((step, index) =>roleKeyForWorkflowStep(step, index, approvalSteps) === (normalizedRole === "reporting_officer" ? "ro" : normalizedRole));
+  return match?.designation || workflowDesignationForRole(normalizedRole);
+};
+
 export const nonTeachingReviewFlow = (itemOrForm = {}) => {
+  const workflowSource = workflowSourceFrom(itemOrForm);
+  if (workflowSource) {
+    const workflow = normalizeApprovalWorkflow(workflowSource, { includeInitial: false });
+    return ["self", ...workflow.approvalSteps.map((step, index) =>roleKeyForWorkflowStep(step, index, workflow.approvalSteps))];
+  }
+
   const rawRole = firstNonEmpty(
     itemOrForm.appraisalRole,
     itemOrForm.appraisal_role,
@@ -793,6 +893,7 @@ export const decorateNonTeachingRow = (row, profile = {}) => {
           ? "#0891b2"
           : "#1d4ed8",
     status: row.status || form.status,
+    workflow: nonTeachingWorkflowFor({ ...row, form, status: row.status || form.status }, { includeInitial: true }),
     submittedOn: row.submitted_at
       ? new Date(row.submitted_at).toLocaleDateString()
       : "",
@@ -864,6 +965,7 @@ const normalizeNonTeachingQueueItem = (item = {}) => {
     avatarColor: item.avatarColor ||
       (role === "registrar" ? "#7c3aed" : role === "reporting_officer" ? "#0891b2" : "#1d4ed8"),
     status,
+    workflow: nonTeachingWorkflowFor({ ...item, form: { ...form, status } }, { includeInitial: true }),
     selfTotal: firstPositiveNumber(item.selfTotal, item.self_total, selfTotals.total),
     roTotal: firstPositiveNumber(item.roTotal, item.ro_total, roTotals.total),
     registrarTotal: firstPositiveNumber(item.registrarTotal, item.registrar_total, registrarTotals.total),
@@ -1065,37 +1167,38 @@ export const openNonTeachingReport = ({
   const partBRoles = reportRoles.filter((role) => role !== "self");
   const maxForRole = (role) =>
     role === "self" ? NON_TEACHING_MAX.partA : NON_TEACHING_MAX.grand;
+  const labelForRole = (role) =>workflowDesignationForNonTeachingRole({ ...item, form: reportForm }, role);
   const reportColumns = {
     self: {
-      label: "Self",
+      label: labelForRole("self"),
       total: totals.self.total,
       partA: (key) => reportForm[key]?.marks,
       remarks: reportForm.remarks,
-      remarksLabel: "Staff",
+      remarksLabel: labelForRole("self"),
     },
     ro: {
-      label: "RO",
+      label: labelForRole("reporting_officer"),
       total: totals.ro.total,
       partA: (key) => reportForm[key]?.roMarks,
       partB: (row, index) => row[`p${index}_ro`],
       remarks: reportForm.roRemarks,
-      remarksLabel: "Reporting Officer",
+      remarksLabel: labelForRole("reporting_officer"),
     },
     registrar: {
-      label: "Registrar",
+      label: labelForRole("registrar"),
       total: totals.registrar.total,
       partA: (key) => reportForm[key]?.regMarks,
       partB: (row, index) => row[`p${index}_reg`],
       remarks: reportForm.registrarRemarks,
-      remarksLabel: "Registrar",
+      remarksLabel: labelForRole("registrar"),
     },
     vc: {
-      label: "Vice Chancellor",
+      label: labelForRole("vc"),
       total: totals.vc.total,
       partA: (key) => reportForm[key]?.vcMarks,
       partB: (row, index) => row[`p${index}_vc`],
       remarks: reportForm.vcRemarks,
-      remarksLabel: "Vice Chancellor",
+      remarksLabel: labelForRole("vc"),
     },
   };
   const docsFor = (key) =>

@@ -17,7 +17,7 @@ import {
   fetchNonTeachingQueueForRole,
   isPendingForNonTeachingReviewer,
   loadNonTeachingAppraisal,
-  nonTeachingReviewFlow,
+  nonTeachingWorkflowFor,
   nonTeachingRoleLabel,
   normalizeNonTeachingStatus,
   openNonTeachingReport,
@@ -27,10 +27,15 @@ import {
   submitNonTeachingSelfAppraisal,
   validateNonTeachingForm,
   visibleNonTeachingReviewRoles,
+  workflowDesignationForNonTeachingRole,
 } from "../services/nonTeachingWorkflow";
 import { clampScore, scoreRemaining } from "../utils/appraisalFormUtils";
 import { profileFromsessionStorage } from "../utils/hierarchy";
+import { currentWorkflowStep } from "../utils/workflow";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
+import ApprovalHistoryTable from "../components/workflow/ApprovalHistoryTable";
+import CurrentApproverCard from "../components/workflow/CurrentApproverCard";
+import WorkflowTimeline from "../components/workflow/WorkflowTimeline";
 
 const ACCENT = "#1d4ed8";
 const REG_ACCENT = "#155e75";
@@ -61,21 +66,12 @@ const initials = (name = "User") =>
     .slice(0, 2)
     .toUpperCase();
 
-const flowLabels = {
-  self: "Staff",
-  ro: "Reporting Officer",
-  registrar: "Registrar",
-  vc: "VC",
-};
-
-const flowTextFor = (form, role) =>
-  nonTeachingReviewFlow({
+const workflowTextFor = (form, role) =>
+  nonTeachingWorkflowFor({
     ...form,
     appraisalRole: role,
     submittedByRole: role,
-  })
-    .map((stage) => flowLabels[stage] || stage)
-    .join(" to ");
+  }).steps.map((stage) =>stage.designation).join(" to ");
 
 function Avatar({ name, color = ACCENT, size = 38 }) {
   return (
@@ -262,60 +258,13 @@ function DocCell({ id, docs, setDocs, readOnly = false }) {
 
 function WorkflowTracker({ status, role, form }) {
   const normalizedRole = normalizeNonTeachingRole(role, role);
-  const normalizedStatus = normalizeNonTeachingStatus(status);
-  const flow = nonTeachingReviewFlow({
+  const workflow = nonTeachingWorkflowFor({
     ...form,
+    status,
     appraisalRole: normalizedRole,
     submittedByRole: normalizedRole,
   });
-  const stages = [
-    { id: "draft", label: "Draft" },
-    ...(flow.includes("ro") ? [{ id: "ro", label: "RO Reviewed" }] : []),
-    ...(flow.includes("registrar") ? [{ id: "registrar", label: "Registrar Reviewed" }] : []),
-    ...(flow.includes("vc") ? [{ id: "vc", label: "VC Approved" }] : []),
-  ];
-  const doneByStatus = {
-    draft: normalizedStatus !== NON_TEACHING_STATUS.DRAFT,
-    ro: [
-      NON_TEACHING_STATUS.RO_REVIEWED,
-      NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW,
-      NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
-      NON_TEACHING_STATUS.VC_APPROVED,
-    ].includes(normalizedStatus),
-    registrar: [
-      NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
-      NON_TEACHING_STATUS.VC_APPROVED,
-    ].includes(normalizedStatus),
-    vc: normalizedStatus === NON_TEACHING_STATUS.VC_APPROVED,
-  };
-  const activeByStatus = {
-    draft: normalizedStatus === NON_TEACHING_STATUS.DRAFT,
-    ro: normalizedStatus === NON_TEACHING_STATUS.PENDING_RO_REVIEW,
-    registrar: [
-      NON_TEACHING_STATUS.PENDING_REGISTRAR_REVIEW,
-      NON_TEACHING_STATUS.RO_REVIEWED,
-    ].includes(normalizedStatus),
-    vc: normalizedStatus === NON_TEACHING_STATUS.REGISTRAR_REVIEWED,
-  };
-
-  return (
-    <SectionCard title="Approval Workflow" accent="#0f172a">
-      <div style={{ display: "flex", gap: 8 }}>
-        {stages.map((stage) => {
-          const done = doneByStatus[stage.id];
-          const active = !done && activeByStatus[stage.id];
-          return (
-            <div key={stage.id} style={{ flex: 1, minHeight: 62, border: "1px solid #e2e8f0", borderRadius: 8, background: done ? "#f0fdf4" : active ? "#eff6ff" : "#f8fafc", padding: "10px 8px", textAlign: "center" }}>
-              <div style={{ margin: "0 auto 6px", width: 24, height: 24, borderRadius: "50%", background: done ? "#10b981" : active ? ACCENT : "#cbd5e1", color: "#fff", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 800 }}>
-                {done ? "Done" : stages.indexOf(stage) + 1}
-              </div>
-              <div style={{ color: done ? "#166534" : active ? ACCENT : "#64748b", fontSize: 10, fontWeight: 800 }}>{stage.label}</div>
-            </div>
-          );
-        })}
-      </div>
-    </SectionCard>
-  );
+  return <WorkflowTimeline workflow={workflow} />;
 }
 
 function SelfAppraisalTable({ form, setForm, readOnly, accent }) {
@@ -388,18 +337,12 @@ function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitt
   const self = calculateNonTeachingTotals(form, "self");
   const selfMax = NON_TEACHING_MAX.partA;
   const scoreCards = [["Self Claimed", self.total, ACCENT]];
-  const nextRole = nonTeachingReviewFlow({
+  const workflow = nonTeachingWorkflowFor({
     ...form,
     appraisalRole: role,
     submittedByRole: role,
-  })[1];
-  const nextReviewer = nextRole === "vc"
-    ? "VC"
-    : nextRole === "registrar"
-      ? "Registrar"
-      : nextRole === "ro"
-        ? "Reporting Officer"
-        : "Next Authority";
+  });
+  const nextReviewer = currentWorkflowStep(workflow)?.designation || workflow.approvalSteps?.[0]?.designation || "Next Authority";
 
   return (
     <SectionCard title={`Summary of Total Score (Max ${selfMax})`} accent="#059669">
@@ -417,6 +360,7 @@ function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitt
       <div style={{ marginBottom: 14, padding: "10px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, color: "#1e3a8a", fontSize: 12, lineHeight: 1.6 }}>
         Current visible score: <strong>{self.total.toFixed(1)} / {selfMax}</strong>
       </div>
+      <CurrentApproverCard workflow={workflow} />
 
       <label style={{ fontSize: 12, color: "#334155", fontWeight: 800, display: "block", marginBottom: 6 }}>Remarks</label>
       <TextArea
@@ -686,7 +630,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
           </div>
         </div>
         <div style={{ background: "#1e293b", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#94a3b8", lineHeight: 1.6 }}>
-          {flowTextFor(form, normalizedRole)}
+          {workflowTextFor(form, normalizedRole)}
         </div>
         <div style={{ margin: "8px 0", padding: "10px 12px", background: "rgba(37,99,235,0.15)", border: "1px solid #2563eb", borderRadius: 8 }}>
           <div style={{ color: "#94a3b8", fontWeight: 700, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>For any queries</div>
@@ -709,6 +653,9 @@ function AuthorityPartA({ form, setForm, reviewerRole, readOnly, visibleRoles = 
   const showReportingOfficer = visibleRoles.includes("ro");
   const showRegistrar = visibleRoles.includes("registrar");
   const showVc = visibleRoles.includes("vc");
+  const reportingOfficerLabel = workflowDesignationForNonTeachingRole(form, "reporting_officer");
+  const registrarLabel = workflowDesignationForNonTeachingRole(form, "registrar");
+  const vcLabel = workflowDesignationForNonTeachingRole(form, "vc");
   const setMark = (key, value) => {
     setForm((current) => ({
       ...current,
@@ -726,9 +673,9 @@ function AuthorityPartA({ form, setForm, reviewerRole, readOnly, visibleRoles = 
               <th style={{ ...TH, textAlign: "left" }}>Staff Description</th>
               <th style={TH}>Docs</th>
               <th style={TH}>Self</th>
-              {showReportingOfficer && <th style={TH}>RO</th>}
-              {showRegistrar && <th style={TH}>Registrar</th>}
-              {showVc && <th style={TH}>VC</th>}
+              {showReportingOfficer && <th style={TH}>{reportingOfficerLabel}</th>}
+              {showRegistrar && <th style={TH}>{registrarLabel}</th>}
+              {showVc && <th style={TH}>{vcLabel}</th>}
             </tr>
           </thead>
           <tbody>
@@ -772,6 +719,9 @@ function AuthorityPartB({ form, setForm, reviewerRole, readOnly, visibleRoles = 
   const showReportingOfficer = visibleRoles.includes("ro");
   const showRegistrar = visibleRoles.includes("registrar");
   const showVc = visibleRoles.includes("vc");
+  const reportingOfficerLabel = workflowDesignationForNonTeachingRole(form, "reporting_officer");
+  const registrarLabel = workflowDesignationForNonTeachingRole(form, "registrar");
+  const vcLabel = workflowDesignationForNonTeachingRole(form, "vc");
   const setRating = (sectionKey, index, value) => {
     setForm((current) => ({
       ...current,
@@ -795,9 +745,9 @@ function AuthorityPartB({ form, setForm, reviewerRole, readOnly, visibleRoles = 
                 <tr>
                   <th style={TH}>SN</th>
                   <th style={{ ...TH, textAlign: "left" }}>Parameter</th>
-                  {showReportingOfficer && <th style={TH}>Reporting Officer</th>}
-                  {showRegistrar && <th style={TH}>Registrar</th>}
-                  {showVc && <th style={TH}>VC</th>}
+                  {showReportingOfficer && <th style={TH}>{reportingOfficerLabel}</th>}
+                  {showRegistrar && <th style={TH}>{registrarLabel}</th>}
+                  {showVc && <th style={TH}>{vcLabel}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -855,10 +805,12 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
     : readOnly || !isPendingForNonTeachingReviewer(item, role);
   const accent = roleAccent(role);
   const visibleRoles = visibleNonTeachingReviewRoles(role, item);
+  const workflow = nonTeachingWorkflowFor({ ...item, form, status: item.status }, { includeInitial: true });
+  const reviewerDesignation = workflowDesignationForNonTeachingRole({ ...item, form }, role);
   const selfTotals = calculateNonTeachingTotals(form, "self");
   const totals = calculateNonTeachingTotals(form, role === "vc" ? "vc" : role);
-  const authorityScoreLabel = role === "vc" ? "Vice Chancellor Score" : `${nonTeachingRoleLabel(role)} Score`;
-  const remarksLabel = role === "vc" ? "Vice Chancellor Remarks and Grade" : "Remarks";
+  const authorityScoreLabel = `${reviewerDesignation} Score`;
+  const remarksLabel = `${reviewerDesignation} Remarks`;
 
   const handleSubmit = async () => {
     if (!confirmed) {
@@ -875,7 +827,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
       alert(err.message);
       return;
     }
-    if (!window.confirm(finalisedByVc ? "Edit and resubmit Vice Chancellor review?" : `Submit ${nonTeachingRoleLabel(role)} review?`)) return;
+    if (!window.confirm(finalisedByVc ? `Edit and resubmit ${reviewerDesignation} review?` : `Submit ${reviewerDesignation} review?`)) return;
 
     setSubmitting(true);
     try {
@@ -885,7 +837,7 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
         reviewerRole: role,
         remarks,
       });
-      alert(finalisedByVc ? "Vice Chancellor review resubmitted." : `${nonTeachingRoleLabel(role)} review submitted.`);
+      alert(finalisedByVc ? `${reviewerDesignation} review resubmitted.` : `${reviewerDesignation} review submitted.`);
       onSubmitted?.(updated);
     } catch (err) {
       console.error("Could not submit non-teaching review:", err);
@@ -919,10 +871,13 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
         </div>
         <StatusBadge status={item.status} />
         <div style={{ background: "#1e293b", borderRadius: 8, padding: "8px 12px", color: "#e2e8f0", textAlign: "center" }}>
-          <div style={{ color: "#94a3b8", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>{nonTeachingRoleLabel(role)} Total</div>
+          <div style={{ color: "#94a3b8", fontSize: 9, fontWeight: 800, textTransform: "uppercase" }}>{reviewerDesignation} Total</div>
           <div style={{ color: accent, fontWeight: 900, fontSize: 16 }}>{totals.total.toFixed(1)}</div>
         </div>
       </div>
+
+      <CurrentApproverCard workflow={workflow} />
+      <WorkflowTimeline workflow={workflow} />
 
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
         {[
@@ -962,9 +917,10 @@ export function NonTeachingAuthorityReviewPanel({ item, reviewerRole, onBack, on
       </fieldset>
 
       {tab === "remarks" && (
-        <SectionCard title={locked ? "Submitted Review" : `${nonTeachingRoleLabel(role)} Remarks & Submission`} accent={accent}>
-          {role === "vc" && visibleRoles.includes("ro") && form.roRemarks && <PriorRemark label="Reporting Officer Remarks" value={form.roRemarks} color={ACCENT} />}
-          {role === "vc" && visibleRoles.includes("registrar") && form.registrarRemarks && <PriorRemark label="Registrar Remarks" value={form.registrarRemarks} color={REG_ACCENT} />}
+        <SectionCard title={locked ? "Submitted Review" : `${reviewerDesignation} Remarks & Submission`} accent={accent}>
+          <ApprovalHistoryTable workflow={workflow} />
+          {role === "vc" && visibleRoles.includes("ro") && form.roRemarks && <PriorRemark label={`${workflowDesignationForNonTeachingRole({ ...item, form }, "reporting_officer")} Remarks`} value={form.roRemarks} color={ACCENT} />}
+          {role === "vc" && visibleRoles.includes("registrar") && form.registrarRemarks && <PriorRemark label={`${workflowDesignationForNonTeachingRole({ ...item, form }, "registrar")} Remarks`} value={form.registrarRemarks} color={REG_ACCENT} />}
 
           <div style={{ color: "#334155", fontSize: 11, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>Staff Submitted Score</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14 }}>
@@ -1222,4 +1178,3 @@ const S = {
 export default function NonTeachingStaffDashboard() {
   return <NonTeachingAppraisalForm role="non_teaching_staff" />;
 }
-
