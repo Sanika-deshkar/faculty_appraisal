@@ -1144,10 +1144,14 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
 
   const { partA, partB, total } = calcHodScore();
   const g = grade(total, 575);
-  const facultySummary = standardSubmittedScoreSummary(faculty, {
-    partA: faculty.lectures?.reduce((a, r) => a + n(r.score), 0) || 0,
-    partB: faculty.journals?.reduce((a, r) => a + n(r.score), 0) || 0,
-  });
+  const facultySummary = {
+    partA: partATotalWithoutAcr,
+    partB: partBTotal,
+    total: displayGrandTotal,
+    partAMax: displayPartAMax,
+    partBMax: effectivePartBMax,
+    grandMax: displayGrandMax,
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0, minHeight: "100%" }}>
@@ -1477,14 +1481,23 @@ export default function HODDashboard() {
   const researchGuidanceProjectMax = sectionApplicability.research === "notApplicable" ? 45 : 75;
   const effectivePartBMax = effectiveMaxScore(375, sectionApplicability, [{ key: "research", max: 30 }]);
   const effectiveGrandMax = effectivePartAMax + effectivePartBMax;
+
+  const displayPartAMax = Math.max(0, effectivePartAMax - 25);
+  const partATotalWithoutAcr = clampScore(teachingRaw + stuFeedbackScore + deptScore + uniScore + societyScore + industryScore, displayPartAMax);
+  const displayGrandMax = Math.max(0, effectiveGrandMax - 25);
+  const displayGrandTotal = clampScore(partATotalWithoutAcr + partBTotal, displayGrandMax);
+
   const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + b8Score, effectivePartBMax);
   const grandTotal = clampScore(partATotal + partBTotal, effectiveGrandMax);
+
   const partAMarksPercentage = effectivePartAMax > 0 ? ((partATotal / effectivePartAMax) * 100).toFixed(2) : "0.00";
   const partBMarksPercentage = effectivePartBMax > 0 ? ((partBTotal / effectivePartBMax) * 100).toFixed(2) : "0.00";
   const totalMarksPercentage = effectiveGrandMax > 0 ? ((grandTotal / effectiveGrandMax) * 100).toFixed(2) : "0.00";
+  const displayPartAMarksPercentage = displayPartAMax > 0 ? ((partATotalWithoutAcr / displayPartAMax) * 100).toFixed(2) : "0.00";
+  const displayTotalMarksPercentage = displayGrandMax > 0 ? ((displayGrandTotal / displayGrandMax) * 100).toFixed(2) : "0.00";
 
   const gradeFunc = () => {
-    const p = pct(grandTotal, effectiveGrandMax);
+    const p = pct(displayGrandTotal, displayGrandMax);
     if (p >= 85) return { label: "Outstanding", color: "#10b981" };
     if (p >= 70) return { label: "Very Good", color: "#3b82f6" };
     if (p >= 55) return { label: "Good", color: "#f59e0b" };
@@ -1813,13 +1826,6 @@ export default function HODDashboard() {
       <tr class="tr"><td colspan="3" class="c b">Total (Max 5)</td><td class="c">${industryScore.toFixed(1)}</td></tr>
     </table>
 
-    <h3>G. Annual Confidential Report &nbsp;(Max 25)</h3>
-    <table>
-      <tr><th>SN</th><th>Parameter</th><th>API Score</th></tr>
-      ${acr.map((a, i) => `<tr><td class="c">${i + 1}</td><td>${a.label || '&nbsp;'}</td><td class="c">${String(a.score ?? "").trim() ? clampScore(a.score, SCORE_LIMITS.acrRow) : '&nbsp;'}</td></tr>`).join('')}
-      <tr class="tr"><td colspan="2" class="c b">Total (Max 25)</td><td class="c">${acrScore.toFixed(1)}</td></tr>
-    </table>
-
     <table class="st">
       <tr><th>Part A Summary</th><th>Max</th><th>Faculty Score</th></tr>
       <tr><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">${teachingMax}</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
@@ -1828,9 +1834,8 @@ export default function HODDashboard() {
       <tr><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
       <tr><td>Contribution to Society</td><td class="c">${sectionApplicability.society === "notApplicable" ? "N/A" : "10"}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
       <tr><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
-      <tr><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
-      <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
-      <tr class="tr"><td class="b">PART A MARKS OBTAINED (%)</td><td colspan="2" class="c b">${partAMarksPercentage}%</td></tr>
+      <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${displayPartAMax}</td><td class="c b">${partATotalWithoutAcr.toFixed(1)}</td></tr>
+      <tr class="tr"><td class="b">PART A MARKS OBTAINED (%)</td><td colspan="2" class="c b">${displayPartAMarksPercentage}%</td></tr>
     </table>
 
     <div class="pb"></div>
@@ -1939,9 +1944,8 @@ export default function HODDashboard() {
       <tr><td class="c">D</td><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
       <tr><td class="c">E</td><td>Contribution to Society</td><td class="c">${sectionApplicability.society === "notApplicable" ? "N/A" : "10"}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
       <tr><td class="c">F</td><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
-      <tr><td class="c">G</td><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
-      <tr class="tr"><td colspan="2" class="c b">Part A Total</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
-      <tr class="tr"><td colspan="2" class="c b">Part A Marks Obtained (%)</td><td colspan="2" class="c b">${partAMarksPercentage}%</td></tr>
+      <tr class="tr"><td colspan="2" class="c b">Part A Total</td><td class="c b">${displayPartAMax}</td><td class="c b">${partATotalWithoutAcr.toFixed(1)}</td></tr>
+      <tr class="tr"><td colspan="2" class="c b">Part A Marks Obtained (%)</td><td colspan="2" class="c b">${displayPartAMarksPercentage}%</td></tr>
       <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part B - Research and Academic Contribution</td></tr>
       <tr><td class="c">1</td><td>Research papers / journal publication</td><td class="c">120</td><td class="c">${journalScore.toFixed(1)}</td></tr>
       <tr><td class="c">2</td><td>Books authored / edited / book chapter</td><td class="c">50</td><td class="c">${bookScore.toFixed(1)}</td></tr>
@@ -1953,8 +1957,8 @@ export default function HODDashboard() {
       <tr><td class="c">8</td><td>Self Development (FDP / Industrial Training)</td><td class="c">10</td><td class="c">${b8Score.toFixed(1)}</td></tr>
       <tr class="tr"><td colspan="2" class="c b">Part B Total</td><td class="c b">${effectivePartBMax}</td><td class="c b">${partBTotal.toFixed(1)}</td></tr>
       <tr class="tr"><td colspan="2" class="c b">Part B Marks Obtained (%)</td><td colspan="2" class="c b">${partBMarksPercentage}%</td></tr>
-      <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${effectiveGrandMax}</td><td class="c">${grandTotal.toFixed(1)}</td></tr>
-      <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Marks Obtained (%)</td><td colspan="2" class="c">${totalMarksPercentage}%</td></tr>
+      <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${displayGrandMax}</td><td class="c">${displayGrandTotal.toFixed(1)}</td></tr>
+      <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Marks Obtained (%)</td><td colspan="2" class="c">${displayTotalMarksPercentage}%</td></tr>
     </table>
 
     ${String(summaryOtherInfo ?? "").trim() ? `
@@ -2118,9 +2122,9 @@ export default function HODDashboard() {
 
                 {/* Part A Tab */}
                 {hodAppraisalTab === "partA" && (
-                  <SC title="Part A - Teaching & Academic Activities (Max 200)" accent="#6366f1">
+                  <SC title={`Part A - Teaching & Academic Activities (Max ${displayPartAMax})`} accent="#6366f1">
                     <div style={{ marginBottom: 14, padding: "8px 12px", background: "#f0f4ff", borderRadius: 6, fontSize: 12, color: "#312e81", fontWeight: 600 }}>
-                      Total Part A Score: {partATotal.toFixed(1)}/{effectivePartAMax}
+                      Total Part A Score: {partATotalWithoutAcr.toFixed(1)}/{displayPartAMax}
                     </div>
                     <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>Fill in your teaching and academic activities for the appraisal period. Enter scores for each item.</div>
                     {/* A1. Teaching Process */}
@@ -2501,28 +2505,9 @@ export default function HODDashboard() {
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(xi) Annual Confidential Report (ACR) - Max 25 marks</div>
                       <div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>Warning: This section is filled by your superior (HOD/Director). Your scores here are read-only.</div>
-                      <table style={T}>
-                        <thead>
-                          <tr>
-                            <th style={{ ...TH, width: 30 }}>SN</th>
-                            <th style={TH}>Attribute</th>
-                            <th style={TH}>Score</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {acr.map((r, i) => (
-                            <tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
-                              <td style={TDC}>{i + 1}</td>
-                              <td style={TD}><div style={{ fontWeight: 700 }}>{r.label}</div>{ACR_DETAIL_POINTS[r.label] && <ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>{ACR_DETAIL_POINTS[r.label].map((point) => <li key={point}>{point}</li>)}</ul>}</td>
-                              <td style={TDS}><RO val={String(r.score ?? "").trim() ? clampScore(r.score, SCORE_LIMITS.acrRow) : "-"} center /></td>
-                            </tr>
-                          ))}
-                          <tr style={{ background: "#eff6ff" }}>
-                            <td style={{ ...TDC, fontWeight: "bold" }} colSpan={2}>Total Score (Max 25)</td>
-                            <td style={{ ...TDS, fontWeight: "bold" }}>{acrScore.toFixed(1)}</td>
-                          </tr>
-                        </tbody>
-                      </table>
+                      <div style={{ padding: "12px", background: "#fff8f0", borderRadius: 6, fontSize: 12, color: "#92400e" }}>
+                        Annual Confidential Report (ACR) is confidential and not shown in employee view.
+                      </div>
                     </div>
                   </SC>
                 )}
@@ -3071,9 +3056,9 @@ export default function HODDashboard() {
                     <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14 }}>
                       <tbody>
                         {[
-                          ["Part A - Teaching & Activities", partATotal, effectivePartAMax, "#6366f1"],
+                          ["Part A - Teaching & Activities", partATotalWithoutAcr, displayPartAMax, "#6366f1"],
                           ["Part B - Research & Contributions", partBTotal, effectivePartBMax, "#7c3aed"],
-                          ["Grand Total", grandTotal, effectiveGrandMax, g.color],
+                          ["Grand Total", displayGrandTotal, displayGrandMax, g.color],
                         ].map(([label, score, max, color]) => (
                           <tr key={label}>
                             <td style={{ padding: "10px", background: "#f8fafc", fontWeight: 600, border: "1px solid #e2e8f0", width: "50%" }}>{label}</td>
