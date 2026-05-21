@@ -493,8 +493,34 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
  const acrTotal = scoreSectionRows(section.key, acrRows, section.max);
  return (
 <SectionShell title="(xi) Annual Confidential Report (ACR) - Max 25 marks" max={section.max} earned={acrTotal} accent="#ef4444" showScoreSummary={false}>
-<div style={{ fontSize: 11, color: "#92400e", background: "#fff8f0", borderRadius: 6, padding: "8px 10px" }}>
- Annual Confidential Report (ACR) is confidential and not shown in employee view.
+<div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>
+ This section is filled by your superior. It is visible here for reference and is not counted in your self score.
+</div>
+<div style={{ overflowX: "auto" }}>
+<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+<thead>
+<tr>
+<th style={thStyle}>SN</th>
+<th style={thStyle}>Parameter</th>
+<th style={thStyle}>Assessment Points</th>
+<th style={thStyle}>Self Score</th>
+</tr>
+</thead>
+<tbody>
+ {acrRows.map((row, index) =>(
+<tr key={row.label}>
+<td style={tdCenter}>{index + 1}</td>
+<td style={tdStyle}>{row.label}</td>
+<td style={tdStyle}>
+<ul style={{ margin: "0 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>
+ {(ACR_DETAIL_POINTS[row.label] || []).map((point) =><li key={point}>{point}</li>)}
+</ul>
+</td>
+<td style={tdCenter}>Not counted</td>
+</tr>
+ ))}
+</tbody>
+</table>
 </div>
 </SectionShell>
  );

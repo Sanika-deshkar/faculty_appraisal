@@ -2388,7 +2388,31 @@ export default function DirectorDashboard() {
  {/* A11. ACR */}
 <div style={{ marginBottom: 16 }}>
 <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(xi) Annual Confidential Report (ACR) - Max 25 marks</div>
-<div style={{ fontSize: 11, color: "#92400e", background: "#fff8f0", borderRadius: 6, padding: "8px 10px" }}>Annual Confidential Report (ACR) is confidential and not shown in employee view.</div>
+<div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>This section is filled by your superior. It is visible here for reference and is not counted in your self score.</div>
+<table style={T}>
+<thead>
+<tr>
+<th style={{ ...TH, width: 30 }}>SN</th>
+<th style={TH}>Parameter</th>
+<th style={TH}>Assessment Points</th>
+<th style={TH}>Self Score</th>
+</tr>
+</thead>
+<tbody>
+ {createAcrRows(acr).map((row, index) =>(
+<tr key={row.label}>
+<td style={TDC}>{index + 1}</td>
+<td style={TD}>{row.label}</td>
+<td style={TD}>
+<ul style={{ margin: "0 0 0 16px", padding: 0, color: "#64748b", fontSize: 11, lineHeight: 1.5 }}>
+ {(ACR_DETAIL_POINTS[row.label] || []).map((point) =><li key={point}>{point}</li>)}
+</ul>
+</td>
+<td style={TDC}>Not counted</td>
+</tr>
+ ))}
+</tbody>
+</table>
 </div>
 </SC>
  )}
