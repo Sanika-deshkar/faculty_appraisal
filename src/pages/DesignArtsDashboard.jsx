@@ -493,39 +493,8 @@ function SectionTable({ section, form, setForm, docs, setDocs, mode, locked, rev
  const acrTotal = scoreSectionRows(section.key, acrRows, section.max);
  return (
 <SectionShell title="(xi) Annual Confidential Report (ACR) - Max 25 marks" max={section.max} earned={acrTotal} accent="#ef4444" showScoreSummary={false}>
-<div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>
- Warning: This section is filled by your superior (HOD/Director). Your scores here are read-only.
-</div>
-<div style={{ overflowX: "auto" }}>
-<table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-<thead>
-<tr>
-<th style={thStyle}>SN</th>
-<th style={thStyle}>Attribute</th>
-<th style={thStyle}>Score</th>
-</tr>
-</thead>
-<tbody>
- {acrRows.map((row, index) =>(
-<tr key={`acr-${index}`} style={index % 2 === 1 ? { background: "#f8fafc" } : {}}>
-<td style={tdCenter}>{index + 1}</td>
-<td style={tdStyle}>
-<div style={{ fontWeight: 700 }}>{row.label}</div>
- {ACR_DETAIL_POINTS[row.label] && (
-<ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>
- {ACR_DETAIL_POINTS[row.label].map((point) =><li key={point}>{point}</li>)}
-</ul>
- )}
-</td>
-<td style={tdCenter}><RO value={String(row.score ?? "").trim() ? clampScore(row.score, SCORE_LIMITS.acrRow) : "-"} center /></td>
-</tr>
- ))}
-<tr style={{ background: "#eff6ff" }}>
-<td style={{ ...tdCenter, fontWeight: "bold" }} colSpan={2}>Total Score (Max 25)</td>
-<td style={{ ...tdCenter, fontWeight: "bold" }}>{acrTotal.toFixed(1)}</td>
-</tr>
-</tbody>
-</table>
+<div style={{ fontSize: 11, color: "#92400e", background: "#fff8f0", borderRadius: 6, padding: "8px 10px" }}>
+ Annual Confidential Report (ACR) is confidential and not shown in employee view.
 </div>
 </SectionShell>
  );
@@ -1441,7 +1410,8 @@ export default function DesignArtsDashboard({ fixedRole }) {
  docs,
  partASections: PART_A_SECTIONS.map((section) =>section.key === "acr" ? { ...section, max: 0, title: "(xi) Annual Confidential Report (ACR) - Not counted in self score" } : section),
  partBSections: PART_B_SECTIONS,
- totals: { partA: partATotal, partB: partBTotal, total: grandTotal },
+		totals: { partA: partATotal, partB: partBTotal, total: grandTotal },
+		hideAcr: true,
  maxScores,
  generatedBy: sessionStorage.getItem("name") || roleLabel(role),
  declaration,

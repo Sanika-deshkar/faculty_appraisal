@@ -2168,6 +2168,7 @@ export default function NonEngineeringDeanDashboard() {
  name: rev.reviewer_name || "",
  date: rev.reviewed_at ? new Date(rev.reviewed_at).toLocaleDateString("en-IN") : "",
  })),
+	hideAcr: true,
  });
 
  const [submitting, setSubmitting] = useState(false);
@@ -2522,7 +2523,7 @@ export default function NonEngineeringDeanDashboard() {
 
  {/* Part A Tab */}
  {hodAppraisalTab === "partA" && (
-<SC title="Part A - Teaching & Academic Activities (Max 200)" accent="#6366f1">
+<SC title={`Part A - Teaching & Academic Activities (Max ${effectivePartAMax})`} accent="#6366f1">
 <div style={{ marginBottom: 14, padding: "8px 12px", background: "#f0f4ff", borderRadius: 6, fontSize: 12, color: "#312e81", fontWeight: 600 }}>
  Total Part A Score: {partATotal.toFixed(1)}/{effectivePartAMax}
 </div>
@@ -2896,30 +2897,7 @@ export default function NonEngineeringDeanDashboard() {
  {/* A11. ACR */}
 <div style={{ marginBottom: 16 }}>
 <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(xi) Annual Confidential Report (ACR) - Max 25 marks</div>
-<div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>Warning: This section is filled by your superior (HOD/Director). Your scores here are read-only.</div>
-<table style={T}>
-<thead>
-<tr>
-<th style={{ ...TH, width: 30 }}>SN</th>
-<th style={TH}>Attribute</th>
-<th style={TH}>Score</th>
-</tr>
-</thead>
-<tbody>
- {acr.map((r, i) =>(
-<tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
-<td style={TDC}>{i + 1}</td>
-<td style={TD}><div style={{ fontWeight: 700 }}>{r.label}</div>{ACR_DETAIL_POINTS[r.label] &&<ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>{ACR_DETAIL_POINTS[r.label].map((point) =><li key={point}>{point}</li>)}</ul>}</td>
-<td style={TDS}><RO val={String(r.score ?? "").trim() ? clampScore(r.score, SCORE_LIMITS.acrRow) : "-"} center /></td>
-
-</tr>
- ))}
-<tr style={{ background: "#eff6ff" }}>
-<td style={{ ...TDC, fontWeight: "bold" }} colSpan={2}>Total Score (Max 25)</td>
-<td style={{ ...TDS, fontWeight: "bold" }}>{acrScore.toFixed(1)}</td>
-</tr>
-</tbody>
-</table>
+<div style={{ fontSize: 11, color: "#92400e", background: "#fff8f0", borderRadius: 6, padding: "8px 10px" }}>Annual Confidential Report (ACR) is confidential and not shown in employee view.</div>
 </div>
 </SC>
  )}
