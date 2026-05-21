@@ -9,6 +9,7 @@ import { INNOVATIVE_METHODS, SCORE_LIMITS, averageSectionScore, clampScore, clam
 import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel, isAppraisalFinalisedByVc } from "../utils/hierarchy";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
+import SummaryOtherInfoField from "../components/SummaryOtherInfoField";
 
 // - Helpers -
 const n = (v) =>parseFloat(v) || 0;
@@ -22,6 +23,15 @@ const grade = (score, max) =>{
  return { label: "Needs Improvement", color: "#dc2626", bg: "#fee2e2" };
 };
 const reportValue = (value) =>String(value ?? "").trim() || "&nbsp;";
+const reportTextValue = (value) =>{
+ const text = String(value ?? "").trim();
+ if (!text) return "&nbsp;";
+ return text
+ .replace(/&/g, "&amp;")
+ .replace(/</g, "&lt;")
+ .replace(/>/g, "&gt;")
+ .replace(/"/g, "&quot;");
+};
 const reportQualification = (info = {}) =>reportValue(info.qual || info.qualification || sessionStorage.getItem("qualification"));
 const reportExperience = (info = {}) =>{
  const single = [info.experience, info.teaching_experience, info.teachingExperience, info.expTotal, sessionStorage.getItem("experience")]
@@ -1422,6 +1432,7 @@ export default function HODDashboard({
  const [sectionApplicability, setSectionApplicability] = useState({ projects: "applicable", research: "applicable", society: "applicable" });
  const [appraisalLocked, setAppraisalLocked] = useState(false);
  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: false, partB: false });
+ const [summaryOtherInfo, setSummaryOtherInfo] = useState("");
  const [savingSection, setSavingSection] = useState(null);
 
  useEffect(() =>{
@@ -1468,6 +1479,7 @@ export default function HODDashboard({
  setFdps,
  setTraining,
  setDocs,
+ setSummaryOtherInfo,
  setSectionApplicability,
  setSectionSaveStatus,
  },
@@ -1658,7 +1670,7 @@ export default function HODDashboard({
  info, lectures, courseFile, innovDetails: visibleInnovRows.map((row) =>row.method).filter(Boolean).join(", "), innovScore: innovScoreComputed, innovRows: visibleInnovRows, projects, quals, feedback,
  deptActs, uniActs, society, industry, acr, journals, books, ict, research,
  projects2, externalProjects, patents, awards, confs, proposals, products, fdps,
- training, sectionApplicability, sectionSaveStatus: saveStatus,
+ training, summaryOtherInfo, sectionApplicability, sectionSaveStatus: saveStatus,
  });
 
  const handleSaveCurrentSection = async (section) =>{
@@ -2016,6 +2028,11 @@ export default function HODDashboard({
 <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${effectiveGrandMax}</td><td class="c">${grandTotal.toFixed(1)}</td></tr>
 <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Marks Obtained (%)</td><td colspan="2" class="c">${totalMarksPercentage}%</td></tr>
 </table>
+
+${String(summaryOtherInfo ?? "").trim() ? `
+<h3>Any other information not covered above</h3>
+<div style="white-space:pre-wrap;border:1px solid #000;padding:8px;min-height:40px;margin-bottom:10px">${reportTextValue(summaryOtherInfo)}</div>
+` : ""}
 
 <h3 style="text-align:center;font-size:14px;background:#d9d9d9;padding:6px;margin-top:16px">DECLARATION BY FACULTY</h3>
 <table style="border:none;margin-bottom:14px">
@@ -3159,6 +3176,12 @@ export default function HODDashboard({
  ))}
 </tbody>
 </table>
+
+<SummaryOtherInfoField
+ value={summaryOtherInfo}
+ onChange={setSummaryOtherInfo}
+ readOnly={appraisalLocked}
+/>
 
 <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 10, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
 <input

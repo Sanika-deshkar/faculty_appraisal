@@ -12,6 +12,7 @@ import { reviewedStatusFor, profileFromsessionStorage, workflowValidationError, 
 import { generateStandardReport } from "../utils/fullFormReport";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
+import SummaryOtherInfoField from "../components/SummaryOtherInfoField";
 import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
 
@@ -1958,6 +1959,7 @@ export default function NonEngineeringDeanDashboard() {
  const [sectionApplicability, setSectionApplicability] = useState({ projects: "applicable", research: "applicable", society: "applicable" });
  const [appraisalLocked, setAppraisalLocked] = useState(false);
  const [sectionSaveStatus, setSectionSaveStatus] = useState({ partA: false, partB: false });
+ const [summaryOtherInfo, setSummaryOtherInfo] = useState("");
  const [savingSection, setSavingSection] = useState(null);
 
  useEffect(() =>{
@@ -2004,6 +2006,7 @@ export default function NonEngineeringDeanDashboard() {
  setFdps,
  setTraining,
  setDocs,
+ setSummaryOtherInfo,
  setSectionApplicability,
  setSectionSaveStatus,
  },
@@ -2140,6 +2143,7 @@ export default function NonEngineeringDeanDashboard() {
  proposalScore, productScore, fdpScore, trainScore,
  partBTotal, effectivePartBMax, grandTotal, effectiveGrandMax,
  researchGuidanceScore,
+ summaryOtherInfo,
  declaration: ownDeclaration,
  reviewChain: ownReviews.map((rev) =>({
  label: roleLabel(rev.reviewer_role),
@@ -2247,7 +2251,7 @@ export default function NonEngineeringDeanDashboard() {
  info, lectures, courseFile, innovDetails: visibleInnovRows.map((row) =>row.method).filter(Boolean).join(", "), innovScore: innovScoreComputed, innovRows: visibleInnovRows, projects, quals, feedback,
  deptActs, uniActs, society, industry, acr, journals, books, ict, research,
  projects2, externalProjects, patents, awards, confs, proposals, products, fdps,
- training, sectionApplicability, sectionSaveStatus: saveStatus,
+ training, summaryOtherInfo, sectionApplicability, sectionSaveStatus: saveStatus,
  });
 
  const handleSaveCurrentSection = async (section) =>{
@@ -3457,6 +3461,12 @@ export default function NonEngineeringDeanDashboard() {
  ))}
 </tbody>
 </table>
+
+<SummaryOtherInfoField
+ value={summaryOtherInfo}
+ onChange={setSummaryOtherInfo}
+ readOnly={appraisalLocked}
+/>
 
 <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 8, marginBottom: 10, color: "#334155", fontSize: 12, lineHeight: 1.5, cursor: appraisalLocked ? "not-allowed" : "pointer" }}>
 <input

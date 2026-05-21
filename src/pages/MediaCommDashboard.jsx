@@ -40,6 +40,7 @@ import {
 } from "../utils/appraisalFormUtils";
 import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles, workflowValidationError, isAppraisalFinalisedByVc } from "../utils/hierarchy";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
+import SummaryOtherInfoField from "../components/SummaryOtherInfoField";
 
 const ACCENT = "#b45309";
 const ACCENT2 = "#0f766e";
@@ -122,6 +123,7 @@ const emptyMediaForm = () =>({
  products: [{ details: "", used: "", score: "" }],
  fdps: [{ program: "", duration: "", org: "", score: "" }],
  training: [{ company: "", duration: "", nature: "", score: "" }],
+ summaryOtherInfo: "",
  sectionApplicability: { projects: "applicable", research: "applicable" },
 });
 
@@ -1323,6 +1325,7 @@ export default function MediaCommDashboard({ fixedRole }) {
  ["setInnovDirector", (value) =>setForm((prev) =>({ ...prev, innovDirector: value }))],
  ["setInnovDean", (value) =>setForm((prev) =>({ ...prev, innovDean: value }))],
  ["setInnovVc", (value) =>setForm((prev) =>({ ...prev, innovVc: value }))],
+ ["setSummaryOtherInfo", (value) =>setForm((prev) =>({ ...prev, summaryOtherInfo: value }))],
  ["setSectionApplicability", (value) =>setForm((prev) =>({ ...prev, sectionApplicability: { ...(prev.sectionApplicability || {}), ...(value || {}) } }))],
  ["setSectionSaveStatus", (value) =>setSectionSaveStatus((prev) =>({ ...prev, ...(value || {}) }))],
  ]), []);
@@ -1689,6 +1692,11 @@ export default function MediaCommDashboard({ fixedRole }) {
  {selfSectionView === "summary" && (
 <div style={{ display: "grid", gap: 16 }}>
 <SummaryBox totals={totals} maxScores={totals.maxScores} roleScoreLabel="Faculty/self appraisal score from the Media & Communication form." />
+<SummaryOtherInfoField
+ value={form.summaryOtherInfo}
+ onChange={(value) =>setForm((prev) =>({ ...prev, summaryOtherInfo: value }))}
+ readOnly={locked}
+/>
 <div style={{ display: "grid", gap: 12, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 16 }}>
  {locked ?<StatusBadge status={declaration?.status || "Submitted"} />: (
 <>

@@ -40,6 +40,7 @@ const SNAPSHOT_SETTERS = {
  products: "setProducts",
  fdps: "setFdps",
  training: "setTraining",
+ summaryOtherInfo: "setSummaryOtherInfo",
  sectionApplicability: "setSectionApplicability",
  sectionSaveStatus: "setSectionSaveStatus",
 };

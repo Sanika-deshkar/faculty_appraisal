@@ -36,6 +36,7 @@ import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 import ApprovalHistoryTable from "../components/workflow/ApprovalHistoryTable";
 import CurrentApproverCard from "../components/workflow/CurrentApproverCard";
 import WorkflowTimeline from "../components/workflow/WorkflowTimeline";
+import SummaryOtherInfoField from "../components/SummaryOtherInfoField";
 
 const ACCENT = "#1d4ed8";
 const REG_ACCENT = "#155e75";
@@ -333,7 +334,7 @@ function SelfAppraisalTable({ form, setForm, readOnly, accent }) {
   );
 }
 
-function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitting, locked, confirmed, setConfirmed, accent, showReport = true }) {
+function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onUpdateSummaryOtherInfo, onReport, submitting, locked, confirmed, setConfirmed, accent, showReport = true }) {
   const self = calculateNonTeachingTotals(form, "self");
   const selfMax = NON_TEACHING_MAX.partA;
   const scoreCards = [["Self Claimed", self.total, ACCENT]];
@@ -361,6 +362,12 @@ function SummaryPanel({ form, role, onSubmit, onUpdateRemarks, onReport, submitt
         Current visible score: <strong>{self.total.toFixed(1)} / {selfMax}</strong>
       </div>
       <CurrentApproverCard workflow={workflow} />
+
+      <SummaryOtherInfoField
+        value={form.summaryOtherInfo}
+        onChange={onUpdateSummaryOtherInfo}
+        readOnly={locked}
+      />
 
       <label style={{ fontSize: 12, color: "#334155", fontWeight: 800, display: "block", marginBottom: 6 }}>Remarks</label>
       <TextArea
@@ -444,6 +451,10 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
 
   const updateRemarks = (value) => {
     setForm((current) => ({ ...current, remarks: value }));
+  };
+
+  const updateSummaryOtherInfo = (value) => {
+    setForm((current) => ({ ...current, summaryOtherInfo: value }));
   };
 
   const handleSaveDraft = async () => {
@@ -603,6 +614,7 @@ export function NonTeachingAppraisalForm({ role = sessionStorage.getItem("role")
               role={normalizedRole}
               onSubmit={handleSubmit}
               onUpdateRemarks={updateRemarks}
+              onUpdateSummaryOtherInfo={updateSummaryOtherInfo}
               onReport={handleReport}
               submitting={submitting}
               locked={locked}

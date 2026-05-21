@@ -362,6 +362,7 @@ export const emptyNonTeachingForm = (
     partB: createEmptyPartB(),
     docs: {},
     remarks: "",
+    summaryOtherInfo: "",
     roRemarks: "",
     registrarRemarks: "",
     vcRemarks: "",
@@ -1138,6 +1139,11 @@ const ratingLabel = (value) => {
   return match ? `${value} - ${match.label}` : value || "";
 };
 
+const summaryOtherInfoBlock = (value) =>
+  clean(value)
+    ? `<h2>Any other information not covered above</h2><div class="box">${escapeHtml(value)}</div>`
+    : "";
+
 export const openNonTeachingReport = ({
   item = {},
   form = item.form,
@@ -1314,6 +1320,7 @@ export const openNonTeachingReport = ({
 
         ${includePartB && partBRoles.length ? `<h2>Part B - Authority Ratings</h2>${partBRows}` : ""}
 
+        ${summaryOtherInfoBlock(reportForm.summaryOtherInfo)}
         <h2>Remarks</h2>
         <table>
           <tbody>

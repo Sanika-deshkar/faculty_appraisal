@@ -39,6 +39,7 @@ import {
 } from "../utils/appraisalFormUtils";
 import { getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles, workflowValidationError, isAppraisalFinalisedByVc } from "../utils/hierarchy";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
+import SummaryOtherInfoField from "../components/SummaryOtherInfoField";
 
 const ACCENT = "#9d174d";
 const ACCENT2 = "#4338ca";
@@ -137,6 +138,7 @@ const emptyDesignArtsForm = () =>({
  proposals: [{ title: "", duration: "", agency: "", amount: "", score: "", _id: uid() }],
  fdps: [{ program: "", duration: "", org: "", score: "", _id: uid() }],
  training: [{ company: "", duration: "", nature: "", score: "", _id: uid() }],
+ summaryOtherInfo: "",
  sectionApplicability: { projects: "applicable", research: "applicable" },
 });
 
@@ -1224,6 +1226,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
  ["setInnovDirector", (value) =>setForm((prev) =>({ ...prev, innovDirector: value }))],
  ["setInnovDean", (value) =>setForm((prev) =>({ ...prev, innovDean: value }))],
  ["setInnovVc", (value) =>setForm((prev) =>({ ...prev, innovVc: value }))],
+ ["setSummaryOtherInfo", (value) =>setForm((prev) =>({ ...prev, summaryOtherInfo: value }))],
  ["setSectionApplicability", (value) =>setForm((prev) =>({ ...prev, sectionApplicability: { ...(prev.sectionApplicability || {}), ...(value || {}) } }))],
  ["setSectionSaveStatus", (value) =>setSectionSaveStatus((prev) =>({ ...prev, ...(value || {}) }))],
  ]), []);
@@ -1556,6 +1559,11 @@ export default function DesignArtsDashboard({ fixedRole }) {
  {selfSectionView === "summary" && (
 <div style={{ display: "grid", gap: 16 }}>
 <SummaryBox totals={totals} maxScores={totals.maxScores} roleScoreLabel={`Faculty/self appraisal score from the ${schoolDisplayName} form.`} />
+<SummaryOtherInfoField
+ value={form.summaryOtherInfo}
+ onChange={(value) =>setForm((prev) =>({ ...prev, summaryOtherInfo: value }))}
+ readOnly={locked}
+/>
 <div style={{ display: "grid", gap: 12, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: 16 }}>
  {locked ?<StatusBadge status={declaration?.status || "Submitted"} />: (
 <>

@@ -126,6 +126,11 @@ const renderReviewRemarks = (sections = []) => sections.length ? `
   `).join("")}
 ` : "";
 
+const renderSummaryOtherInfo = (value) =>
+  String(value ?? "").trim()
+    ? `<h3>Any other information not covered above</h3><div class="remarks">${safeHtml(value)}</div>`
+    : "";
+
 const docsFor = (docs, key) => {
   const files = docs?.[key] || [];
   if (!files.length) return "&nbsp;";
@@ -388,6 +393,7 @@ export const openFullFormReport = async ({
     </tbody>
   </table>
   ${renderReviewRemarks(Array.isArray(remarksSections) ? remarksSections : (remarksLabel ? [{ label: remarksLabel, remarks }] : []))}
+  ${renderSummaryOtherInfo(form.summaryOtherInfo)}
   ${buildSignaturePage({
     facultyName: form.info?.name || form.name || "",
     submittedAt: declaration?.submitted_at || "",
@@ -516,6 +522,7 @@ export const generateMediaCommReport = async ({
     <tr class="tr"><td>Marks Obtained (%)</td><td colspan="2" class="c">${totalPercentage}%</td></tr>
   </table>`}
   ${renderReviewRemarks(remarksSections)}
+  ${renderSummaryOtherInfo(form.summaryOtherInfo)}
   ${buildSignaturePage({
     facultyName: info.name || "",
     submittedAt: declaration?.submitted_at || "",
@@ -542,6 +549,7 @@ export const generateStandardReport = async ({
   proposalScore, productScore, fdpScore, trainScore,
   partBTotal, effectivePartBMax, grandTotal, effectiveGrandMax,
   researchGuidanceScore: rgs,
+  summaryOtherInfo = "",
   declaration = null,
   reviewChain = [],
 }) => {
@@ -727,6 +735,7 @@ export const generateStandardReport = async ({
     <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${effectiveGrandMax}</td><td class="c">${grandTotal.toFixed(1)}</td></tr>
     <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Marks Obtained (%)</td><td colspan="2" class="c">${totalPercentage}%</td></tr>
   </table>
+  ${renderSummaryOtherInfo(summaryOtherInfo)}
   ${buildSignaturePage({
     facultyName: info.name || "",
     submittedAt: declaration?.submitted_at || "",
