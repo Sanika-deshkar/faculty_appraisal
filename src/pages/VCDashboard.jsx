@@ -13,7 +13,7 @@ import { MediaCommAuthorityReviewPanel } from "./MediaCommDashboard";
 import { DesignArtsAuthorityReviewPanel } from "./DesignArtsDashboard";
 import { NonTeachingAuthorityReviewPanel } from "./NonTeachingStaffDashboard";
 import SummaryOtherInfoField, { summaryOtherInfoValueFrom } from "../components/SummaryOtherInfoField";
-import { SCORE_LIMITS, clampScore, clampReviewScore, effectiveMaxScore, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, reviewRowMaxForSection, reviewSectionScore, rowHasReviewableData, societyRowLocked, societyRowScore } from "../utils/appraisalFormUtils";
+import { SCORE_LIMITS, clampScore, clampReviewScore, effectiveMaxScore, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, reviewRowMaxForSection, reviewSectionScore, rowHasReviewableData, selfEffectivePartAMax, societyRowLocked, societyRowScore } from "../utils/appraisalFormUtils";
 import { standardReviewSummary } from "../utils/reviewSummaryTotals";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 
@@ -788,19 +788,25 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
  const partA = reviewLocked && n(person.vcPartA) >0 ? n(person.vcPartA) : calculatedScores.partA;
  const partB = reviewLocked && n(person.vcPartB) >0 ? n(person.vcPartB) : calculatedScores.partB;
  const total = reviewLocked && n(person.vcTotal) >0 ? n(person.vcTotal) : calculatedScores.total;
- const summaryMaxScores = {
- partA: effectiveMaxScore(MAX_SCORES.PART_A, person.sectionApplicability || {}, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]),
+ const selfMaxScores = {
+ partA: selfEffectivePartAMax(MAX_SCORES.PART_A, person.sectionApplicability || {}, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]),
  partB: effectiveMaxScore(MAX_SCORES.PART_B, person.sectionApplicability || {}, [{ key: "research", max: 30 }]),
  grand: 0,
  };
- summaryMaxScores.grand = summaryMaxScores.partA + summaryMaxScores.partB;
- const g = grade(total, summaryMaxScores.grand);
+ selfMaxScores.grand = selfMaxScores.partA + selfMaxScores.partB;
+ const reviewerMaxScores = {
+ partA: effectiveMaxScore(MAX_SCORES.PART_A, person.sectionApplicability || {}, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]),
+ partB: selfMaxScores.partB,
+ grand: 0,
+ };
+ reviewerMaxScores.grand = reviewerMaxScores.partA + reviewerMaxScores.partB;
+ const g = grade(total, reviewerMaxScores.grand);
  const previousRoles = vcPreviousRolesFor(person, personMode);
- const selfPartA = n(person.declaration?.part_a_total ?? person.selfPartA ?? person.partATotal);
- const selfPartB = n(person.declaration?.part_b_total ?? person.selfPartB ?? person.partBTotal);
- const selfTotal = vcSelfTotalForPerson(person);
- const facultyTotals = { partA: selfPartA, partB: selfPartB, total: selfTotal, maxScores: summaryMaxScores };
- const reviewerSummaryTotals = { partA, partB, total, maxScores: summaryMaxScores };
+ const selfPartA = Math.min(n(person.declaration?.part_a_total ?? person.selfPartA ?? person.partATotal), selfMaxScores.partA);
+ const selfPartB = Math.min(n(person.declaration?.part_b_total ?? person.selfPartB ?? person.partBTotal), selfMaxScores.partB);
+ const selfTotal = Math.min(vcSelfTotalForPerson(person), selfPartA + selfPartB, selfMaxScores.grand);
+ const facultyTotals = { partA: selfPartA, partB: selfPartB, total: selfTotal, maxScores: selfMaxScores };
+ const reviewerSummaryTotals = { partA, partB, total, maxScores: reviewerMaxScores };
  const vcReviewCompleted = person.status === "Reviewed" || person.status === "VC Reviewed" || n(person.vcTotal) >0;
  const firstReviewRoleLabel = previousRoles.includes("center_head") ? "Center Head Remarks" : "HOD Remarks";
  const personInfo = mergeFacultyInfo(person.info, person);
@@ -842,7 +848,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
  partB: reviewLocked && String(person.vcPartB ?? "").trim() !== "" ? n(person.vcPartB) : partB,
  total: reviewLocked && String(person.vcTotal ?? "").trim() !== "" ? n(person.vcTotal) : total,
  },
- maxScores: summaryMaxScores,
+ maxScores: reviewerMaxScores,
  scoreRoles: ["score", ...previousRoles, "vc"],
  roleLabel: (value) =>value === "vc" ? "VC" : vcRoleMeta(value).shortLabel || value,
  status: person.status,
@@ -891,7 +897,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
 </div>
 <div style={{ background: g.bg, border: `2px solid ${g.color}40`, borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
 <div style={{ color: g.color, fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 700 }}>VC Total</div>
-<div style={{ color: g.color, fontWeight: 800, fontSize: 14 }}>{total.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/{summaryMaxScores.grand}</span></div>
+<div style={{ color: g.color, fontWeight: 800, fontSize: 14 }}>{total.toFixed(1)}<span style={{ fontSize: 10, color: "#94a3b8" }}>/{reviewerMaxScores.grand}</span></div>
 </div>
 </div>
 </div>

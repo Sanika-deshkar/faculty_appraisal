@@ -5,7 +5,7 @@ import { ACR_DETAIL_POINTS, APP_INFO, createAcrRows } from "../constants/formCon
 import { fetchSavedAppraisal, loadAppraisalDocuments, loadSavedAppraisal, mergeFacultyInfo, saveAppraisalDraftSection, submitAppraisal } from "../services/appraisalPersistence";
 import { api } from "../services/api";
 import { fetchReviewQueueForRole, submitWorkflowReview } from "../services/reviewWorkflow";
-import { INNOVATIVE_METHODS, SCORE_LIMITS, averageSectionScore, clampScore, clampReviewScore, courseFileAverageScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, reviewSectionScore, rowHasReviewableData, scoreRemaining, societyRowLocked, societyRowScore, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
+import { INNOVATIVE_METHODS, SCORE_LIMITS, averageSectionScore, clampScore, clampReviewScore, courseFileAverageScore, courseFileRowScore, effectiveMaxScore, feedbackAverage, feedbackRowScore, feedbackSectionScore, innovativeSelectionsFromDetails, innovativeTeachingScore, isAllowedAttachmentFile, isValidDDMMYYYY, maskDateDDMMYYYY, normalizeAutoScores, projectGuidanceRowMax, researchGuidanceRowMax, researchGuidanceScore, reviewSectionScore, rowHasReviewableData, scoreRemaining, selfEffectivePartAMax, societyRowLocked, societyRowScore, sumSectionScore, toggleInnovativeMethod, validateCompleteRows } from "../utils/appraisalFormUtils";
 import { canReviewerRejectProfile, rejectedStatusFor, reviewedStatusFor, profileFromsessionStorage, workflowValidationError, roleLabel, isAppraisalFinalisedByVc, isRejectedStatus } from "../utils/hierarchy";
 import { standardSubmittedScoreSummary } from "../utils/reviewSummaryTotals";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
@@ -1534,9 +1534,9 @@ export default function HODDashboard({
  const uniScore = sumSectionScore(uniActs, 30);
  const societyScore = sectionApplicability.society === "notApplicable" ? 0 : clampScore(society.reduce((total, row) =>total + societyRowScore(row), 0), 10);
  const industryScore = sumSectionScore(industry, 5);
- const acrScore = sumSectionScore(acr, 25, "score", SCORE_LIMITS.acrRow);
+ const acrScore = 0;
  const teachingMax = sectionApplicability.projects === "notApplicable" ? 90 : 100;
- const effectivePartAMax = effectiveMaxScore(200, sectionApplicability, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]);
+ const effectivePartAMax = selfEffectivePartAMax(200, sectionApplicability, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]);
  const partATotal = clampScore(teachingRaw + stuFeedbackScore + deptScore + uniScore + societyScore + industryScore + acrScore, effectivePartAMax);
 
  const journalScore = sumSectionScore(journals, 120);
@@ -1903,11 +1903,11 @@ export default function HODDashboard({
 <tr class="tr"><td colspan="3" class="c b">Total (Max 5)</td><td class="c">${industryScore.toFixed(1)}</td></tr>
 </table>
 
-<h3>G. Annual Confidential Report &nbsp;(Max 25)</h3>
+<h3>G. Annual Confidential Report &nbsp;(Not counted in self score)</h3>
 <table>
 <tr><th>SN</th><th>Parameter</th><th>API Score</th></tr>
  ${acr.map((a, i) =>`<tr><td class="c">${i + 1}</td><td>${a.label || '&nbsp;'}</td><td class="c">${String(a.score ?? "").trim() ? clampScore(a.score, SCORE_LIMITS.acrRow) : '&nbsp;'}</td></tr>`).join('')}
-<tr class="tr"><td colspan="2" class="c b">Total (Max 25)</td><td class="c">${acrScore.toFixed(1)}</td></tr>
+<tr class="tr"><td colspan="2" class="c b">Total (Not counted in self score)</td><td class="c">${acrScore.toFixed(1)}</td></tr>
 </table>
 
 <table class="st">
@@ -1918,7 +1918,7 @@ export default function HODDashboard({
 <tr><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
 <tr><td>Contribution to Society</td><td class="c">${sectionApplicability.society === "notApplicable" ? "N/A" : "10"}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
 <tr><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
-<tr><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
+<tr><td>Annual Confidential Report</td><td class="c">N/A</td><td class="c">${acrScore.toFixed(1)}</td></tr>
 <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
 <tr class="tr"><td class="b">PART A MARKS OBTAINED (%)</td><td colspan="2" class="c b">${partAMarksPercentage}%</td></tr>
 </table>
@@ -2029,7 +2029,7 @@ export default function HODDashboard({
 <tr><td class="c">D</td><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
 <tr><td class="c">E</td><td>Contribution to Society</td><td class="c">${sectionApplicability.society === "notApplicable" ? "N/A" : "10"}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
 <tr><td class="c">F</td><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
-<tr><td class="c">G</td><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
+<tr><td class="c">G</td><td>Annual Confidential Report</td><td class="c">N/A</td><td class="c">${acrScore.toFixed(1)}</td></tr>
 <tr class="tr"><td colspan="2" class="c b">Part A Total</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
 <tr class="tr"><td colspan="2" class="c b">Part A Marks Obtained (%)</td><td colspan="2" class="c b">${partAMarksPercentage}%</td></tr>
 <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part B - Research and Academic Contribution</td></tr>

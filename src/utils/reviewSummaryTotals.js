@@ -181,14 +181,16 @@ export const standardSubmittedScoreSummary = (subject = {}, fallback = {}) => {
   ].filter(Boolean);
 
   const sectionApplicability = sectionApplicabilityFrom(sources);
-  const inferredPartAMax = n(fallback.partAMax ?? fallback.effectivePartAMax) ||
-    effectiveMaxFromApplicability(200, sectionApplicability, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]);
+  const inferredSelfPartAMax = effectiveMaxFromApplicability(200, { ...sectionApplicability, acr: "notApplicable" }, [{ key: "projects", max: 10 }, { key: "society", max: 10 }, { key: "acr", max: 25 }]);
+  const fallbackPartAMax = n(fallback.partAMax ?? fallback.effectivePartAMax);
+  const inferredPartAMax = fallbackPartAMax ? Math.min(fallbackPartAMax, inferredSelfPartAMax) : inferredSelfPartAMax;
   const inferredPartBMax = n(fallback.partBMax ?? fallback.effectivePartBMax) ||
     effectiveMaxFromApplicability(375, sectionApplicability, [{ key: "research", max: 30 }]);
 
-  const partAMax = numericFrom(sources, [
+  const storedPartAMax = numericFrom(sources, [
     "partAMax", "part_a_max", "effectivePartAMax", "effective_part_a_max", "maxPartA",
   ], inferredPartAMax);
+  const partAMax = Math.min(storedPartAMax || inferredPartAMax, inferredPartAMax);
   const partBMax = numericFrom(sources, [
     "partBMax", "part_b_max", "effectivePartBMax", "effective_part_b_max", "maxPartB",
   ], inferredPartBMax);
@@ -196,18 +198,21 @@ export const standardSubmittedScoreSummary = (subject = {}, fallback = {}) => {
     "grandMax", "grand_max", "effectiveGrandMax", "effective_grand_max", "maxGrand", "totalMax",
   ], partAMax + partBMax);
 
-  const partA = numericFrom(sources, [
+  const rawPartA = numericFrom(sources, [
     "partATotal", "partA", "part_a_total", "part_a_score", "selfPartA", "self_part_a",
     "facultyPartA", "faculty_part_a", "facultyPartAScore", "faculty_part_a_score",
   ], fallback.partA);
-  const partB = numericFrom(sources, [
+  const partA = Math.min(rawPartA, partAMax);
+  const rawPartB = numericFrom(sources, [
     "partBTotal", "partB", "part_b_total", "part_b_score", "selfPartB", "self_part_b",
     "facultyPartB", "faculty_part_b", "facultyPartBScore", "faculty_part_b_score",
   ], fallback.partB);
-  const total = numericFrom(sources, [
+  const partB = Math.min(rawPartB, partBMax);
+  const rawTotal = numericFrom(sources, [
     "grandTotal", "grand_total", "totalScore", "total_score", "total", "selfTotal",
     "self_total", "facultyTotal", "faculty_total", "facultyScore", "faculty_score",
   ], fallback.total ?? partA + partB);
+  const total = Math.min(rawTotal, partA + partB, grandMax);
 
   return { partA, partB, total, partAMax, partBMax, grandMax };
 };

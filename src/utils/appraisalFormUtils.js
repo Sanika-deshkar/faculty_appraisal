@@ -131,6 +131,12 @@ export const effectiveMaxScore = (baseMax, applicability = {}, sections = []) =>
  ),
  );
 
+export const selfEffectivePartAMax = (baseMax = 200, applicability = {}, sections = []) =>
+ effectiveMaxScore(baseMax, { ...applicability, acr: "notApplicable" }, [
+ ...sections.filter((section) => section.key !== "acr"),
+ { key: "acr", max: 25 },
+ ]);
+
 export const sumSectionScore = (rows = [], maxScore, scoreKey = "score", rowMax) =>
  clampScore(
  rows.reduce((total, row, index) =>{

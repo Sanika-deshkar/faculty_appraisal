@@ -31,6 +31,7 @@ import {
  reviewSectionScore,
  rowHasReviewableData,
  scoreSectionRows,
+ selfEffectivePartAMax,
  societyRowLocked,
  societyRowScore,
  sumSectionScore,
@@ -216,14 +217,14 @@ const scoreKeyForInnov = (role) =>({
 
 const calculateDesignArtsTotals = (form, scoreKey = "score") =>{
  const applicability = form.sectionApplicability || {};
- const maxScores = getDesignArtsEffectiveMaxScores(form);
+ const maxScores = getDesignArtsEffectiveMaxScores(form, { self: scoreKey === "score" });
  const rowSum = (key, max) =>applicability[key] === "notApplicable" ? 0 : scoreSectionRows(key, form[key] || [], max, scoreKey);
  const lecturesScore = applicability["lectures"] === "notApplicable" ? 0 : averageSectionScore(form.lectures || [], 40, scoreKey);
  const courseFileScore = applicability["courseFile"] === "notApplicable" ? 0 : scoreSectionRows("courseFile", form.courseFile || [], 20, scoreKey);
  const partA = clampScore(
  lecturesScore + courseFileScore + (scoreKey === "score" && Array.isArray(form.innovRows) ? clampScore(form.innovRows.reduce((total, row) =>total + clampScore(row.score, SCORE_LIMITS.innovativeRow), 0), 10) : scoreKey === "score" ? innovativeTeachingScore(form.innovDetails, form.innovScore, 10) : clampScore(form[scoreKeyForInnov(scoreKey)], 10)) +
  rowSum("projects", 20) + rowSum("quals", 10) + (scoreKey === "score" ? feedbackSectionScore(form.feedback, 10) : reviewSectionScore("feedback", form.feedback || [], 10, scoreKey)) +
- rowSum("deptActs", 20) + rowSum("uniActs", 30) + rowSum("society", 10) + rowSum("industry", 5) + rowSum("acr", 25),
+ rowSum("deptActs", 20) + rowSum("uniActs", 30) + rowSum("society", 10) + rowSum("industry", 5) + (scoreKey === "score" ? 0 : rowSum("acr", 25)),
  maxScores.partA,
  );
  const b8Score = clampScore(rowSum("fdps", 20) + rowSum("training", 20), 20);
@@ -246,9 +247,9 @@ const effectivePartBMax = (baseMax, applicability = {}) =>{
  : withoutB8;
 };
 
-const getDesignArtsEffectiveMaxScores = (form = {}) =>{
+const getDesignArtsEffectiveMaxScores = (form = {}, { self = false } = {}) =>{
  const applicability = form.sectionApplicability || {};
- const partA = effectivePartMax(PART_A_MAX, applicability, PART_A_SECTIONS);
+ const partA = self ? selfEffectivePartAMax(PART_A_MAX, applicability, PART_A_SECTIONS) : effectivePartMax(PART_A_MAX, applicability, PART_A_SECTIONS);
  const partB = effectivePartBMax(PART_B_MAX, applicability);
  return { partA, partB, grand: partA + partB };
 };
@@ -1428,9 +1429,9 @@ export default function DesignArtsDashboard({ fixedRole }) {
  const lecScore = applicability["lectures"] === "notApplicable" ? 0 : averageSectionScore(form.lectures || [], 40, "score");
  const cfScore = applicability["courseFile"] === "notApplicable" ? 0 : averageSectionScore(form.courseFile || [], 20, "score");
  const innovScore = clampScore(Array.isArray(form.innovRows) ? form.innovRows.reduce((t, r) =>t + clampScore(r.score, SCORE_LIMITS.innovativeRow), 0) : innovativeTeachingScore(form.innovDetails, form.innovScore, 10), 10);
- const maxScores = getDesignArtsEffectiveMaxScores(form);
+ const maxScores = getDesignArtsEffectiveMaxScores(form, { self: true });
  const b8Score = clampScore(rowSum("fdps", 20) + rowSum("training", 20), 20);
- const partATotal = clampScore(lecScore + cfScore + innovScore + rowSum("projects", 20) + rowSum("quals", 10) + feedbackSectionScore(form.feedback || [], 10) + rowSum("deptActs", 20) + rowSum("uniActs", 30) + rowSum("society", 10) + rowSum("industry", 5) + rowSum("acr", 25), maxScores.partA);
+ const partATotal = clampScore(lecScore + cfScore + innovScore + rowSum("projects", 20) + rowSum("quals", 10) + feedbackSectionScore(form.feedback || [], 10) + rowSum("deptActs", 20) + rowSum("uniActs", 30) + rowSum("society", 10) + rowSum("industry", 5), maxScores.partA);
  const partBTotal = clampScore(rowSum("journals", 80) + rowSum("books", 60) + rowSum("ict", 50) + rowSum("research", 30) + rowSum("internalProjects", 15) + rowSum("externalProjects", 30) + rowSum("ipr", 40) + rowSum("awards", 10) + rowSum("confs", 30) + rowSum("proposals", 10) + b8Score, maxScores.partB);
  const grandTotal = clampScore(partATotal + partBTotal, maxScores.grand);
  generateMediaCommReport({
@@ -1438,7 +1439,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
  subtitle: `${roleLabel(role)} appraisal form`,
  form,
  docs,
- partASections: PART_A_SECTIONS,
+ partASections: PART_A_SECTIONS.map((section) =>section.key === "acr" ? { ...section, max: 0, title: "(xi) Annual Confidential Report (ACR) - Not counted in self score" } : section),
  partBSections: PART_B_SECTIONS,
  totals: { partA: partATotal, partB: partBTotal, total: grandTotal },
  maxScores,
@@ -1461,7 +1462,7 @@ export default function DesignArtsDashboard({ fixedRole }) {
  ...summaryRowIfApplicable(applicability, "uniActs", { id: "A(viii)", label: "University Level Activities", max: 30, score: rowSum("uniActs", 30) }),
  ...summaryRowIfApplicable(applicability, "society", { id: "A(ix)", label: "Contribution to Society", max: 10, score: rowSum("society", 10) }),
  ...summaryRowIfApplicable(applicability, "industry", { id: "A(x)", label: "Industry Connect", max: 5, score: rowSum("industry", 5) }),
- ...summaryRowIfApplicable(applicability, "acr", { id: "A(xi)", label: "Annual Confidential Report (ACR)", max: 25, score: rowSum("acr", 25) }),
+ { id: "A(xi)", label: "Annual Confidential Report (ACR)", max: "N/A", score: 0 },
  { isTotal: true, label: "Part A Total", max: maxScores.partA, score: partATotal },
  { isHeader: true, label: "Part B - Research & Academic Contributions" },
  ...summaryRowIfApplicable(applicability, "journals", { id: "B1(i)", label: "Published Papers in Journals", max: 80, score: rowSum("journals", 80) }),

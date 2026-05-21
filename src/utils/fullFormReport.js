@@ -560,6 +560,9 @@ export const generateStandardReport = async ({
   const partAPercentage = percentOf(partATotal, effectivePartAMax);
   const partBPercentage = percentOf(partBTotal, effectivePartBMax);
   const totalPercentage = percentOf(grandTotal, effectiveGrandMax);
+  const selfAcrExcluded = n(effectivePartAMax) <= 175 || applicability.acr === "notApplicable";
+  const acrSummaryMax = selfAcrExcluded ? "N/A" : "25";
+  const acrSummaryScore = selfAcrExcluded ? 0 : acrScore;
   const win = window.open('', '_blank');
   if (!win) { alert("Please allow popups to generate the report."); return; }
   let logoSrc = `${window.location.origin}/image.png`;
@@ -637,10 +640,10 @@ export const generateStandardReport = async ({
   <table><tr><th>SN</th><th>Name of Industry</th><th>Details of Activity</th><th>API Score</th></tr>
   ${industry.map((ind,i)=>`<tr><td class="c">${i+1}</td><td>${ind.name||'&nbsp;'}</td><td>${ind.details||'&nbsp;'}</td><td class="c">${ind.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="3" class="c b">Total (Max 5)</td><td class="c">${industryScore.toFixed(1)}</td></tr></table>
-  <h3>G. Annual Confidential Report (Max 25)</h3>
+  <h3>G. Annual Confidential Report (${selfAcrExcluded ? "Not counted in self score" : "Max 25"})</h3>
   <table><tr><th>SN</th><th>Parameter</th><th>API Score</th></tr>
   ${acr.map((a,i)=>`<tr><td class="c">${i+1}</td><td>${a.label||'&nbsp;'}</td><td class="c">${a.score||'&nbsp;'}</td></tr>`).join('')}
-  <tr class="tr"><td colspan="2" class="c b">Total (Max 25)</td><td class="c">${acrScore.toFixed(1)}</td></tr></table>
+  <tr class="tr"><td colspan="2" class="c b">Total (${selfAcrExcluded ? "Not counted in self score" : "Max 25"})</td><td class="c">${acrSummaryScore.toFixed(1)}</td></tr></table>
   <table class="st">
     <tr><th>Part A Summary</th><th>Max</th><th>Faculty Score</th></tr>
     <tr><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">${teachingMax}</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
@@ -649,7 +652,7 @@ export const generateStandardReport = async ({
     <tr><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
     <tr><td>Contribution to Society</td><td class="c">${applicability.society==='notApplicable'?'N/A':'10'}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
     <tr><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
-    <tr><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
+    <tr><td>Annual Confidential Report</td><td class="c">${acrSummaryMax}</td><td class="c">${acrSummaryScore.toFixed(1)}</td></tr>
     <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
     <tr class="tr"><td class="b">PART A MARKS OBTAINED (%)</td><td colspan="2" class="c b">${partAPercentage}%</td></tr>
   </table>
@@ -718,7 +721,7 @@ export const generateStandardReport = async ({
     <tr><td class="c">D</td><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
     <tr><td class="c">E</td><td>Contribution to Society</td><td class="c">${applicability.society==='notApplicable'?'N/A':'10'}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
     <tr><td class="c">F</td><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
-    <tr><td class="c">G</td><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
+    <tr><td class="c">G</td><td>Annual Confidential Report</td><td class="c">${acrSummaryMax}</td><td class="c">${acrSummaryScore.toFixed(1)}</td></tr>
     <tr class="tr"><td colspan="2" class="c b">Part A Total</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
     <tr class="tr"><td colspan="2" class="c b">Part A Marks Obtained (%)</td><td colspan="2" class="c b">${partAPercentage}%</td></tr>
     <tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">Part B - Research and Academic Contribution</td></tr>
