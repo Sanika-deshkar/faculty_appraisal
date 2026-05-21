@@ -2090,6 +2090,14 @@ export default function DeanDashboard() {
  const partBTotal = clampScore(journalScore + bookScore + ictScore + researchScore + projectBScore + externalProjectScore + patentScore + awardScore + confScore + proposalScore + productScore + b8Score, effectivePartBMax);
  const grandTotal = clampScore(partATotal + partBTotal, effectiveGrandMax);
 
+ // display totals exclude ACR for employee-facing views
+ const displayPartATotal = Math.max(0, partATotal - acrScore);
+ const displayEffectivePartAMax = Math.max(0, effectivePartAMax - (Array.isArray(acr) && acr.length ? 25 : 0));
+ const displayGrand = Math.max(0, grandTotal - acrScore);
+ const displayEffectiveGrandMax = Math.max(0, effectiveGrandMax - (Array.isArray(acr) && acr.length ? 25 : 0));
+ const displayPartAMarksPercentage = displayEffectivePartAMax > 0 ? ((displayPartATotal / displayEffectivePartAMax) * 100).toFixed(2) : "0.00";
+ const displayTotalMarksPercentage = displayEffectiveGrandMax > 0 ? ((displayGrand / displayEffectiveGrandMax) * 100).toFixed(2) : "0.00";
+
  const gradeFunc = () =>{
  const p = pct(grandTotal, effectiveGrandMax);
  if (p >= 85) return { label: "Outstanding", color: "#10b981" };
@@ -2178,6 +2186,7 @@ export default function DeanDashboard() {
  name: rev.reviewer_name || "",
  date: rev.reviewed_at ? new Date(rev.reviewed_at).toLocaleDateString("en-IN") : "",
  })),
+	hideAcr: true,
  });
 
  const [submitting, setSubmitting] = useState(false);
@@ -2535,7 +2544,7 @@ export default function DeanDashboard() {
  {hodAppraisalTab === "partA" && (
 <SC title="Part A - Teaching & Academic Activities (Max 200)" accent="#6366f1">
 <div style={{ marginBottom: 14, padding: "8px 12px", background: "#f0f4ff", borderRadius: 6, fontSize: 12, color: "#312e81", fontWeight: 600 }}>
- Total Part A Score: {partATotal.toFixed(1)}/{effectivePartAMax}
+ Total Part A Score: {displayPartATotal.toFixed(1)}/{displayEffectivePartAMax}
 </div>
 <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>Fill in your teaching and academic activities for the appraisal period. Enter scores for each item.</div>
  {/* A1. Teaching Process */}
@@ -2907,30 +2916,7 @@ export default function DeanDashboard() {
  {/* A11. ACR */}
 <div style={{ marginBottom: 16 }}>
 <div style={{ fontWeight: 700, fontSize: 13, color: "#0f172a", marginBottom: 8 }}>(xi) Annual Confidential Report (ACR) - Max 25 marks</div>
-<div style={{ fontSize: 11, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 5, padding: "6px 10px", marginBottom: 8 }}>Warning: This section is filled by your superior (HOD/Director). Your scores here are read-only.</div>
-<table style={T}>
-<thead>
-<tr>
-<th style={{ ...TH, width: 30 }}>SN</th>
-<th style={TH}>Attribute</th>
-<th style={TH}>Score</th>
-</tr>
-</thead>
-<tbody>
- {acr.map((r, i) =>(
-<tr key={i} style={i % 2 === 1 ? { background: "#f8fafc" } : {}}>
-<td style={TDC}>{i + 1}</td>
-<td style={TD}><div style={{ fontWeight: 700 }}>{r.label}</div>{ACR_DETAIL_POINTS[r.label] &&<ul style={{ margin: "5px 0 0 16px", padding: 0, color: "#64748b", fontSize: 10, lineHeight: 1.5 }}>{ACR_DETAIL_POINTS[r.label].map((point) =><li key={point}>{point}</li>)}</ul>}</td>
-<td style={TDS}><RO val={String(r.score ?? "").trim() ? clampScore(r.score, SCORE_LIMITS.acrRow) : "-"} center /></td>
-
-</tr>
- ))}
-<tr style={{ background: "#eff6ff" }}>
-<td style={{ ...TDC, fontWeight: "bold" }} colSpan={2}>Total Score (Max 25)</td>
-<td style={{ ...TDS, fontWeight: "bold" }}>{acrScore.toFixed(1)}</td>
-</tr>
-</tbody>
-</table>
+<div style={{ fontSize: 11, color: "#92400e", background: "#fff8f0", borderRadius: 6, padding: "8px 10px" }}>Annual Confidential Report (ACR) is confidential and not shown in employee view. It remains in the system for reviewer use.</div>
 </div>
 </SC>
  )}

@@ -309,6 +309,7 @@ export const openFullFormReport = async ({
   showTotal = false,
   declaration = null,
   reviewChain = [],
+  hideAcr = false,
 }) => {
   const win = window.open("", "_blank", "width=1000,height=800");
   if (!win) { alert("Please allow popups to generate the report."); return; }
@@ -324,6 +325,17 @@ export const openFullFormReport = async ({
   const partAPercentage = percentOf(totals.partA, maxScores.partA);
   const partBPercentage = percentOf(totals.partB, maxScores.partB);
   const totalPercentage = percentOf(totals.total, maxScores.grand);
+  // When hideAcr is requested (employee-facing), remove ACR (25) from Part A and grand totals for display
+  const acrValue = n(totals.acr || form.acr?.reduce((s, r) => s + n(r.score), 0));
+  const displayPartAMax = hideAcr ? Math.max(0, n(maxScores.partA) - 25) : n(maxScores.partA || 0);
+  const displayPartA = hideAcr ? Math.max(0, n(totals.partA) - acrValue) : n(totals.partA || 0);
+  const displayGrandMax = hideAcr ? Math.max(0, n(maxScores.grand) - 25) : n(maxScores.grand || 0);
+  const displayGrand = hideAcr ? Math.max(0, n(totals.total) - acrValue) : n(totals.total || 0);
+  const displayPartAPercentage = percentOf(displayPartA, displayPartAMax);
+  const displayPartBPercentage = percentOf(n(totals.partB || 0), n(maxScores.partB || 0));
+  const displayTotalPercentage = percentOf(displayGrand, displayGrandMax);
+
+  const sectionAllowed = (section) => isSectionReportable(form, section) && !(hideAcr && section.key === "acr");
   const html = `<!doctype html>
 <html>
 <head>
@@ -370,9 +382,9 @@ export const openFullFormReport = async ({
   </table>
 
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART A - Teaching Process &amp; Academic Activities</h3>
-  ${partASections.slice(0, 2).filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel, showTotal })).join("")}
+  ${partASections.slice(0, 2).filter((section) => sectionAllowed(section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel, showTotal })).join("")}
   ${renderInnovativeSection({ form, docs, scoreRoles, roleLabel, showTotal })}
-  ${partASections.slice(2).filter((section) => isSectionReportable(form, section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel, showTotal })).join("")}
+  ${partASections.slice(2).filter((section) => sectionAllowed(section)).map((section) => renderSection({ section, rows: form[section.key], docs, scoreRoles, roleLabel, showTotal })).join("")}
 
   <div class="page-break"></div>
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART B - Research &amp; Academic Contributions</h3>
@@ -383,12 +395,12 @@ export const openFullFormReport = async ({
   <table class="st">
     <thead><tr><th>Section</th><th>Score</th><th>Maximum</th></tr></thead>
     <tbody>
-      <tr><td>Part A</td><td class="c">${n(totals.partA).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partA ?? ""))}</td></tr>
-      <tr><td>Part A Marks Obtained (%)</td><td colspan="2" class="c">${partAPercentage}%</td></tr>
+      <tr><td>Part A</td><td class="c">${displayPartA.toFixed(1)}</td><td class="c">${safeHtml(String(displayPartAMax))}</td></tr>
+      <tr><td>Part A Marks Obtained (%)</td><td colspan="2" class="c">${displayPartAPercentage}%</td></tr>
       <tr><td>Part B</td><td class="c">${n(totals.partB).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partB ?? ""))}</td></tr>
-      <tr><td>Part B Marks Obtained (%)</td><td colspan="2" class="c">${partBPercentage}%</td></tr>
-      <tr class="tr"><td>Grand Total</td><td class="c">${n(totals.total).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.grand ?? ""))}</td></tr>
-      <tr class="tr"><td>Marks Obtained (%)</td><td colspan="2" class="c">${totalPercentage}%</td></tr>
+      <tr><td>Part B Marks Obtained (%)</td><td colspan="2" class="c">${displayPartBPercentage}%</td></tr>
+      <tr class="tr"><td>Grand Total</td><td class="c">${displayGrand.toFixed(1)}</td><td class="c">${safeHtml(String(displayGrandMax))}</td></tr>
+      <tr class="tr"><td>Marks Obtained (%)</td><td colspan="2" class="c">${displayTotalPercentage}%</td></tr>
       ${status ? `<tr><td>Status</td><td colspan="2">${safeHtml(status)}</td></tr>` : ""}
     </tbody>
   </table>
@@ -421,6 +433,7 @@ export const generateMediaCommReport = async ({
   declaration = null,
   reviewChain = [],
   remarksSections = [],
+  hideAcr = false,
 }) => {
   const win = window.open("", "_blank", "width=1000,height=800");
   if (!win) { alert("Please allow popups to generate the report."); return; }
@@ -433,9 +446,18 @@ export const generateMediaCommReport = async ({
 
   const info = form.info || {};
   const scoreRoles = ["score"];
-  const partAPercentage = percentOf(totals.partA, maxScores.partA);
-  const partBPercentage = percentOf(totals.partB, maxScores.partB);
-  const totalPercentage = percentOf(totals.total, maxScores.grand);
+  const acrScore = n(form.acr?.reduce((s, r) => s + n(r.score), 0));
+  const acrPresent = Array.isArray(form.acr) && form.acr.length > 0;
+  const acrMax = acrPresent ? 25 : 0;
+  const displayPartA = hideAcr ? Math.max(0, n(totals.partA) - acrScore) : n(totals.partA);
+  const displayPartAMax = hideAcr ? Math.max(0, n(maxScores.partA || 0) - acrMax) : n(maxScores.partA || 0);
+  const displayPartB = n(totals.partB);
+  const displayGrand = hideAcr ? Math.max(0, n(totals.total) - acrScore) : n(totals.total);
+  const displayGrandMax = hideAcr ? Math.max(0, n(maxScores.grand || 0) - acrMax) : n(maxScores.grand || 0);
+  const partAPercentage = percentOf(displayPartA, displayPartAMax);
+  const partBPercentage = percentOf(displayPartB, maxScores.partB);
+  const totalPercentage = percentOf(displayGrand, displayGrandMax);
+  const rowsToRender = hideAcr && Array.isArray(detailedSummaryRows) ? detailedSummaryRows.filter(r => !/annual confidential report|acr/i.test(r.label || '')) : detailedSummaryRows;
 
   const html = `<!doctype html>
 <html>
@@ -492,11 +514,11 @@ export const generateMediaCommReport = async ({
   ${partBSections.filter((s) => isSectionReportable(form, s)).map((s) => renderSection({ section: s, rows: form[s.key], docs, scoreRoles, roleLabel: undefined, showTotal: true })).join("")}
 
   <div class="pb"></div>
-  ${detailedSummaryRows ? `
+  ${rowsToRender ? `
   <h3 style="text-align:center;font-size:13px">SUMMARY OF API SCORES - AY ${safeHtml(info.ay || "")}</h3>
   <table class="st">
     <tr><th>Sr.No.</th><th>Criteria</th><th>Max Score</th><th>Faculty Score</th></tr>
-    ${detailedSummaryRows.map((row, i) =>
+    ${rowsToRender.map((row, i) =>
       row.isHeader
         ? `<tr><td colspan="4" class="b" style="background:#d9d9d9;text-align:center">${safeHtml(row.label)}</td></tr>`
         : row.isGrandTotal
@@ -514,11 +536,11 @@ export const generateMediaCommReport = async ({
   <h2>Summary</h2>
   <table class="st">
     <tr><th>Section</th><th>Score</th><th>Maximum</th></tr>
-    <tr><td>Part A</td><td class="c">${n(totals.partA).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partA || ""))}</td></tr>
+    <tr><td>Part A</td><td class="c">${displayPartA.toFixed(1)}</td><td class="c">${safeHtml(String(displayPartAMax || ""))}</td></tr>
     <tr><td>Part A Marks Obtained (%)</td><td colspan="2" class="c">${partAPercentage}%</td></tr>
-    <tr><td>Part B</td><td class="c">${n(totals.partB).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partB || ""))}</td></tr>
+    <tr><td>Part B</td><td class="c">${displayPartB.toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.partB || ""))}</td></tr>
     <tr><td>Part B Marks Obtained (%)</td><td colspan="2" class="c">${partBPercentage}%</td></tr>
-    <tr class="tr"><td>Grand Total</td><td class="c">${n(totals.total).toFixed(1)}</td><td class="c">${safeHtml(String(maxScores.grand || ""))}</td></tr>
+    <tr class="tr"><td>Grand Total</td><td class="c">${displayGrand.toFixed(1)}</td><td class="c">${safeHtml(String(displayGrandMax || ""))}</td></tr>
     <tr class="tr"><td>Marks Obtained (%)</td><td colspan="2" class="c">${totalPercentage}%</td></tr>
   </table>`}
   ${renderReviewRemarks(remarksSections)}
@@ -552,6 +574,7 @@ export const generateStandardReport = async ({
   summaryOtherInfo = "",
   declaration = null,
   reviewChain = [],
+  hideAcr = false,
 }) => {
   const n = (v) => parseFloat(v) || 0;
   const applicability = sectionApplicability || {};
@@ -560,6 +583,15 @@ export const generateStandardReport = async ({
   const partAPercentage = percentOf(partATotal, effectivePartAMax);
   const partBPercentage = percentOf(partBTotal, effectivePartBMax);
   const totalPercentage = percentOf(grandTotal, effectiveGrandMax);
+  const acrValue = n(acrScore) || (Array.isArray(acr) ? acr.reduce((s, r) => s + n(r.score), 0) : 0);
+  const acrPresent = Array.isArray(acr) && acr.length > 0;
+  const acrMax = acrPresent ? 25 : 0;
+  const displayPartATotal = hideAcr ? Math.max(0, n(partATotal) - acrValue) : n(partATotal);
+  const displayEffectivePartAMax = hideAcr ? Math.max(0, n(effectivePartAMax) - acrMax) : n(effectivePartAMax);
+  const displayGrand = hideAcr ? Math.max(0, n(grandTotal) - acrValue) : n(grandTotal);
+  const displayEffectiveGrandMax = hideAcr ? Math.max(0, n(effectiveGrandMax) - acrMax) : n(effectiveGrandMax);
+  const displayPartAPercentage = percentOf(displayPartATotal, displayEffectivePartAMax);
+  const displayTotalPercentage = percentOf(displayGrand, displayEffectiveGrandMax);
   const win = window.open('', '_blank');
   if (!win) { alert("Please allow popups to generate the report."); return; }
   let logoSrc = `${window.location.origin}/image.png`;
@@ -637,10 +669,12 @@ export const generateStandardReport = async ({
   <table><tr><th>SN</th><th>Name of Industry</th><th>Details of Activity</th><th>API Score</th></tr>
   ${industry.map((ind,i)=>`<tr><td class="c">${i+1}</td><td>${ind.name||'&nbsp;'}</td><td>${ind.details||'&nbsp;'}</td><td class="c">${ind.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="3" class="c b">Total (Max 5)</td><td class="c">${industryScore.toFixed(1)}</td></tr></table>
+  ${!hideAcr ? `
   <h3>G. Annual Confidential Report (Max 25)</h3>
   <table><tr><th>SN</th><th>Parameter</th><th>API Score</th></tr>
   ${acr.map((a,i)=>`<tr><td class="c">${i+1}</td><td>${a.label||'&nbsp;'}</td><td class="c">${a.score||'&nbsp;'}</td></tr>`).join('')}
   <tr class="tr"><td colspan="2" class="c b">Total (Max 25)</td><td class="c">${acrScore.toFixed(1)}</td></tr></table>
+  ` : ''}
   <table class="st">
     <tr><th>Part A Summary</th><th>Max</th><th>Faculty Score</th></tr>
     <tr><td>Teaching Process (i+ii+iii+iv+v)</td><td class="c">${teachingMax}</td><td class="c">${teachingRaw.toFixed(1)}</td></tr>
@@ -649,9 +683,9 @@ export const generateStandardReport = async ({
     <tr><td>University Activity</td><td class="c">30</td><td class="c">${uniScore.toFixed(1)}</td></tr>
     <tr><td>Contribution to Society</td><td class="c">${applicability.society==='notApplicable'?'N/A':'10'}</td><td class="c">${societyScore.toFixed(1)}</td></tr>
     <tr><td>Industry Connect</td><td class="c">5</td><td class="c">${industryScore.toFixed(1)}</td></tr>
-    <tr><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>
-    <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${effectivePartAMax}</td><td class="c b">${partATotal.toFixed(1)}</td></tr>
-    <tr class="tr"><td class="b">PART A MARKS OBTAINED (%)</td><td colspan="2" class="c b">${partAPercentage}%</td></tr>
+    ${!hideAcr ? `<tr><td>Annual Confidential Report</td><td class="c">25</td><td class="c">${acrScore.toFixed(1)}</td></tr>` : ''}
+    <tr class="tr"><td class="b">PART A TOTAL</td><td class="c b">${displayEffectivePartAMax}</td><td class="c b">${displayPartATotal.toFixed(1)}</td></tr>
+    <tr class="tr"><td class="b">PART A MARKS OBTAINED (%)</td><td colspan="2" class="c b">${displayPartAPercentage}%</td></tr>
   </table>
   <div class="pb"></div>
   <h3 style="background:#d9d9d9;padding:4px;text-align:center;font-size:13px">PART B - Research &amp; Academic Contributions</h3>
@@ -732,8 +766,8 @@ export const generateStandardReport = async ({
     <tr><td class="c">8</td><td>Self Development (FDP / Industrial Training)</td><td class="c">10</td><td class="c">${(fdpScore+trainScore).toFixed(1)}</td></tr>
     <tr class="tr"><td colspan="2" class="c b">Part B Total</td><td class="c b">${effectivePartBMax}</td><td class="c b">${partBTotal.toFixed(1)}</td></tr>
     <tr class="tr"><td colspan="2" class="c b">Part B Marks Obtained (%)</td><td colspan="2" class="c b">${partBPercentage}%</td></tr>
-    <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${effectiveGrandMax}</td><td class="c">${grandTotal.toFixed(1)}</td></tr>
-    <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Marks Obtained (%)</td><td colspan="2" class="c">${totalPercentage}%</td></tr>
+    <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Grand Total (Part A + Part B)</td><td class="c">${displayEffectiveGrandMax}</td><td class="c">${displayGrand.toFixed(1)}</td></tr>
+    <tr style="background:#bfbfbf;font-weight:bold;font-size:13px"><td colspan="2" class="c">Marks Obtained (%)</td><td colspan="2" class="c">${displayTotalPercentage}%</td></tr>
   </table>
   ${renderSummaryOtherInfo(summaryOtherInfo)}
   ${buildSignaturePage({
