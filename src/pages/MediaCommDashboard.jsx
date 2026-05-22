@@ -39,7 +39,7 @@ import {
  toggleInnovativeMethod,
  validateCompleteRows,
 } from "../utils/appraisalFormUtils";
-import { canReviewerRejectProfile, getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles, workflowValidationError, isAppraisalFinalisedByVc, isRejectedStatus, isPendingReviewStatusFor, hasActiveRejection } from "../utils/hierarchy";
+import { canReviewerRejectProfile, getReviewChain, pendingStatusFor, profileFromsessionStorage, reviewedStatusFor, roleLabel, visiblePreviousReviewRoles, workflowValidationError, isAppraisalFinalisedByVc, isRejectedStatus, isPendingReviewStatusFor, hasActiveRejection, reviewListFrom } from "../utils/hierarchy";
 import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 import SummaryOtherInfoField, { summaryOtherInfoValueFrom } from "../components/SummaryOtherInfoField";
 import RejectionNotice from "../components/RejectionNotice";
@@ -1028,7 +1028,8 @@ function WorkflowTracker({ declaration, reviews, profile }) {
  if (!declaration) {
  return<div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 14, color: "#64748b", fontSize: 12 }}>Submit the appraisal to see the approval route.</div>;
  }
- const reviewed = new Map((reviews || []).map((review) =>[review.reviewer_role, review]));
+ const reviewList = reviewListFrom(reviews);
+ const reviewed = new Map(reviewList.map((review) =>[review.reviewer_role, review]));
  const next = chain.find((role) =>!reviewed.has(role));
  return (
 <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 14 }}>
@@ -1354,7 +1355,7 @@ export default function MediaCommDashboard({ fixedRole }) {
  return null;
  });
  const declarationRow = data?.declaration || null;
- const loadedReviews = data?.reviews || [];
+ const loadedReviews = reviewListFrom(data?.reviews);
  setDeclaration(declarationRow);
  setReviews(loadedReviews);
  await Promise.all([

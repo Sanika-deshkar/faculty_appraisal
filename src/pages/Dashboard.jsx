@@ -8,6 +8,7 @@ import {
   getReviewChain,
   isRejectedStatus,
   hasActiveRejection,
+  reviewListFrom,
   pendingStatusFor,
   profileFromsessionStorage,
   roleLabel,
@@ -124,7 +125,8 @@ function StatusBadge({ status }) {
 function WorkflowStatusTracker({ declaration, reviews, profile }) {
   const chain = getReviewChain(profile);
   const status = declaration?.status || "";
-  const reviewByRole = new Map((reviews || []).map((review) => [review.reviewer_role, review]));
+  const reviewList = reviewListFrom(reviews);
+  const reviewByRole = new Map(reviewList.map((review) => [review.reviewer_role, review]));
   const rejected = hasActiveRejection(declaration, reviews);
   const nextRole = rejected
     ? null
@@ -1415,7 +1417,7 @@ export default function HODDashboard() {
         });
         const declaration = data?.declaration || null;
         setWorkflowDeclaration(declaration);
-        const loadedReviews = data?.reviews || [];
+        const loadedReviews = reviewListFrom(data?.reviews);
         setWorkflowReviews(loadedReviews);
         setAppraisalLocked(Boolean(declaration) && !hasActiveRejection(declaration, loadedReviews));
 

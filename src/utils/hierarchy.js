@@ -148,13 +148,18 @@ const timestampMs = (value) => {
   const time = value ? new Date(value).getTime() : NaN;
   return Number.isFinite(time) ? time : null;
 };
+export const reviewListFrom = (reviews = []) => {
+  if (Array.isArray(reviews)) return reviews;
+  if (!reviews || typeof reviews !== "object") return [];
+  return Object.values(reviews).filter((review) => review && typeof review === "object");
+};
 const reviewTimestampMs = (review = {}) =>
-  timestampMs(review.reviewed_at || review.reviewedAt || review.updated_at || review.updatedAt || review.created_at || review.createdAt);
+  timestampMs(review?.reviewed_at || review?.reviewedAt || review?.updated_at || review?.updatedAt || review?.created_at || review?.createdAt);
 const declarationTimestampMs = (declaration = {}) =>
-  timestampMs(declaration.submitted_at || declaration.submittedAt || declaration.updated_at || declaration.updatedAt || declaration.created_at || declaration.createdAt);
+  timestampMs(declaration?.submitted_at || declaration?.submittedAt || declaration?.updated_at || declaration?.updatedAt || declaration?.created_at || declaration?.createdAt);
 export const hasRejectedReview = (reviews = [], { since } = {}) => {
   const sinceMs = timestampMs(since);
-  return (reviews || []).some((review) => [
+  return reviewListFrom(reviews).some((review) => [
     review?.status,
     review?.review_status,
     review?.reviewStatus,

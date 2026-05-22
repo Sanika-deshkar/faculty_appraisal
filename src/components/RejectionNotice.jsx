@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { hasActiveRejection, isRejectedStatus, roleLabel } from "../utils/hierarchy";
+import { hasActiveRejection, isRejectedStatus, reviewListFrom, roleLabel } from "../utils/hierarchy";
 
 const clean = (value) => String(value ?? "").trim();
 
@@ -55,6 +55,7 @@ const reviewRemarks = (review = {}) =>
   clean(review.remarks || review.remark || review.comments || review.comment || review.reason || review.rejection_reason || review.rejectionReason);
 
 const buildRejectionNotice = ({ declaration, reviews = [], form = {}, item = {}, status } = {}) => {
+  const reviewList = reviewListFrom(reviews);
   const statusCandidates = [
     status,
     declaration?.status,
@@ -69,15 +70,15 @@ const buildRejectionNotice = ({ declaration, reviews = [], form = {}, item = {},
     item?.declaration?.status,
   ];
   const rejectedStatus = statusCandidates.find((candidate) => isRejectedStatus(candidate));
-  const activeRejection = hasActiveRejection(declaration, reviews);
-  const rejectedReview = [...(reviews || [])].reverse().find((review) => isRejectedStatus(reviewStatus(review)));
+  const activeRejection = hasActiveRejection(declaration, reviewList);
+  const rejectedReview = [...reviewList].reverse().find((review) => isRejectedStatus(reviewStatus(review)));
   const role = normalizedRole(reviewRole(rejectedReview) || roleFromStatus(rejectedStatus));
 
   if (!rejectedStatus && !activeRejection) return null;
 
   const matchingReview = role
-    ? [...(reviews || [])].reverse().find((review) => reviewRole(review) === role && reviewRemarks(review))
-    : [...(reviews || [])].reverse().find((review) => reviewRemarks(review));
+    ? [...reviewList].reverse().find((review) => reviewRole(review) === role && reviewRemarks(review))
+    : [...reviewList].reverse().find((review) => reviewRemarks(review));
 
   const sources = [
     rejectedReview,
