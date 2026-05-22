@@ -435,8 +435,17 @@ export const submitWorkflowReview = async ({
   const endpointUrl = `/appraisal-remarks/${endpoint}/${encodeURIComponent(subjectEmail)}`;
   const rejected = decision === "rejected";
   const forwarding = rejected ? workflowRejectionFor(role) : workflowForwardingFor(role, subjectProfile || {});
+
+  if (rejected) {
+    try {
+      return await api.put(endpointUrl, { ...basePayload, ...forwarding }) || {};
+    } catch {
+      return await api.put(endpointUrl, { ...basePayload, decision: "rejected" }) || {};
+    }
+  }
+
   if (role === "vc") {
-    return await api.put(endpointUrl, rejected ? { ...basePayload, ...forwarding } : basePayload) || {};
+    return await api.put(endpointUrl, basePayload) || {};
   }
 
   let result;
