@@ -342,6 +342,26 @@ const buildDirectorSectionScores = (faculty, dirData) =>{
  };
  return payload;
 };
+const normalizeDirectorDraftData = (sectionScores = {}) =>{
+ const next = { ...(sectionScores || {}) };
+ REVIEW_ARRAY_KEYS.forEach((key) =>{
+ if (!Array.isArray(next[key])) return;
+ next[key] = next[key].map((row = {}) =>({
+ ...row,
+ dir: row.dir ?? row.director ?? "",
+ }));
+ });
+ if (Array.isArray(next.innovRows)) {
+ next.innovRows = next.innovRows.map((row = {}) =>({
+ ...row,
+ dir: row.dir ?? row.director ?? "",
+ }));
+ }
+ if (next.innovativeTeaching?.director && !next.innovDir) {
+ next.innovDir = next.innovativeTeaching.director;
+ }
+ return next;
+};
 
 // - Faculty Form in HOD Review Mode -
 function FacultyReviewForm({ faculty, hodData, setHodData, dirData, setDirData, sectionView = "partA" }) {
@@ -1214,7 +1234,7 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false }) {
  loadReviewerDraft({ subjectEmail, academicYear, reviewerRole: "director" })
  .then((draft) =>{
  if (!active || !draft?.payload) return;
- setDirData(draft.payload.section_scores || {});
+ setDirData(normalizeDirectorDraftData(draft.payload.section_scores || {}));
  setDirRemarks(draft.payload.remarks ?? "");
  setDraftStatus(draft.updated_at ? `Last saved: ${new Date(draft.updated_at).toLocaleString()}` : "Draft loaded");
  })
