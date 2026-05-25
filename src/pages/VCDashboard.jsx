@@ -758,7 +758,7 @@ function calcVCScore(person, vcData) {
  sum(person.ict, "ict", "vc") + (person.sectionApplicability?.research === "notApplicable" ? 0 : sum(person.research, "research", "vc")) +
  sum(person.projects2, "projects2", "vc") + sum(person.externalProjects, "externalProjects", "vc") + sum(person.patents, "patents", "vc") + sum(person.awards, "awards", "vc") +
  sum(person.confs, "confs", "vc") + sum(person.proposals, "proposals", "vc") + sum(person.products, "products", "vc") +
- sum(person.fdps, "fdps", "vc") + sum(person.training || [], "training", "vc");
+ clampScore(sum(person.fdps, "fdps", "vc") + sum(person.training || [], "training", "vc"), 10);
 
  const partAMax = effectiveMaxScore(MAX_SCORES.PART_A || 200, person.sectionApplicability || {}, [{ key: "projects", max: 10 }, { key: "society", max: 10 }]);
  const partBMax = effectiveMaxScore(MAX_SCORES.PART_B || 375, person.sectionApplicability || {}, [{ key: "research", max: 30 }]);

@@ -1125,7 +1125,8 @@ function ReviewPanel({ faculty, onBack, onSubmit, readOnly = false, reviewerLabe
  const prod = sumReviewRows("products", "hod", 10);
  const fdp = sumReviewRows("fdps", "hod", 10, SCORE_LIMITS.fdpRow);
  const train = sumReviewRows("training", "hod", 10, SCORE_LIMITS.fdpRow);
- const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train, 375);
+ const b8 = clampScore(fdp + train, 10);
+ const partB = clampScore(jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + b8, 375);
 
  return { partA, partB, total: clampScore(partA + partB, 575) };
  };

@@ -1143,7 +1143,8 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
     const prod = (faculty.products || []).reduce((a, _, i) => a + get("products", i, "hod"), 0);
     const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) => a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
     const train = clampScore((faculty.training || []).reduce((a, _, i) => a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
-    const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train;
+    const b8 = clampScore(fdp + train, 10);
+    const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + b8;
 
     return { partA, partB, total: partA + partB };
   };

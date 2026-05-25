@@ -1001,7 +1001,8 @@ function ReviewPanel({ faculty, onBack, onSubmit }) {
  const prod = (faculty.products || []).reduce((a, _, i) =>a + get("products", i, "hod"), 0);
  const fdp = clampScore((faculty.fdps || []).reduce((a, _, i) =>a + clampScore(get("fdps", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
  const train = clampScore((faculty.training || []).reduce((a, _, i) =>a + clampScore(get("training", i, "hod"), SCORE_LIMITS.fdpRow), 0), 10);
- const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + fdp + train;
+ const b8 = clampScore(fdp + train, 10);
+ const partB = jour + bk + ictT + res + resProjects + externalResProjects + pat + awd + conf + prop + prod + b8;
 
  return { partA, partB, total: partA + partB };
  };
@@ -1193,8 +1194,9 @@ const deanScoreTotals = (payload) =>{
  ? reviewSectionScore("innovRows", payload.innovRows, 10, "dean")
  : clampScore(payload.innovativeTeaching?.dean, 10);
  const partA = clampScore(sumDeanRows(payload, DEAN_REVIEW_PART_A_KEYS) + innovativeScore, 200);
- const partB = sumDeanRows(payload, DEAN_REVIEW_PART_B_KEYS);
- const cappedPartB = clampScore(partB, 375);
+ const b8 = clampScore(sumDeanRows(payload, ["fdps"]) + sumDeanRows(payload, ["training"]), 10);
+ const partBWithoutB8 = sumDeanRows(payload, DEAN_REVIEW_PART_B_KEYS.filter(k =>k !== "fdps" && k !== "training"));
+ const cappedPartB = clampScore(partBWithoutB8 + b8, 375);
  return { partA, partB: cappedPartB, total: clampScore(partA + cappedPartB, 575) };
 };
 
