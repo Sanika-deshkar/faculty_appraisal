@@ -20,6 +20,7 @@ import AppraisalHeaderImage from "../components/AppraisalHeaderImage";
 // --- Helpers ------------------------------------------------------------------
 const n = (v) =>parseFloat(v) || 0;
 const pct = (v, m) =>Math.min(100, Math.round((v / m) * 100)) || 0;
+const oneDecimal = (value) =>(Math.trunc(n(value) * 10) / 10).toFixed(1);
 const isVcReviewed = (person = {}) =>!isPendingReviewStatusFor([person.status, person.workflowStatus, person.workflow_status], "vc") && (person.status === "Reviewed" || person.status === "VC Reviewed" || person.status === "Rejected" || person.status === "VC Rejected" || n(person.vcTotal) >0);
 const grade = (score, max) =>{
  const p = (score / max) * 100;
@@ -260,6 +261,26 @@ const vcTotalForRole = (person = {}, role) =>{
 };
 const vcSelfTotalForPerson = (person = {}) =>
  n(person.declaration?.grand_total ?? person.grandTotal ?? person.grand_total ?? person.totalScore ?? person.total ?? person.selfTotal);
+const rawVcSelfTotalForPerson = (person = {}) =>
+ person.declaration?.grand_total ?? person.grandTotal ?? person.grand_total ?? person.totalScore ?? person.total ?? person.selfTotal;
+const rawVcTotalForRole = (person = {}, role) =>{
+ if (role === "hod" || role === "center_head") return person.hodTotal ?? person.hodScore;
+ if (role === "director") return person.directorTotal ?? person.directorScore;
+ if (role === "dean") return person.deanTotal ?? person.deanScore;
+ return undefined;
+};
+const hasScoreValue = (value) =>
+ value !== undefined && value !== null && String(value).trim() !== "" && Number.isFinite(Number(value));
+const vcAverageBeforeVc = (person = {}, personMode = "faculty", previousRoles = vcPreviousRolesFor(person, personMode)) =>{
+ const scores = [
+ rawVcSelfTotalForPerson(person),
+ ...previousRoles.map((role) =>rawVcTotalForRole(person, role)),
+ ]
+ .filter(hasScoreValue)
+ .map(Number);
+ if (!scores.length) return 0;
+ return scores.reduce((sum, value) =>sum + value, 0) / scores.length;
+};
 
 const vcReviewSummaryFrom = standardReviewSummary;
 
@@ -355,6 +376,7 @@ const buildVcSectionScores = (person, vcData) =>{
 // personMode: "dean" | "director" | "hod" | "faculty"
 function VCReviewForm({ person, vcData, setVcData, personMode = "director", sectionView = "partA" }) {
  const info = mergeFacultyInfo(person.info, person);
+ const hiddenInfoRows = new Set(["expDyp", "expPrev", "expTotal"]);
  const reviewRoles = vcPreviousRolesFor(person, personMode);
  const selfScoreLabel = personMode === "faculty" ? "Faculty Score" : "Self Score";
 
@@ -457,7 +479,7 @@ function VCReviewForm({ person, vcData, setVcData, personMode = "director", sect
 <SC title="Personal Information" accent="#7c3aed">
 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
 <tbody>
- {Object.entries(info).map(([k, v]) =>(
+ {Object.entries(info).filter(([k]) =>!hiddenInfoRows.has(k)).map(([k, v]) =>(
 <tr key={k}>
 <td style={{ padding: "6px 10px", background: "#f8fafc", fontWeight: 600, border: "1px solid #e2e8f0", width: "35%", textTransform: "capitalize" }}>{k}</td>
 <td style={{ padding: "5px 10px", border: "1px solid #e2e8f0", color: "#334155" }}>{v}</td>
@@ -906,6 +928,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
  const meta = vcRoleMeta(role);
  return { label: meta.label, val: vcTotalForRole(person, role), color: meta.color };
  }),
+ { label: "Average Score", val: vcAverageBeforeVc(person, personMode, previousRoles), color: "#f59e0b" },
  ];
 
  return (
@@ -922,7 +945,7 @@ function VCReviewPanel({ person, personMode, onBack, onSubmit, readOnly = false 
  {scoreCards.map(({ label, val, color }) =>(
 <div key={label} style={{ background: "#1e293b", borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
 <div style={{ color: "#94a3b8", fontSize: 9, textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</div>
-<div style={{ color, fontWeight: 800, fontSize: 14 }}>{val}</div>
+<div style={{ color, fontWeight: 800, fontSize: 14 }}>{oneDecimal(val)}</div>
 </div>
  ))}
 <div style={{ background: "#1e293b", borderRadius: 8, padding: "8px 12px", textAlign: "center" }}>
@@ -1065,6 +1088,7 @@ function PersonCard({ person, role, onReview, schoolColor, loading = false }) {
  const meta = vcRoleMeta(reviewRole);
  return { label: meta.shortLabel, value: vcTotalForRole(person, reviewRole), color: meta.color };
  }),
+ { label: "Average Score", value: vcAverageBeforeVc(person, personMode, previousRoles), color: "#f59e0b" },
  { label: "VC Score", value: vcTotal, color: "#7c3aed", isVc: true },
  ];
  const remarkTiles = previousRoles
